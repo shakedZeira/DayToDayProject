@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Login from "./Login";
+import Tasks from "./Tasks";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
 
@@ -34,14 +35,19 @@ export default function App() {
         Backend: <span className="text-indigo-600">{backend}</span>
       </p>
       {token && user ? (
-        <div className="text-center text-slate-600">
-          <p>Logged in as <span className="font-semibold">{user.email}</span></p>
-          <button
-            className="mt-4 text-sm text-red-600 underline"
-            onClick={() => { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); setToken(null); setUser(null); }}
-          >
-            Log out
-          </button>
+        <div className="w-full max-w-2xl flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-600">
+              Logged in as <span className="font-semibold">{user.email}</span>
+            </p>
+            <button
+              className="text-sm text-red-600 underline"
+              onClick={() => { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); setToken(null); setUser(null); }}
+            >
+              Log out
+            </button>
+          </div>
+          <Tasks token={token} />
         </div>
       ) : (
         <Login onAuthed={onAuthed} />
