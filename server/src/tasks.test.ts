@@ -50,6 +50,34 @@ test("rejects unauthenticated access", async () => {
   expect(res.status).toBe(401);
 });
 
+test("today returns only tasks due today", async () => {
+  const daily = await request(app)
+    .post("/api/tasks")
+    .set("Authorization", `Bearer ${token}`)
+    .send({ title: "Morning stretch", recurrence: "daily" });
+
+  const dueToday = await request(app)
+    .post("/api/tasks")
+    .set("Authorization", `Bearer ${token}`)
+    .send({ title: "Submit invoice", dueAt: new Date().toISOString() });
+
+  const notToday = await request(app)
+    .post("/api/tasks")
+    .set("Authorization", `Bearer ${token}`)
+    .send({ title: "Plan next week", dueAt: new Date(Date.now() + 86400000).toISOString() });
+
+  expect(daily.status).toBe(201);
+  expect(dueToday.status).toBe(201);
+  expect(notToday.status).toBe(201);
+
+  const res = await request(app)
+    .get("/api/tasks/today")
+    .set("Authorization", `Bearer ${token}`);
+  expect(res.status).toBe(200);
+  const titles = res.body.map((t: { title: string }) => t.title).sort();
+  expect(titles).toEqual(["Morning stretch", "Submit invoice"]);
+});
+
 test("dueOn resolves daily recurrence", async () => {
   const { dueOn } = await import("./tasks");
   const daily = { dueAt: null, recurrence: "daily" };

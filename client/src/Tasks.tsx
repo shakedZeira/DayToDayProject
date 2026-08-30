@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { listTasks, createTask, updateTask, deleteTask, type Task } from "./tasksApi";
+import { listTasks, getTodayTasks, createTask, updateTask, deleteTask, type Task } from "./tasksApi";
 
 interface Props {
   token: string;
@@ -15,6 +15,7 @@ function recurrenceLabel(r: string): string {
 
 export default function Tasks({ token }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [today, setToday] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [category, setCategory] = useState("");
@@ -38,6 +39,18 @@ export default function Tasks({ token }: Props) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getTodayTasks(token)
+      .then((data) => {
+        if (!cancelled) setToday(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -85,6 +98,12 @@ export default function Tasks({ token }: Props) {
     if (!iso) return "";
     const d = new Date(iso);
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+
+  function formatTime(iso: string | null): string {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   }
 
   if (loading) {
@@ -140,6 +159,35 @@ export default function Tasks({ token }: Props) {
       </form>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
+
+      {today.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+            Due today
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {today.map((t) => (
+              <li
+                key={t.id}
+                className="border border-indigo-200 rounded p-3 bg-indigo-50 flex items-center gap-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-slate-800 font-medium truncate">{t.title}</p>
+                  {t.recurrence === "none" && t.dueAt && (
+                    <p className="text-xs text-indigo-500">Due {formatTime(t.dueAt)}</p>
+                  )}
+                  {t.recurrence !== "none" && (
+                    <p className="text-xs text-indigo-500">
+                      {recurrenceLabel(t.recurrence)}
+                      {t.dueAt ? ` · ${formatTime(t.dueAt)}` : ""}
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {tasks.length === 0 ? (
         <div className="text-center text-slate-400 py-8">No tasks yet. Add one above!</div>

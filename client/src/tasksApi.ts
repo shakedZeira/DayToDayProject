@@ -28,6 +28,11 @@ export async function listTasks(token: string): Promise<Task[]> {
   return json<Task[]>(res);
 }
 
+export async function getTodayTasks(token: string): Promise<Task[]> {
+  const res = await authedFetch(token, "/api/tasks/today");
+  return json<Task[]>(res);
+}
+
 export async function createTask(token: string, input: TaskCreateInput): Promise<Task> {
   const res = await authedFetch(token, "/api/tasks", {
     method: "POST",

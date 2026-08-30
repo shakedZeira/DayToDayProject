@@ -26,6 +26,14 @@ tasksRouter.get("/", async (req: AuthedRequest, res) => {
   res.json(tasks);
 });
 
+tasksRouter.get("/today", async (req: AuthedRequest, res) => {
+  const now = new Date();
+  const owned = await prisma.task.findMany({ where: { ownerId: req.userId } });
+  const due = owned.filter((t) => t.status !== "DONE" || (t.recurrence !== "none" && t.recurrence != null));
+  const today = due.filter((t) => dueOn(t, now));
+  res.json(today);
+});
+
 tasksRouter.post("/", async (req: AuthedRequest, res) => {
   const { title, notes, dueAt, recurrence, category } = req.body ?? {};
   if (typeof title !== "string" || !title.trim()) {
