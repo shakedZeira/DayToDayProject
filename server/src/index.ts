@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { healthRouter } from "./health";
 import { authRouter } from "./auth";
+import { tasksRouter } from "./tasks";
 import { prisma } from "./db";
 
 export const app = express();
@@ -12,6 +13,7 @@ app.use(express.json());
 
 app.use("/api", healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/tasks", tasksRouter);
 
 // Verify the DB is reachable on boot.
 app.get("/api/ready", async (_req, res) => {
