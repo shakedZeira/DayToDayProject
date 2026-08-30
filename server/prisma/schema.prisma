@@ -30,3 +30,15 @@ model Task {
 
   @@index([ownerId])
 }
+
+model PushSub {
+  id         String   @id @default(cuid())
+  ownerId    String
+  endpoint   String
+  keysAuth   String
+  keysP256dh String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([ownerId])
+}

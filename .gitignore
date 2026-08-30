@@ -7,4 +7,6 @@ dist/
 *.sqlite-journal
 *.db
 *.db-journal
+vapid.json
+*.vapid.json
 .DS_Store
