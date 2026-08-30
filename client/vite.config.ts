@@ -8,6 +8,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
+      },
       includeAssets: ["favicon.svg"],
       manifest: {
         name: "Day To Day",

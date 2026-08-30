@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Login from "./Login";
 import Tasks from "./Tasks";
+import Notifications from "./Notifications";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
 
@@ -48,6 +49,7 @@ export default function App() {
             </button>
           </div>
           <Tasks token={token} />
+          <Notifications token={token} />
         </div>
       ) : (
         <Login onAuthed={onAuthed} />
