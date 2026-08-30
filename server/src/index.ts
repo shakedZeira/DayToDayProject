@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { healthRouter } from "./health";
+import { authRouter } from "./auth";
 import { prisma } from "./db";
 
 export const app = express();
@@ -10,6 +11,7 @@ app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
 app.use(express.json());
 
 app.use("/api", healthRouter);
+app.use("/api/auth", authRouter);
 
 // Verify the DB is reachable on boot.
 app.get("/api/ready", async (_req, res) => {
