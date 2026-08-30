@@ -2,12 +2,13 @@ import { useState } from "react";
 import { login, register, type AuthResponse, type AuthUser } from "./auth";
 
 interface Props {
-  onAuthed: (token: string, user: AuthUser) => void;
+  onAuthed: (token: string, user: AuthUser, remember: boolean) => void;
 }
 
 export default function Login({ onAuthed }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +18,7 @@ export default function Login({ onAuthed }: Props) {
     try {
       const fn = mode === "login" ? login : register;
       const res: AuthResponse = await fn(email, password);
-      onAuthed(res.token, res.user);
+      onAuthed(res.token, res.user, remember);
     } catch (err) {
       setError(err instanceof Error ? err.message : "failed");
     }
@@ -38,6 +39,13 @@ export default function Login({ onAuthed }: Props) {
         type="password" placeholder="password (min 8)" value={password}
         onChange={(e) => setPassword(e.target.value)} required minLength={8}
       />
+      <label className="flex items-center gap-2 text-sm text-slate-600">
+        <input
+          type="checkbox" checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+        />
+        Remember me
+      </label>
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <button className="bg-indigo-600 text-white rounded py-2">{mode === "login" ? "Log in" : "Register"}</button>
       <button type="button" className="text-sm text-indigo-600 underline" onClick={() => setMode(mode === "login" ? "register" : "login")}>

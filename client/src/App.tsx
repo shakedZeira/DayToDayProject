@@ -8,11 +8,25 @@ import type { AuthUser } from "./auth";
 const TOKEN_KEY = "dtd.token";
 const USER_KEY = "dtd.user";
 
+function readStored(key: string): string | null {
+  return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+}
+
+function clearStored(key: string) {
+  sessionStorage.removeItem(key);
+  localStorage.removeItem(key);
+}
+
+function writeStored(key: string, value: string, remember: boolean) {
+  const store = remember ? localStorage : sessionStorage;
+  store.setItem(key, value);
+}
+
 export default function App() {
   const [backend, setBackend] = useState<string>("connecting…");
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [token, setToken] = useState<string | null>(() => readStored(TOKEN_KEY));
   const [user, setUser] = useState<AuthUser | null>(() => {
-    const raw = localStorage.getItem(USER_KEY);
+    const raw = readStored(USER_KEY);
     return raw ? (JSON.parse(raw) as AuthUser) : null;
   });
 
@@ -22,9 +36,9 @@ export default function App() {
       .catch(() => setBackend("unreachable"));
   }, []);
 
-  function onAuthed(t: string, u: AuthUser) {
-    localStorage.setItem(TOKEN_KEY, t);
-    localStorage.setItem(USER_KEY, JSON.stringify(u));
+  function onAuthed(t: string, u: AuthUser, remember: boolean) {
+    writeStored(TOKEN_KEY, t, remember);
+    writeStored(USER_KEY, JSON.stringify(u), remember);
     setToken(t);
     setUser(u);
   }
@@ -43,7 +57,7 @@ export default function App() {
             </p>
             <button
               className="text-sm text-red-600 underline"
-              onClick={() => { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); setToken(null); setUser(null); }}
+              onClick={() => { clearStored(TOKEN_KEY); clearStored(USER_KEY); setToken(null); setUser(null); }}
             >
               Log out
             </button>
