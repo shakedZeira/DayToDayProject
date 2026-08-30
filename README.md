@@ -4,7 +4,7 @@ A personal all-in-one daily companion — tasks and clock alerts, health trackin
 
 ## Prerequisites
 
-- **Node 20** (pinned in `.nvmrc`). Local development works on Node 18, but the deploy skeleton and Dockerfiles target Node 20 for consistency.
+- **Node 24 LTS** (pinned in `.nvmrc`). Local development requires Node 20+; the deploy skeleton and Dockerfiles target Node 24 for consistency. (Node 18 can run dev servers but the client production build needs Node 20+ due to `vite-plugin-pwa`.)
 - npm (comes with Node)
 
 ## Local Development
