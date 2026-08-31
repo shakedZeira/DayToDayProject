@@ -21,3 +21,12 @@ export interface WeeklyGoalView {
   thisWeekCount: number;
   lastEventAt?: string | null;
 }
+
+export interface WorkoutCreateInput { title: string; date?: string; notes?: string | null; }
+export interface WorkoutSetInput { exercise: string; weightKg: number; reps: number; }
+export interface ProgressiveSuggestion {
+  exercise: string;
+  currentWeightKg: number;
+  suggestedNextKg: number;
+  reason: "completed_target" | "not_yet";
+}
