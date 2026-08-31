@@ -5,6 +5,9 @@ import Goals from "./Goals";
 import Workouts from "./Workouts";
 import Foods from "./Foods";
 import type { MealLogRecord } from "./foodApi";
+import NutritionSummary from "./NutritionSummary";
+import { getSummary, setTarget } from "./nutritionApi";
+import type { NutritionSummary as NutritionSummaryType } from "shared";
 import Notifications from "./Notifications";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
@@ -33,7 +36,8 @@ export default function App() {
     const raw = readStored(USER_KEY);
     return raw ? (JSON.parse(raw) as AuthUser) : null;
   });
-  const [meals, setMeals] = useState<MealLogRecord[]>([]);
+  const [summary, setSummary] = useState<NutritionSummaryType | null>(null);
+  const [targetInput, setTargetInput] = useState("");
 
   useEffect(() => {
     fetchHealth()
@@ -48,7 +52,24 @@ export default function App() {
     setUser(u);
   }
 
-  function refreshMeals() {}
+  function refreshNutrition() {
+    if (!token) return;
+    getSummary(token).then(setSummary).catch(() => setSummary(null));
+  }
+
+  useEffect(() => {
+    refreshNutrition();
+  }, [token]);
+
+  const summaryMeals: MealLogRecord[] = summary
+    ? summary.meals.map((m) => ({
+        id: m.id,
+        foodId: m.id,
+        grams: m.grams,
+        date: summary.date,
+        name: m.foodName,
+      }))
+    : [];
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center gap-6 p-6">
@@ -72,7 +93,36 @@ export default function App() {
           <Tasks token={token} />
           <Goals token={token} />
           <Workouts token={token} />
-          <Foods token={token} meals={meals} onChanged={refreshMeals} />
+          <div className="flex items-center gap-2">
+            <label htmlFor="target" className="text-sm text-slate-600">
+              Daily target (kcal)
+            </label>
+            <input
+              id="target"
+              className="border rounded px-3 py-2 w-32"
+              type="number"
+              min={1}
+              step="any"
+              placeholder="2000"
+              value={targetInput}
+              onChange={(e) => setTargetInput(e.target.value)}
+            />
+            <button
+              className="bg-indigo-600 text-white rounded px-4 py-2 text-sm font-medium"
+              onClick={() => {
+                const calories = Number(targetInput);
+                if (!calories || calories <= 0) return;
+                setTarget(token, calories).then(() => {
+                  setTargetInput("");
+                  refreshNutrition();
+                });
+              }}
+            >
+              Set target
+            </button>
+          </div>
+          {summary && <NutritionSummary summary={summary} />}
+          <Foods token={token} meals={summaryMeals} onChanged={refreshNutrition} />
           <Notifications token={token} />
         </div>
       ) : (

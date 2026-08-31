@@ -33,3 +33,11 @@ export interface ProgressiveSuggestion {
 export interface FoodInput { name: string; caloriesPer100: number; servingUnit?: string; }
 export interface FoodRecord { id: string; name: string; caloriesPer100: number; servingUnit: string; }
 export interface MealLogInput { foodId: string; grams: number; date?: string; }
+export interface DailyTargetInput { calories: number; }
+export interface NutritionSummary {
+  date: string;
+  target: number;
+  consumed: number;
+  remaining: number;
+  meals: { id: string; foodName: string; grams: number; calories: number }[];
+}

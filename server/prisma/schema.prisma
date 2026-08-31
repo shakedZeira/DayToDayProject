@@ -116,3 +116,11 @@ model MealLog {
   food      Food     @relation(fields: [foodId], references: [id], onDelete: Cascade)
   @@index([ownerId, date])
 }
+
+model DailyTarget {
+  id        String   @id @default(cuid())
+  ownerId   String   @unique
+  calories  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
