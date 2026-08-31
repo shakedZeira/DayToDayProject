@@ -5,7 +5,6 @@ import { prisma } from "./db";
 import { seedFoods, SEED_FOODS } from "./foods.seed";
 
 let token = "";
-let userId = "";
 
 beforeEach(async () => {
   await prisma.mealLog.deleteMany({});
@@ -15,34 +14,69 @@ beforeEach(async () => {
     .post("/api/auth/register")
     .send({ email: "foods@example.com", password: "password123" });
   token = reg.body.token as string;
-  userId = reg.body.user.id as string;
 });
 
-test("seedFoods creates >= 20 foods and is idempotent", async () => {
-  const first = await seedFoods(userId);
-  expect(first).toBeGreaterThan(0);
-  expect(first).toBeGreaterThanOrEqual(20);
+test("seedFoods creates the full global catalog and is idempotent", async () => {
+  const first = await seedFoods();
   expect(first).toBe(SEED_FOODS.length);
-  const second = await seedFoods(userId);
+  expect(first).toBeGreaterThanOrEqual(25);
+  const second = await seedFoods();
   expect(second).toBe(0);
 });
 
-test("POST /api/foods/search finds chicken foods", async () => {
-  await seedFoods(userId);
-  const res = await request(app)
+test("a fresh user can search the shared catalog in English and Hebrew without creating any food", async () => {
+  await seedFoods();
+  const english = await request(app)
     .post("/api/foods/search")
     .set("Authorization", `Bearer ${token}`)
     .send({ q: "chicken" });
+  expect(english.status).toBe(200);
+  expect(Array.isArray(english.body)).toBe(true);
+  expect(english.body.length).toBeGreaterThanOrEqual(1);
+  expect(english.body.some((f: { name: string }) => f.name === "Chicken Breast")).toBe(true);
+  expect(english.body[0].nameHe).toBe("חזה עוף");
+
+  const hebrew = await request(app)
+    .post("/api/foods/search")
+    .set("Authorization", `Bearer ${token}`)
+    .send({ q: "עוף" });
+  expect(hebrew.status).toBe(200);
+  expect(hebrew.body.some((f: { name: string }) => f.name === "Chicken Breast")).toBe(true);
+});
+
+test("foods are global: one user's catalog is visible to another fresh user", async () => {
+  await seedFoods();
+  const other = await request(app)
+    .post("/api/auth/register")
+    .send({ email: "other@example.com", password: "password123" });
+  const otherToken = other.body.token as string;
+  const res = await request(app)
+    .post("/api/foods/search")
+    .set("Authorization", `Bearer ${otherToken}`)
+    .send({ q: "banana" });
   expect(res.status).toBe(200);
-  expect(Array.isArray(res.body)).toBe(true);
-  expect(res.body.length).toBeGreaterThanOrEqual(1);
-  expect(res.body.some((f: { name: string }) => f.name === "Chicken Breast")).toBe(true);
+  expect(res.body.some((f: { name: string }) => f.name === "Banana")).toBe(true);
+});
+
+test("POST /api/foods creates a global food with optional Hebrew name and no ownerId", async () => {
+  const res = await request(app)
+    .post("/api/foods")
+    .set("Authorization", `Bearer ${token}`)
+    .send({ name: "Coconut Water", nameHe: "מי קוקוס", caloriesPer100: 19, servingUnit: "ml" });
+  expect(res.status).toBe(201);
+  expect(res.body).toMatchObject({
+    name: "Coconut Water",
+    nameHe: "מי קוקוס",
+    caloriesPer100: 19,
+    servingUnit: "ml",
+  });
+  expect(res.body.ownerId).toBeUndefined();
 });
 
 test("POST /api/foods/meals logs 200g chicken breast with correct calories", async () => {
-  await seedFoods(userId);
+  await seedFoods();
   const chicken = await prisma.food.findUnique({
-    where: { ownerId_name: { ownerId: userId, name: "Chicken Breast" } },
+    where: { name: "Chicken Breast" },
   });
   expect(chicken).toBeTruthy();
 
@@ -57,9 +91,9 @@ test("POST /api/foods/meals logs 200g chicken breast with correct calories", asy
 });
 
 test("DELETE /api/foods/meals/:id removes the meal", async () => {
-  await seedFoods(userId);
+  await seedFoods();
   const chicken = await prisma.food.findUnique({
-    where: { ownerId_name: { ownerId: userId, name: "Chicken Breast" } },
+    where: { name: "Chicken Breast" },
   });
   const meal = await request(app)
     .post("/api/foods/meals")
@@ -71,9 +105,6 @@ test("DELETE /api/foods/meals/:id removes the meal", async () => {
     .delete(`/api/foods/meals/${meal.body.id}`)
     .set("Authorization", `Bearer ${token}`);
   expect(del.status).toBe(204);
-
-  const remaining = await prisma.mealLog.count({ where: { ownerId: userId } });
-  expect(remaining).toBe(0);
 });
 
 test("GET /api/foods rejects unauthenticated access", async () => {

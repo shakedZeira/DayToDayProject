@@ -5,7 +5,6 @@ import { prisma } from "./db";
 import { seedFoods } from "./foods.seed";
 
 let token = "";
-let userId = "";
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -18,13 +17,12 @@ beforeEach(async () => {
     .post("/api/auth/register")
     .send({ email: "nutrition@example.com", password: "password123" });
   token = reg.body.token as string;
-  userId = reg.body.user.id as string;
-  await seedFoods(userId);
+  await seedFoods();
 });
 
 async function logChicken(grams: number): Promise<request.Response> {
   const chicken = await prisma.food.findUnique({
-    where: { ownerId_name: { ownerId: userId, name: "Chicken Breast" } },
+    where: { name: "Chicken Breast" },
   });
   return request(app)
     .post("/api/foods/meals")

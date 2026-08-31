@@ -9,17 +9,18 @@ foodsRouter.get("/", async (req: AuthedRequest, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim().toLowerCase() : "";
   const foods = await prisma.food.findMany({
     where: {
-      ownerId: req.userId,
-      ...(q ? { name: { contains: q } } : {}),
+      ...(q
+        ? { OR: [{ name: { contains: q } }, { nameHe: { contains: q } }] }
+        : {}),
     },
-    select: { id: true, name: true, caloriesPer100: true, servingUnit: true },
+    select: { id: true, name: true, nameHe: true, caloriesPer100: true, servingUnit: true },
     orderBy: { name: "asc" },
   });
   res.json(foods);
 });
 
 foodsRouter.post("/", async (req: AuthedRequest, res) => {
-  const { name, caloriesPer100, servingUnit } = req.body ?? {};
+  const { name, caloriesPer100, servingUnit, nameHe } = req.body ?? {};
   if (typeof name !== "string" || !name.trim()) {
     return res.status(400).json({ error: "name required" });
   }
@@ -28,8 +29,8 @@ foodsRouter.post("/", async (req: AuthedRequest, res) => {
   }
   const food = await prisma.food.create({
     data: {
-      ownerId: req.userId!,
       name: name.trim(),
+      nameHe: typeof nameHe === "string" && nameHe.trim() ? nameHe.trim() : null,
       caloriesPer100,
       servingUnit: typeof servingUnit === "string" && servingUnit.trim() ? servingUnit.trim() : "g",
     },
@@ -44,10 +45,9 @@ foodsRouter.post("/search", async (req: AuthedRequest, res) => {
   }
   const foods = await prisma.food.findMany({
     where: {
-      ownerId: req.userId,
-      name: { contains: q },
+      OR: [{ name: { contains: q } }, { nameHe: { contains: q } }],
     },
-    select: { id: true, name: true, caloriesPer100: true, servingUnit: true },
+    select: { id: true, name: true, nameHe: true, caloriesPer100: true, servingUnit: true },
     orderBy: { name: "asc" },
   });
   res.json(foods);
@@ -61,8 +61,8 @@ foodsRouter.post("/meals", async (req: AuthedRequest, res) => {
   if (typeof grams !== "number" || !Number.isFinite(grams) || grams <= 0) {
     return res.status(400).json({ error: "grams must be a number > 0" });
   }
-  const food = await prisma.food.findFirst({
-    where: { id: foodId, ownerId: req.userId },
+  const food = await prisma.food.findUnique({
+    where: { id: foodId },
   });
   if (!food) return res.status(404).json({ error: "not found" });
 

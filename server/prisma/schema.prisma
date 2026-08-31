@@ -96,14 +96,13 @@ model WorkoutSet {
 
 model Food {
   id             String   @id @default(cuid())
-  ownerId        String
   name           String
+  nameHe         String?
   caloriesPer100 Float
   servingUnit    String   @default("g")
   createdAt      DateTime @default(now())
   meals          MealLog[]
-  @@unique([ownerId, name])
-  @@index([ownerId])
+  @@unique([name])
 }
 
 model MealLog {

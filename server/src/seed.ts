@@ -2,11 +2,8 @@ import { prisma } from "./db";
 import { seedFoods } from "./foods.seed";
 
 async function main() {
-  const users = await prisma.user.findMany();
-  for (const user of users) {
-    const count = await seedFoods(user.id);
-    console.log(`Seeded ${count} foods for ${user.email}`);
-  }
+  const count = await seedFoods();
+  console.log(`Seeded ${count} foods (shared global catalog)`);
 }
 
 main()
