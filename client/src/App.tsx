@@ -10,11 +10,23 @@ import { getSummary, setTarget } from "./nutritionApi";
 import type { NutritionSummary as NutritionSummaryType } from "shared";
 import Notifications from "./Notifications";
 import PhotoCalories from "./PhotoCalories";
+import Profile from "./Profile";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
 
 const TOKEN_KEY = "dtd.token";
 const USER_KEY = "dtd.user";
+
+type Tab = "today" | "goals" | "workouts" | "food" | "profile" | "notifications";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "today", label: "Today" },
+  { key: "goals", label: "Goals" },
+  { key: "workouts", label: "Workouts" },
+  { key: "food", label: "Food" },
+  { key: "profile", label: "Profile" },
+  { key: "notifications", label: "Notifications" },
+];
 
 function readStored(key: string): string | null {
   return sessionStorage.getItem(key) ?? localStorage.getItem(key);
@@ -39,6 +51,7 @@ export default function App() {
   });
   const [summary, setSummary] = useState<NutritionSummaryType | null>(null);
   const [targetInput, setTargetInput] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("today");
 
   useEffect(() => {
     fetchHealth()
@@ -91,41 +104,74 @@ export default function App() {
               Log out
             </button>
           </div>
-          <Tasks token={token} />
-          <Goals token={token} />
-          <Workouts token={token} />
-          <div className="flex items-center gap-2">
-            <label htmlFor="target" className="text-sm text-slate-600">
-              Daily target (kcal)
-            </label>
-            <input
-              id="target"
-              className="border rounded px-3 py-2 w-32"
-              type="number"
-              min={1}
-              step="any"
-              placeholder="2000"
-              value={targetInput}
-              onChange={(e) => setTargetInput(e.target.value)}
-            />
-            <button
-              className="bg-indigo-600 text-white rounded px-4 py-2 text-sm font-medium"
-              onClick={() => {
-                const calories = Number(targetInput);
-                if (!calories || calories <= 0) return;
-                setTarget(token, calories).then(() => {
-                  setTargetInput("");
-                  refreshNutrition();
-                });
-              }}
-            >
-              Set target
-            </button>
+
+          {/* Tab bar */}
+          <div className="flex gap-1 border-b border-slate-200 pb-px">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-3 py-2 text-sm font-medium rounded-t transition-colors ${
+                  activeTab === tab.key
+                    ? "bg-indigo-600 text-white"
+                    : "text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-          {summary && <NutritionSummary summary={summary} />}
-          <Foods token={token} meals={summaryMeals} onChanged={refreshNutrition} />
-          <PhotoCalories token={token} />
-          <Notifications token={token} />
+
+          {/* Tab content */}
+          {activeTab === "today" && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <label htmlFor="target" className="text-sm text-slate-600">
+                  Daily target (kcal)
+                </label>
+                <input
+                  id="target"
+                  className="border rounded px-3 py-2 w-32"
+                  type="number"
+                  min={1}
+                  step="any"
+                  placeholder="2000"
+                  value={targetInput}
+                  onChange={(e) => setTargetInput(e.target.value)}
+                />
+                <button
+                  className="bg-indigo-600 text-white rounded px-4 py-2 text-sm font-medium"
+                  onClick={() => {
+                    const calories = Number(targetInput);
+                    if (!calories || calories <= 0) return;
+                    setTarget(token, calories).then(() => {
+                      setTargetInput("");
+                      refreshNutrition();
+                    });
+                  }}
+                >
+                  Set target
+                </button>
+              </div>
+              {summary && <NutritionSummary summary={summary} />}
+              <Tasks token={token} />
+            </div>
+          )}
+
+          {activeTab === "goals" && <Goals token={token} />}
+
+          {activeTab === "workouts" && <Workouts token={token} />}
+
+          {activeTab === "food" && (
+            <div className="flex flex-col gap-4">
+              <Foods token={token} meals={summaryMeals} onChanged={refreshNutrition} />
+              <PhotoCalories token={token} />
+            </div>
+          )}
+
+          {activeTab === "profile" && <Profile token={token} />}
+
+          {activeTab === "notifications" && <Notifications token={token} />}
         </div>
       ) : (
         <Login onAuthed={onAuthed} />

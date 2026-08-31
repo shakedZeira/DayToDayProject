@@ -59,7 +59,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
       <form onSubmit={onSearch} className="flex gap-2">
         <input
           className="border rounded px-3 py-2 flex-1"
-          placeholder="Search foods (e.g. chicken)"
+          placeholder="Search foods — e.g. chicken / עוף"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -90,7 +90,10 @@ export default function Foods({ token, meals, onChanged }: Props) {
               className="border rounded px-3 py-2 bg-slate-50 flex items-center gap-2"
             >
               <span className="flex-1 min-w-0">
-                <span className="block text-slate-800 font-medium truncate">{food.name}</span>
+                <span className="block text-slate-800 font-medium truncate">
+                  {food.name}
+                  {food.nameHe ? <span className="font-normal text-slate-500"> · {food.nameHe}</span> : null}
+                </span>
                 <span className="block text-xs text-slate-400">
                   {food.caloriesPer100} kcal/100{food.servingUnit}
                 </span>
