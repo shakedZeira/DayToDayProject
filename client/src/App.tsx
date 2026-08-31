@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Login from "./Login";
 import Tasks from "./Tasks";
 import Goals from "./Goals";
+import Workouts from "./Workouts";
 import Notifications from "./Notifications";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
@@ -65,6 +66,7 @@ export default function App() {
           </div>
           <Tasks token={token} />
           <Goals token={token} />
+          <Workouts token={token} />
           <Notifications token={token} />
         </div>
       ) : (
