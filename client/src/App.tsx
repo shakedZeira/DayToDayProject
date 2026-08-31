@@ -9,6 +9,7 @@ import NutritionSummary from "./NutritionSummary";
 import { getSummary, setTarget } from "./nutritionApi";
 import type { NutritionSummary as NutritionSummaryType } from "shared";
 import Notifications from "./Notifications";
+import PhotoCalories from "./PhotoCalories";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
 
@@ -123,6 +124,7 @@ export default function App() {
           </div>
           {summary && <NutritionSummary summary={summary} />}
           <Foods token={token} meals={summaryMeals} onChanged={refreshNutrition} />
+          <PhotoCalories token={token} />
           <Notifications token={token} />
         </div>
       ) : (

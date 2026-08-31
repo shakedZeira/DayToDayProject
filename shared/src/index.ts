@@ -41,3 +41,10 @@ export interface NutritionSummary {
   remaining: number;
   meals: { id: string; foodName: string; grams: number; calories: number }[];
 }
+
+export interface VisionEstimate {
+  provider: string;
+  items: { foodName: string; estimatedGrams: number; estimatedCalories: number }[];
+  totalCalories: number;
+  disclaimer: string;
+}
