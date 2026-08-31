@@ -78,3 +78,18 @@ export interface ExerciseRecord {
   isCompound: boolean; isCustom: boolean;
 }
 export interface ExerciseCreateInput { name: string; muscleGroup?: string; equipment?: string; isCompound?: boolean; }
+
+export interface RoutineExerciseInput {
+  order: number; targetSets: number; targetReps: number; targetWeight?: number | null;
+  notes?: string | null; exerciseId: string;
+}
+export interface RoutineDayInput { name: string; order?: number; exercises?: RoutineExerciseInput[]; }
+export interface RoutineCreateInput { name: string; description?: string | null; days?: RoutineDayInput[]; }
+export interface RoutineDayView {
+  id: string; name: string; order: number;
+  exercises: (RoutineExerciseInput & { id: string; exercise: ExerciseRecord })[];
+}
+export interface RoutineView {
+  id: string; name: string; description: string | null;
+  days: RoutineDayView[];
+}

@@ -137,16 +137,56 @@ model UserProfile {
 }
 
 model Exercise {
-  id           String   @id @default(cuid())
-  ownerId      String?
-  name         String
-  muscleGroup  String   @default("Other")
-  equipment    String   @default("Bodyweight")
-  isCompound   Boolean  @default(true)
-  instructions String?
-  createdAt    DateTime @default(now())
+  id              String              @id @default(cuid())
+  ownerId         String?
+  name            String
+  muscleGroup     String              @default("Other")
+  equipment       String              @default("Bodyweight")
+  isCompound      Boolean             @default(true)
+  instructions    String?
+  createdAt       DateTime            @default(now())
+  routineExercises RoutineExercise[]
 
   @@unique([ownerId, name])
   @@index([ownerId])
   @@index([name])
+}
+
+model Routine {
+  id          String   @id @default(cuid())
+  ownerId     String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  days        RoutineDay[]
+
+  @@index([ownerId])
+}
+
+model RoutineDay {
+  id        String  @id @default(cuid())
+  ownerId   String
+  name      String
+  order     Int
+  routineId String
+  routine   Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercises RoutineExercise[]
+
+  @@index([ownerId])
+}
+
+model RoutineExercise {
+  id           String     @id @default(cuid())
+  ownerId      String
+  order        Int
+  targetSets   Int
+  targetReps   Int
+  targetWeight Float?
+  notes        String?
+  routineDayId String
+  routineDay   RoutineDay   @relation(fields: [routineDayId], references: [id], onDelete: Cascade)
+  exerciseId   String
+  exercise     Exercise     @relation(fields: [exerciseId], references: [id])
+
+  @@index([ownerId])
 }
