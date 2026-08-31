@@ -48,3 +48,27 @@ export interface VisionEstimate {
   totalCalories: number;
   disclaimer: string;
 }
+
+export type ActivityLevel =
+  | "sedentary" | "light" | "moderate" | "active" | "very_active";
+
+export interface UserProfile {
+  heightCm: number;
+  weightKg: number;
+  age: number;
+  sex: "male" | "female";
+  activity: ActivityLevel;
+}
+
+export interface ProfileInput extends UserProfile {}
+
+export interface CalorieRecommendation {
+  bmr: number;
+  tdee: number;
+  activity: ActivityLevel;
+  maintenance: number;
+  weightLoss: number;
+  weightGain: number;
+  method: string;
+  disclaimer: string;
+}

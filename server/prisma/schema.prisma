@@ -123,3 +123,15 @@ model DailyTarget {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  ownerId   String   @unique
+  heightCm  Float
+  weightKg  Float
+  age       Int?
+  sex       String?
+  activity  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
