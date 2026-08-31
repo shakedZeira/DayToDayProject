@@ -93,3 +93,26 @@ model WorkoutSet {
   workout    Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   @@index([ownerId, exercise])
 }
+
+model Food {
+  id             String   @id @default(cuid())
+  ownerId        String
+  name           String
+  caloriesPer100 Float
+  servingUnit    String   @default("g")
+  createdAt      DateTime @default(now())
+  meals          MealLog[]
+  @@unique([ownerId, name])
+  @@index([ownerId])
+}
+
+model MealLog {
+  id        String   @id @default(cuid())
+  ownerId   String
+  foodId    String
+  grams     Float
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  food      Food     @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  @@index([ownerId, date])
+}

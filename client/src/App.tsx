@@ -3,6 +3,8 @@ import Login from "./Login";
 import Tasks from "./Tasks";
 import Goals from "./Goals";
 import Workouts from "./Workouts";
+import Foods from "./Foods";
+import type { MealLogRecord } from "./foodApi";
 import Notifications from "./Notifications";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
@@ -31,6 +33,7 @@ export default function App() {
     const raw = readStored(USER_KEY);
     return raw ? (JSON.parse(raw) as AuthUser) : null;
   });
+  const [meals, setMeals] = useState<MealLogRecord[]>([]);
 
   useEffect(() => {
     fetchHealth()
@@ -44,6 +47,8 @@ export default function App() {
     setToken(t);
     setUser(u);
   }
+
+  function refreshMeals() {}
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center gap-6 p-6">
@@ -67,6 +72,7 @@ export default function App() {
           <Tasks token={token} />
           <Goals token={token} />
           <Workouts token={token} />
+          <Foods token={token} meals={meals} onChanged={refreshMeals} />
           <Notifications token={token} />
         </div>
       ) : (

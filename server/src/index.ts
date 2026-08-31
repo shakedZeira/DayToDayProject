@@ -7,6 +7,7 @@ import { tasksRouter } from "./tasks";
 import { goalsRouter } from "./goals";
 import { pushRouter } from "./push";
 import { workoutsRouter } from "./workouts";
+import { foodsRouter } from "./foods";
 import { startScheduler } from "./scheduler";
 import { prisma } from "./db";
 
@@ -21,6 +22,7 @@ app.use("/api/tasks", tasksRouter);
 app.use("/api/goals", goalsRouter);
 app.use("/api/push", pushRouter);
 app.use("/api/workouts", workoutsRouter);
+app.use("/api/foods", foodsRouter);
 
 // Verify the DB is reachable on boot.
 app.get("/api/ready", async (_req, res) => {

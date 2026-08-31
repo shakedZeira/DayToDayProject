@@ -30,3 +30,6 @@ export interface ProgressiveSuggestion {
   suggestedNextKg: number;
   reason: "completed_target" | "not_yet";
 }
+export interface FoodInput { name: string; caloriesPer100: number; servingUnit?: string; }
+export interface FoodRecord { id: string; name: string; caloriesPer100: number; servingUnit: string; }
+export interface MealLogInput { foodId: string; grams: number; date?: string; }
