@@ -10,6 +10,8 @@
 
 **Tech Stack:** Web Speech API (`SpeechRecognition`/`webkitSpeechRecognition`), `speechSynthesis`, Express, Prisma (SQLite), vitest + supertest, React 18, TypeScript, shared workspace types, `LLMProvider`.
 
+> **Cross-module hook (weekly goals):** When the user completes an Italian lesson or learns new words (Phase 4 practice/lesson completion), if they have a `WeeklyGoal` with `autoSource: "italian_lesson"` (or `"italian_words"`, e.g. "learn 10 new words in Italian"), insert matching `GoalEvent` rows so the weekly-goal progress auto-increments. Do this in the relevant Phase 4 practice/lesson-complete route.
+
 **Spec:** `docs/superpowers/specs/2026-08-30-personal-daily-companion-design.md`
 
 ## Global Constraints

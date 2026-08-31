@@ -10,6 +10,8 @@
 
 **Tech Stack:** Express, Prisma, SQLite, `multer` (multipart photo upload), React, TypeScript, Tailwind, plain inline SVG for charts.
 
+> **Cross-module hook (weekly goals):** When a workout is logged (workout POST), if the logged-in user has a `WeeklyGoal` with `autoSource: "workout"`, insert a matching `GoalEvent` (`ownerId`, `goalId`, `date: now`, `count: 1`, `source: "workout"`) so the weekly-goal progress (feature added in Phase 1) auto-increments. Do this inside the workout create route.
+
 **Spec:** `docs/superpowers/specs/2026-08-30-personal-daily-companion-design.md`
 
 ## Global Constraints
