@@ -135,3 +135,18 @@ model UserProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Exercise {
+  id           String   @id @default(cuid())
+  ownerId      String?
+  name         String
+  muscleGroup  String   @default("Other")
+  equipment    String   @default("Bodyweight")
+  isCompound   Boolean  @default(true)
+  instructions String?
+  createdAt    DateTime @default(now())
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+  @@index([name])
+}

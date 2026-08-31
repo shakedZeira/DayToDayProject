@@ -72,3 +72,9 @@ export interface CalorieRecommendation {
   method: string;
   disclaimer: string;
 }
+
+export interface ExerciseRecord {
+  id: string; name: string; muscleGroup: string; equipment: string;
+  isCompound: boolean; isCustom: boolean;
+}
+export interface ExerciseCreateInput { name: string; muscleGroup?: string; equipment?: string; isCompound?: boolean; }
