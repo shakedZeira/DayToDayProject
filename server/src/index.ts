@@ -4,6 +4,7 @@ import cors from "cors";
 import { healthRouter } from "./health";
 import { authRouter } from "./auth";
 import { tasksRouter } from "./tasks";
+import { goalsRouter } from "./goals";
 import { pushRouter } from "./push";
 import { startScheduler } from "./scheduler";
 import { prisma } from "./db";
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use("/api", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/tasks", tasksRouter);
+app.use("/api/goals", goalsRouter);
 app.use("/api/push", pushRouter);
 
 // Verify the DB is reachable on boot.

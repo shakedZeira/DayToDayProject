@@ -42,3 +42,31 @@ model PushSub {
 
   @@index([ownerId])
 }
+
+model WeeklyGoal {
+  id          String      @id @default(cuid())
+  ownerId     String
+  title       String
+  targetCount Int         @default(1)
+  unit        String?
+  category    String?
+  autoSource  String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  events      GoalEvent[]
+
+  @@index([ownerId])
+}
+
+model GoalEvent {
+  id      String      @id @default(cuid())
+  ownerId String
+  goalId  String
+  date    DateTime    @default(now())
+  count   Int         @default(1)
+  source  String
+  goal    WeeklyGoal  @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([goalId])
+}
