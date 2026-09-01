@@ -218,3 +218,34 @@ model RoutineExercise {
 
   @@index([ownerId])
 }
+
+model ExerciseProgression {
+  id            String   @id @default(cuid())
+  ownerId       String
+  exerciseId    String?
+  exerciseName  String
+  targetSets    Int      @default(3)
+  targetReps    Int      @default(8)
+  targetWeight  Float?
+  incrementKg   Float    @default(2.5)
+  lastProgressed DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([ownerId, exerciseName])
+  @@index([ownerId])
+}
+
+model PersonalRecord {
+  id            String   @id @default(cuid())
+  ownerId       String
+  exerciseId    String?
+  exerciseName  String
+  repRange      Int
+  weight        Float
+  date          DateTime
+  e1rm          Float
+
+  @@unique([ownerId, exerciseName, repRange])
+  @@index([ownerId])
+}

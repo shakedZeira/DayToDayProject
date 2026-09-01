@@ -95,3 +95,17 @@ export interface RoutineView {
   id: string; name: string; description: string | null;
   days: RoutineDayView[];
 }
+
+export interface ProgressiveOverloadView {
+  exerciseName: string; targetSets: number; targetReps: number;
+  targetWeight?: number | null; incrementKg: number; lastProgressed?: string | null;
+}
+export interface AnalyticsSummary {
+  totalWorkouts: number; thisWeekWorkouts: number;
+  volumeTrend: { date: string; kg: number }[];
+  muscleVolume: { muscle: string; kg: number }[];
+  prs: { exerciseName: string; repRange: number; weight: number; e1rm: number; date: string }[];
+}
+export interface ProgressionUpdateInput {
+  targetSets?: number; targetReps?: number; targetWeight?: number | null; incrementKg?: number;
+}

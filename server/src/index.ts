@@ -13,6 +13,7 @@ import { nutritionRouter } from "./nutrition";
 import { nutritionPhotoRouter } from "./nutritionPhoto";
 import { profileRouter } from "./profile";
 import { routinesRouter } from "./routines";
+import { progressionRouter } from "./progression";
 import { startScheduler } from "./scheduler";
 import { prisma } from "./db";
 
@@ -30,6 +31,7 @@ app.use("/api/workouts", workoutsRouter);
 app.use("/api/foods", foodsRouter);
 app.use("/api/exercises", exercisesRouter);
 app.use("/api/routines", routinesRouter);
+app.use("/api/progression", progressionRouter);
 app.use("/api/nutrition", nutritionRouter);
 app.use("/api/nutrition", nutritionPhotoRouter);
 app.use("/api/profile", profileRouter);

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "./db";
 import { requireAuth, type AuthedRequest } from "./session";
+import { updateProgression, computeAnalytics } from "./progression";
 import type { ProgressiveSuggestion, WorkoutSetInput } from "shared";
 
 export const workoutsRouter = Router();
@@ -66,6 +67,10 @@ export async function historyFor(ownerId: string) {
 
 workoutsRouter.get("/", async (req: AuthedRequest, res) => {
   res.json(await historyFor(req.userId!));
+});
+
+workoutsRouter.get("/analytics/summary", async (req: AuthedRequest, res) => {
+  res.json(await computeAnalytics(req.userId!));
 });
 
 workoutsRouter.post("/", async (req: AuthedRequest, res) => {
@@ -154,6 +159,18 @@ workoutsRouter.post("/:id/sets", async (req: AuthedRequest, res) => {
       })
     );
   }
+
+  const byExercise = new Map<string, { weightKg: number; reps: number; setType?: string }[]>();
+  for (const s of sets) {
+    const name = s.exercise.trim();
+    const arr = byExercise.get(name) ?? [];
+    arr.push({ weightKg: s.weightKg, reps: Math.floor(s.reps), setType: s.setType });
+    byExercise.set(name, arr);
+  }
+  for (const [name, ws] of byExercise) {
+    await updateProgression(req.userId!, name, ws);
+  }
+
   res.status(201).json(created);
 });
 
@@ -252,6 +269,10 @@ workoutsRouter.post("/:id/exercises/:xeId/sets", async (req: AuthedRequest, res)
       notes: typeof req.body?.notes === "string" ? req.body.notes : null,
     },
   });
+
+  await updateProgression(req.userId!, xe.exerciseName, [
+    { weightKg, reps: Math.floor(reps), setType: setType ?? "working" },
+  ]);
 
   res.status(201).json(ws);
 });
