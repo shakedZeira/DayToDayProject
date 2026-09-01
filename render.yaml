@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: api
+    runtime: image
+    image: { source: Dockerfile, dockerfilePath: server/Dockerfile }
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dtd-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        sync: false
+        value: "https://{{client_name}}.onrender.com"
+      - key: VISION_PROVIDER
+        value: "stub"
+      - key: PORT
+        value: 4000
+    healthCheckPath: /api/ready
+    autoDeploy: true
+  - type: web
+    name: client
+    runtime: image
+    image: { source: Dockerfile, dockerfilePath: client/Dockerfile }
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: api
+          property: host
+databases:
+  - name: dtd-db
+    plan: free

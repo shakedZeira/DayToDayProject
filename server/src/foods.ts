@@ -10,7 +10,7 @@ foodsRouter.get("/", async (req: AuthedRequest, res) => {
   const foods = await prisma.food.findMany({
     where: {
       ...(q
-        ? { OR: [{ name: { contains: q } }, { nameHe: { contains: q } }] }
+        ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { nameHe: { contains: q, mode: "insensitive" as const } }] }
         : {}),
     },
     select: { id: true, name: true, nameHe: true, caloriesPer100: true, servingUnit: true },
@@ -45,7 +45,7 @@ foodsRouter.post("/search", async (req: AuthedRequest, res) => {
   }
   const foods = await prisma.food.findMany({
     where: {
-      OR: [{ name: { contains: q } }, { nameHe: { contains: q } }],
+      OR: [{ name: { contains: q, mode: "insensitive" as const } }, { nameHe: { contains: q, mode: "insensitive" as const } }],
     },
     select: { id: true, name: true, nameHe: true, caloriesPer100: true, servingUnit: true },
     orderBy: { name: "asc" },

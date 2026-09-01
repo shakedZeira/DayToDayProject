@@ -14,7 +14,7 @@ exercisesRouter.get("/", async (req: AuthedRequest, res) => {
   const exercises = await prisma.exercise.findMany({
     where: {
       OR: [{ ownerId: null }, { ownerId: req.userId }],
-      ...(q ? { name: { contains: q.toLowerCase() } } : {}),
+      ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
     },
     select: { id: true, name: true, muscleGroup: true, equipment: true, isCompound: true, ownerId: true },
     orderBy: { name: "asc" },

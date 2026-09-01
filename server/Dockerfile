@@ -10,8 +10,7 @@ RUN npm ci --workspace server --include-workspace-root
 COPY . .
 WORKDIR /app/server
 RUN npx prisma generate
-RUN npx prisma db push
 RUN npm run build
 
 EXPOSE 4000
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/index.js"]
