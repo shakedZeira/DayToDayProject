@@ -233,7 +233,10 @@ export default function Workouts({ token }: Props) {
           </form>
 
           {workouts.length === 0 ? (
-            <div className="text-center text-slate-400 py-6">No workouts yet.</div>
+            <div className="text-center text-slate-400 py-6">
+              No workouts yet. Hit <span className="font-medium text-slate-600">Start Empty Workout</span> or
+              start from a routine to log your first session.
+            </div>
           ) : (
             <>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -344,7 +347,7 @@ export default function Workouts({ token }: Props) {
         <>
           <h3 className="text-sm font-semibold text-slate-700">Start from Routine</h3>
           {routines.length === 0 ? (
-            <p className="text-sm text-slate-400">No routines yet. Create one in the Routines tab.</p>
+            <p className="text-sm text-slate-400">No routines yet. Create one in the Routines sub-tab, or start empty.</p>
           ) : (
             <>
               <select

@@ -1,6 +1,6 @@
 # DayToDayProject
 
-A personal all-in-one daily companion — tasks and clock alerts, health tracking, an Italian tutor, and a study/PDF hub. Built as a React + Vite PWA front-end backed by an Express API with Prisma and PostgreSQL.
+A personal all-in-one daily companion — tasks and clock alerts, health tracking, an Italian tutor, and a study/PDF hub. Built as a React + Vite PWA front-end backed by an Express API with Prisma and PostgreSQL. The Workout module includes routines, a shared exercise library, active sessions with a rest timer, and progress/PR analytics (Epley e1RM).
 
 ## Prerequisites
 
