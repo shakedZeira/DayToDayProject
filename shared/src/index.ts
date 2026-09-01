@@ -23,7 +23,9 @@ export interface WeeklyGoalView {
 }
 
 export interface WorkoutCreateInput { title: string; date?: string; notes?: string | null; }
-export interface WorkoutSetInput { exercise: string; weightKg: number; reps: number; }
+export interface WorkoutSetInput { exercise: string; weightKg: number; reps: number; setType?: string; restSeconds?: number; rpe?: number; }
+export interface WorkoutSetView { id: string; exercise: string; weightKg: number; reps: number; setType: string; order: number; restSeconds?: number | null; rpe?: number | null; }
+export interface WorkoutExerciseView { id: string; order: number; exerciseId?: string | null; exerciseName: string; sets: WorkoutSetView[]; }
 export interface ProgressiveSuggestion {
   exercise: string;
   currentWeightKg: number;

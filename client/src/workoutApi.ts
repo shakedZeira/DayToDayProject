@@ -1,5 +1,5 @@
 import { authedFetch } from "./auth";
-import type { WorkoutCreateInput, WorkoutSetInput, ProgressiveSuggestion } from "shared";
+import type { WorkoutCreateInput, WorkoutSetInput, ProgressiveSuggestion, WorkoutExerciseView } from "shared";
 
 export interface WorkoutSet extends WorkoutSetInput {
   id: string;
@@ -17,6 +17,7 @@ export interface Workout {
   createdAt: string;
   updatedAt: string;
   sets: WorkoutSet[];
+  exercises: WorkoutExerciseView[];
 }
 
 export interface WorkoutSummary {
@@ -66,4 +67,31 @@ export async function appendSets(token: string, id: string, sets: WorkoutSetInpu
 export async function getProgressive(token: string, id: string): Promise<ProgressiveSuggestion[]> {
   const res = await authedFetch(token, `/api/workouts/${id}/progressive`);
   return json<ProgressiveSuggestion[]>(res);
+}
+
+export async function addWorkoutExercise(
+  token: string,
+  workoutId: string,
+  input: { exerciseId?: string; exerciseName?: string; notes?: string },
+): Promise<WorkoutExerciseView> {
+  const res = await authedFetch(token, `/api/workouts/${workoutId}/exercises`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return json<WorkoutExerciseView>(res);
+}
+
+export async function appendSetToExercise(
+  token: string,
+  workoutId: string,
+  xeId: string,
+  input: { weightKg: number; reps: number; setType?: string; restSeconds?: number; rpe?: number },
+): Promise<WorkoutSet> {
+  const res = await authedFetch(token, `/api/workouts/${workoutId}/exercises/${xeId}/sets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return json<WorkoutSet>(res);
 }

@@ -72,26 +72,53 @@ model GoalEvent {
 }
 
 model Workout {
-  id        String        @id @default(cuid())
+  id        String           @id @default(cuid())
   ownerId   String
   title     String
-  date      DateTime      @default(now())
+  date      DateTime         @default(now())
   notes     String?
-  createdAt DateTime      @default(now())
+  createdAt DateTime         @default(now())
   sets      WorkoutSet[]
+  exercises WorkoutExercise[]
   @@index([ownerId, date])
 }
 
+model WorkoutExercise {
+  id           String  @id @default(cuid())
+  ownerId      String
+  workoutId    String
+  workout      Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId   String?
+  exercise     Exercise? @relation(fields: [exerciseId], references: [id])
+  exerciseName String
+  order        Int     @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+  sets         WorkoutSet[]
+
+  @@index([ownerId])
+  @@index([workoutId])
+}
+
 model WorkoutSet {
-  id         String  @id @default(cuid())
-  ownerId    String
-  workoutId  String
-  exercise   String
-  weightKg   Float
-  reps       Int
-  createdAt  DateTime @default(now())
-  workout    Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  id                String           @id @default(cuid())
+  ownerId           String
+  workoutId         String
+  workoutExerciseId String?
+  workoutExercise   WorkoutExercise? @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+  exercise          String
+  order             Int              @default(0)
+  setType           String           @default("working")
+  weightKg          Float
+  reps              Int
+  restSeconds       Int?
+  rpe               Float?
+  notes             String?
+  createdAt         DateTime         @default(now())
+  workout           Workout          @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
   @@index([ownerId, exercise])
+  @@index([workoutExerciseId])
 }
 
 model Food {
@@ -145,7 +172,8 @@ model Exercise {
   isCompound      Boolean             @default(true)
   instructions    String?
   createdAt       DateTime            @default(now())
-  routineExercises RoutineExercise[]
+  routineExercises  RoutineExercise[]
+  workoutExercises  WorkoutExercise[]
 
   @@unique([ownerId, name])
   @@index([ownerId])
