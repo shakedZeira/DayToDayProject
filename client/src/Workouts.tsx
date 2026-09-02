@@ -9,6 +9,7 @@ import {
 } from "./workoutApi";
 import type { ProgressiveSuggestion } from "shared";
 import ProgressionChart, { type ProgressionChartPoint } from "./ProgressionChart";
+import ExerciseDemoModal, { type DemoExercise } from "./ExerciseDemoModal";
 
 interface Props {
   token: string;
@@ -29,6 +30,7 @@ export default function Workouts({ token }: Props) {
   const [reps, setReps] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [demoExercise, setDemoExercise] = useState<DemoExercise | null>(null);
 
   const loadDetail = useCallback(
     async (id: string) => {
@@ -192,14 +194,28 @@ export default function Workouts({ token }: Props) {
             <div className="text-center text-slate-400 py-4">No sets logged yet.</div>
           ) : (
             <ul className="flex flex-col gap-1">
-              {selected.sets.map((s) => (
-                <li
-                  key={s.id}
-                  className="border rounded px-3 py-2 bg-slate-50 text-sm text-slate-700"
-                >
-                  {s.exercise}: {s.weightKg}kg × {s.reps} reps
-                </li>
-              ))}
+              {selected.sets.map((s, setIdx) => {
+                const firstForExercise =
+                  selected.sets.findIndex((x) => x.exercise === s.exercise) === setIdx;
+                return (
+                  <li
+                    key={s.id}
+                    className="flex items-center justify-between gap-2 border rounded px-3 py-2 bg-slate-50 text-sm text-slate-700"
+                  >
+                    <span>
+                      {s.exercise}: {s.weightKg}kg × {s.reps} reps
+                    </span>
+                    {firstForExercise && (
+                      <button
+                        onClick={() => setDemoExercise({ name: s.exercise })}
+                        className="shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                      >
+                        Demo
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
 
@@ -238,6 +254,11 @@ export default function Workouts({ token }: Props) {
           )}
         </>
       )}
+
+      <ExerciseDemoModal
+        exercise={demoExercise}
+        onClose={() => setDemoExercise(null)}
+      />
     </div>
   );
 }

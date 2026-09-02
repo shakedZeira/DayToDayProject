@@ -3,6 +3,7 @@ import type { RoutineView, RoutineCreateInput, ExerciseRecord } from "shared";
 import { getRoutines, createRoutine, updateRoutine, deleteRoutine } from "./routineApi";
 import { getExercises } from "./exerciseApi";
 import ActiveWorkout from "./ActiveWorkout";
+import ExerciseDemoModal, { type DemoExercise } from "./ExerciseDemoModal";
 
 interface ExerciseDay {
   name: string;
@@ -47,6 +48,7 @@ export default function Plans({ token }: { token: string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ExerciseRecord[]>([]);
   const [pickDays, setPickDays] = useState<Record<string, number>>({});
+  const [demoExercise, setDemoExercise] = useState<DemoExercise | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -365,6 +367,12 @@ export default function Plans({ token }: { token: string }) {
                     title="Weight (kg)"
                   />
                   <button
+                    onClick={() => setDemoExercise({ name: re.exerciseName })}
+                    className="text-xs font-medium text-indigo-500 hover:text-indigo-700"
+                  >
+                    Demo
+                  </button>
+                  <button
                     onClick={() => removeExercise(dayIdx, exIdx)}
                     className="text-red-400 hover:text-red-600"
                   >
@@ -495,6 +503,11 @@ export default function Plans({ token }: { token: string }) {
           })}
         </div>
       )}
+
+      <ExerciseDemoModal
+        exercise={demoExercise}
+        onClose={() => setDemoExercise(null)}
+      />
     </div>
   );
 }

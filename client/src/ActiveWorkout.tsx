@@ -9,6 +9,7 @@ import {
 } from "./workoutApi";
 import { getExercises } from "./exerciseApi";
 import type { ExerciseRecord } from "shared";
+import ExerciseDemoModal, { type DemoExercise } from "./ExerciseDemoModal";
 
 export interface ActiveInitialExercise {
   exerciseId?: string;
@@ -106,6 +107,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [demoExercise, setDemoExercise] = useState<DemoExercise | null>(null);
   const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchPrevPerformance = useCallback(
@@ -395,6 +397,14 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-slate-800">{ex.exerciseName}</span>
             {muscleGroupBadge(ex.muscleGroup)}
+            <button
+              onClick={() =>
+                setDemoExercise({ name: ex.exerciseName, muscleGroup: ex.muscleGroup })
+              }
+              className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-100"
+            >
+              Demo
+            </button>
             {ex.targetSets != null && ex.targetReps != null && (
               <span className="text-xs text-slate-400">
                 Target: {ex.targetSets} × {ex.targetReps}
@@ -566,6 +576,11 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
           </div>
         </div>
       )}
+
+      <ExerciseDemoModal
+        exercise={demoExercise}
+        onClose={() => setDemoExercise(null)}
+      />
     </div>
   );
 }
