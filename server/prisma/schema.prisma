@@ -249,3 +249,19 @@ model PersonalRecord {
   @@unique([ownerId, exerciseName, repRange])
   @@index([ownerId])
 }
+
+model Pdf {
+  id          String   @id @default(cuid())
+  ownerId     String
+  title       String
+  fileName    String
+  path        String
+  size        Int
+  pageCount   Int      @default(0)
+  lastPage    Int      @default(0)
+  readProgress Float   @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
+}

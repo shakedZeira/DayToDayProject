@@ -10,3 +10,4 @@ dist/
 vapid.json
 *.vapid.json
 .DS_Store
+server/storage/
