@@ -5,28 +5,23 @@ import { getExercises } from "./exerciseApi";
 import ActiveWorkout from "./ActiveWorkout";
 import ExerciseDemoModal, { type DemoExercise } from "./ExerciseDemoModal";
 
-interface ExerciseDay {
-  name: string;
-  exercises: {
-    exerciseId: string;
-    exerciseName: string;
-    order: number;
-    targetSets: number;
-    targetReps: number;
-    targetWeight: number | null;
-  }[];
+interface ExerciseItem {
+  exerciseId: string;
+  exerciseName: string;
+  targetSets: number;
+  targetReps: number;
 }
 
 interface RoutineForm {
   name: string;
   description: string;
-  days: ExerciseDay[];
+  exercises: ExerciseItem[];
 }
 
 const emptyForm: RoutineForm = {
   name: "",
   description: "",
-  days: [{ name: "Day 1", exercises: [] }],
+  exercises: [],
 };
 
 type Mode = "list" | "new" | "edit" | "active";
@@ -44,10 +39,9 @@ export default function Plans({ token }: { token: string }) {
   const [form, setForm] = useState<RoutineForm>(emptyForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchDayIdx, setSearchDayIdx] = useState<number | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ExerciseRecord[]>([]);
-  const [pickDays, setPickDays] = useState<Record<string, number>>({});
   const [demoExercise, setDemoExercise] = useState<DemoExercise | null>(null);
 
   const load = useCallback(async () => {
@@ -60,9 +54,7 @@ export default function Plans({ token }: { token: string }) {
     }
   }, [token]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const startNew = () => {
     setMode("new");
@@ -74,117 +66,87 @@ export default function Plans({ token }: { token: string }) {
   const startEdit = (routine: RoutineView) => {
     setMode("edit");
     setEditingId(routine.id);
+    const day = routine.days[0];
     setForm({
       name: routine.name,
       description: routine.description ?? "",
-      days: routine.days.map((d) => ({
-        name: d.name,
-        exercises: d.exercises.map((re) => ({
-          exerciseId: re.exerciseId,
-          exerciseName: re.exercise.name,
-          order: re.order,
-          targetSets: re.targetSets,
-          targetReps: re.targetReps,
-          targetWeight: re.targetWeight ?? null,
-        })),
-      })),
+      exercises: day
+        ? day.exercises.map((re) => ({
+            exerciseId: re.exerciseId,
+            exerciseName: re.exercise.name,
+            targetSets: re.targetSets,
+            targetReps: re.targetReps,
+          }))
+        : [],
     });
     setError(null);
   };
 
-  const handleSearch = async (q: string, dayIdx: number) => {
+  const handleSearch = async (q: string) => {
     setSearchQuery(q);
-    setSearchDayIdx(dayIdx);
-    if (q.length < 1) {
-      setSearchResults([]);
-      return;
-    }
+    if (q.length < 1) { setSearchResults([]); return; }
     const results = await getExercises(token, q);
     setSearchResults(results);
   };
 
-  const addExercise = (dayIdx: number, ex: ExerciseRecord) => {
-    setForm((prev) => {
-      const days = [...prev.days];
-      const day = { ...days[dayIdx] };
-      day.exercises = [
-        ...day.exercises,
-        {
-          exerciseId: ex.id,
-          exerciseName: ex.name,
-          order: day.exercises.length,
-          targetSets: 3,
-          targetReps: 8,
-          targetWeight: null,
-        },
-      ];
-      days[dayIdx] = day;
-      return { ...prev, days };
-    });
+  const addExercise = (ex: ExerciseRecord) => {
+    setForm((prev) => ({
+      ...prev,
+      exercises: [
+        ...prev.exercises,
+        { exerciseId: ex.id, exerciseName: ex.name, targetSets: 3, targetReps: 8 },
+      ],
+    }));
     setSearchQuery("");
     setSearchResults([]);
-    setSearchDayIdx(null);
+    setSearchOpen(false);
   };
 
-  const removeExercise = (dayIdx: number, exIdx: number) => {
-    setForm((prev) => {
-      const days = [...prev.days];
-      const day = { ...days[dayIdx] };
-      day.exercises = day.exercises.filter((_, i) => i !== exIdx);
-      day.exercises = day.exercises.map((e, i) => ({ ...e, order: i }));
-      days[dayIdx] = day;
-      return { ...prev, days };
-    });
-  };
-
-  const updateExercise = (dayIdx: number, exIdx: number, field: string, value: any) => {
-    setForm((prev) => {
-      const days = [...prev.days];
-      const day = { ...days[dayIdx] };
-      const ex = { ...day.exercises[exIdx], [field]: value };
-      day.exercises = [...day.exercises];
-      day.exercises[exIdx] = ex;
-      days[dayIdx] = day;
-      return { ...prev, days };
-    });
-  };
-
-  const addDay = () => {
+  const removeExercise = (idx: number) => {
     setForm((prev) => ({
       ...prev,
-      days: [...prev.days, { name: `Day ${prev.days.length + 1}`, exercises: [] }],
+      exercises: prev.exercises.filter((_, i) => i !== idx),
     }));
   };
 
-  const removeDay = (idx: number) => {
-    setForm((prev) => ({
-      ...prev,
-      days: prev.days.filter((_, i) => i !== idx),
-    }));
+  const updateExerciseField = (idx: number, field: string, value: any) => {
+    setForm((prev) => {
+      const exercises = [...prev.exercises];
+      exercises[idx] = { ...exercises[idx], [field]: value };
+      return { ...prev, exercises };
+    });
+  };
+
+  const moveExercise = (idx: number, dir: -1 | 1) => {
+    setForm((prev) => {
+      const exercises = [...prev.exercises];
+      const target = idx + dir;
+      if (target < 0 || target >= exercises.length) return prev;
+      [exercises[idx], exercises[target]] = [exercises[target], exercises[idx]];
+      return { ...prev, exercises };
+    });
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) {
-      setError("Name is required");
-      return;
-    }
+    if (!form.name.trim()) { setError("Name is required"); return; }
+    if (form.exercises.length === 0) { setError("Add at least one exercise"); return; }
     setLoading(true);
     setError(null);
     try {
       const input: RoutineCreateInput = {
         name: form.name.trim(),
         description: form.description.trim() || null,
-        days: form.days.map((d, i) => ({
-          name: d.name.trim(),
-          order: i,
-          exercises: d.exercises.map((re) => ({
-            order: re.order,
+        days: [{
+          name: "Workout",
+          order: 0,
+          exercises: form.exercises.map((re, i) => ({
+            order: i,
             targetSets: re.targetSets,
             targetReps: re.targetReps,
-            targetWeight: re.targetWeight,
+            targetWeight: null,
             exerciseId: re.exerciseId,
           })),
-        })),
+        }],
       };
       if (editingId) {
         await updateRoutine(token, editingId, input);
@@ -203,7 +165,7 @@ export default function Plans({ token }: { token: string }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this plan?")) return;
+    if (!confirm("Delete this workout?")) return;
     setLoading(true);
     try {
       await deleteRoutine(token, id);
@@ -215,14 +177,13 @@ export default function Plans({ token }: { token: string }) {
     }
   };
 
-  const startPlan = (routine: RoutineView, dayIdx: number) => {
-    const day = routine.days[dayIdx];
-    if (!day) return;
+  const startPlan = (routine: RoutineView) => {
+    const day = routine.days[0];
+    if (!day || day.exercises.length === 0) return;
     const now = new Date();
     const dateStr = now.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    const title = `${routine.name} — ${day.name} ${dateStr}`;
     setActiveInitial({
-      title,
+      title: `${routine.name} — ${dateStr}`,
       xes: day.exercises.map((re) => ({
         exerciseId: re.exerciseId,
         exerciseName: re.exercise.name,
@@ -255,13 +216,13 @@ export default function Plans({ token }: { token: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-800">My Plans</h2>
+        <h2 className="text-xl font-bold text-slate-800">My Workouts</h2>
         {!inEditor && (
           <button
             onClick={startNew}
             className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
-            + New Plan
+            + New Workout
           </button>
         )}
       </div>
@@ -272,15 +233,10 @@ export default function Plans({ token }: { token: string }) {
         <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-700">
-              {isEditing ? "Edit plan" : "New plan"}
+              {isEditing ? "Edit workout" : "New workout"}
             </h3>
             <button
-              onClick={() => {
-                setMode("list");
-                setEditingId(null);
-                setForm(emptyForm);
-                setError(null);
-              }}
+              onClick={() => { setMode("list"); setEditingId(null); setForm(emptyForm); setError(null); }}
               className="text-sm text-slate-500 hover:text-slate-700"
             >
               Cancel
@@ -288,7 +244,7 @@ export default function Plans({ token }: { token: string }) {
           </div>
           <input
             type="text"
-            placeholder="Plan name"
+            placeholder="Workout name"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
@@ -301,70 +257,31 @@ export default function Plans({ token }: { token: string }) {
             className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
           />
 
-          {form.days.map((day, dayIdx) => (
-            <div key={dayIdx} className="space-y-2 rounded border border-slate-100 bg-slate-50 p-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={day.name}
-                  onChange={(e) => {
-                    setForm((prev) => {
-                      const days = [...prev.days];
-                      days[dayIdx] = { ...days[dayIdx], name: e.target.value };
-                      return { ...prev, days };
-                    });
-                  }}
-                  className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm font-medium"
-                />
-                {form.days.length > 1 && (
-                  <button
-                    onClick={() => removeDay(dayIdx)}
-                    className="text-xs text-red-500 hover:text-red-700"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-
-              {day.exercises.map((re, exIdx) => (
-                <div key={exIdx} className="flex items-center gap-2 text-sm">
-                  <span className="w-32 truncate text-slate-600">{re.exerciseName}</span>
+          {form.exercises.length > 0 && (
+            <div className="space-y-1.5">
+              {form.exercises.map((re, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-sm">
+                  <div className="flex flex-col gap-0.5 mr-1">
+                    <button onClick={() => moveExercise(idx, -1)} className="text-slate-300 hover:text-slate-600 leading-none" title="Move up">&#9650;</button>
+                    <button onClick={() => moveExercise(idx, 1)} className="text-slate-300 hover:text-slate-600 leading-none" title="Move down">&#9660;</button>
+                  </div>
+                  <span className="w-36 truncate text-slate-600 font-medium">{re.exerciseName}</span>
                   <input
                     type="number"
                     value={re.targetSets}
-                    onChange={(e) =>
-                      updateExercise(dayIdx, exIdx, "targetSets", parseInt(e.target.value) || 1)
-                    }
-                    className="w-14 rounded border border-slate-300 px-1 py-0.5 text-center"
+                    onChange={(e) => updateExerciseField(idx, "targetSets", parseInt(e.target.value) || 1)}
+                    className="w-12 rounded border border-slate-300 px-1 py-0.5 text-center text-xs"
                     min={1}
                     title="Sets"
                   />
-                  <span className="text-slate-400">x</span>
+                  <span className="text-xs text-slate-400">×</span>
                   <input
                     type="number"
                     value={re.targetReps}
-                    onChange={(e) =>
-                      updateExercise(dayIdx, exIdx, "targetReps", parseInt(e.target.value) || 1)
-                    }
-                    className="w-14 rounded border border-slate-300 px-1 py-0.5 text-center"
+                    onChange={(e) => updateExerciseField(idx, "targetReps", parseInt(e.target.value) || 1)}
+                    className="w-12 rounded border border-slate-300 px-1 py-0.5 text-center text-xs"
                     min={1}
                     title="Reps"
-                  />
-                  <input
-                    type="number"
-                    value={re.targetWeight ?? ""}
-                    onChange={(e) =>
-                      updateExercise(
-                        dayIdx,
-                        exIdx,
-                        "targetWeight",
-                        e.target.value ? parseFloat(e.target.value) : null
-                      )
-                    }
-                    className="w-16 rounded border border-slate-300 px-1 py-0.5 text-center"
-                    placeholder="kg"
-                    min={0}
-                    title="Weight (kg)"
                   />
                   <button
                     onClick={() => setDemoExercise({ name: re.exerciseName })}
@@ -373,127 +290,112 @@ export default function Plans({ token }: { token: string }) {
                     Demo
                   </button>
                   <button
-                    onClick={() => removeExercise(dayIdx, exIdx)}
-                    className="text-red-400 hover:text-red-600"
+                    onClick={() => removeExercise(idx)}
+                    className="ml-auto text-xs text-red-400 hover:text-red-600"
                   >
-                    x
+                    ×
                   </button>
                 </div>
               ))}
+            </div>
+          )}
 
-              {searchDayIdx === dayIdx && searchResults.length > 0 && (
-                <div className="max-h-40 overflow-y-auto rounded border border-slate-200 bg-white">
+          {searchOpen ? (
+            <div className="space-y-2 rounded border border-slate-200 bg-slate-50 p-3">
+              <input
+                type="text"
+                placeholder="Search exercises..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                autoFocus
+              />
+              {searchResults.length > 0 && (
+                <div className="max-h-48 overflow-y-auto rounded border border-slate-200 bg-white">
                   {searchResults.map((ex) => (
                     <button
                       key={ex.id}
-                      onClick={() => addExercise(dayIdx, ex)}
-                      className="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
+                      onClick={() => addExercise(ex)}
+                      className="flex w-full items-center justify-between px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
                     >
-                      {ex.name} <span className="text-xs text-slate-400">{ex.muscleGroup}</span>
+                      <span>{ex.name}</span>
+                      <span className="text-xs text-slate-400">{ex.muscleGroup}</span>
                     </button>
                   ))}
                 </div>
               )}
-
-              <input
-                type="text"
-                placeholder="Search exercises..."
-                value={searchDayIdx === dayIdx ? searchQuery : ""}
-                onChange={(e) => handleSearch(e.target.value, dayIdx)}
-                onFocus={() => setSearchDayIdx(dayIdx)}
-                className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
-              />
+              <button
+                onClick={() => { setSearchOpen(false); setSearchQuery(""); setSearchResults([]); }}
+                className="text-xs text-slate-500 hover:text-slate-700"
+              >
+                Cancel
+              </button>
             </div>
-          ))}
-
-          <button onClick={addDay} className="text-sm text-indigo-600 hover:text-indigo-800">
-            + Add Day
-          </button>
+          ) : (
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="w-full rounded border-2 border-dashed border-slate-300 py-2 text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600"
+            >
+              + Add Exercise
+            </button>
+          )}
 
           <button
             onClick={handleSave}
             disabled={loading}
             className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? "Saving..." : "Save plan"}
+            {loading ? "Saving..." : "Save workout"}
           </button>
         </div>
       ) : routines.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
-          <p className="text-sm text-slate-500">No plans yet — build your first plan</p>
+          <p className="text-sm text-slate-500">No workouts yet — create your first workout plan</p>
           <button
             onClick={startNew}
             className="mt-4 rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           >
-            + New Plan
+            + New Workout
           </button>
         </div>
       ) : (
         <div className="space-y-2">
           {routines.map((r) => {
-            const totalExercises = r.days.reduce((sum, d) => sum + d.exercises.length, 0);
-            const multipleDays = r.days.length > 1;
-            const dayIdx = pickDays[r.id] ?? 0;
-            const day = r.days[dayIdx];
+            const day = r.days[0];
+            const exCount = day ? day.exercises.length : 0;
             return (
               <div
                 key={r.id}
-                className="rounded-lg border border-slate-200 bg-white p-4 flex flex-col gap-3"
+                className="rounded-lg border border-slate-200 bg-white p-4 flex items-center justify-between gap-3"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-semibold text-slate-800">{r.name}</div>
-                    {r.description && (
-                      <div className="text-xs text-slate-500">{r.description}</div>
+                <div className="min-w-0">
+                  <div className="font-semibold text-slate-800">{r.name}</div>
+                  {r.description && <div className="text-xs text-slate-500">{r.description}</div>}
+                  <div className="mt-0.5 text-xs text-slate-400">
+                    {exCount} exercise{exCount !== 1 ? "s" : ""}
+                    {day && (
+                      <span className="ml-2">
+                        {day.exercises.map((re) => re.exercise.name).join(", ")}
+                      </span>
                     )}
-                    <div className="mt-1 text-xs text-slate-400">
-                      {r.days.length} day{r.days.length !== 1 ? "s" : ""} · {totalExercises}{" "}
-                      exercise{totalExercises !== 1 ? "s" : ""}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <button
-                      onClick={() => startEdit(r)}
-                      className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(r.id)}
-                      className="rounded bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100"
-                    >
-                      Delete
-                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  {multipleDays && (
-                    <>
-                      <label className="text-xs text-slate-500">Start day:</label>
-                      <select
-                        className="rounded border border-slate-300 px-2 py-1 text-sm"
-                        value={dayIdx}
-                        onChange={(e) =>
-                          setPickDays((prev) => ({ ...prev, [r.id]: Number(e.target.value) }))
-                        }
-                      >
-                        {r.days.map((d, i) => (
-                          <option key={d.id} value={i}>
-                            {d.name} ({d.exercises.length} exercise{d.exercises.length !== 1 ? "s" : ""})
-                          </option>
-                        ))}
-                      </select>
-                      {day && (
-                        <span className="text-xs text-slate-400">
-                          {day.exercises.length} exercise{day.exercises.length !== 1 ? "s" : ""}
-                        </span>
-                      )}
-                    </>
-                  )}
+                <div className="flex gap-2 shrink-0">
                   <button
-                    onClick={() => startPlan(r, dayIdx)}
-                    className="bg-indigo-600 text-white rounded px-5 py-2 text-sm font-semibold hover:bg-indigo-700"
+                    onClick={() => startEdit(r)}
+                    className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(r.id)}
+                    className="rounded bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => startPlan(r)}
+                    className="rounded bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
                   >
                     Start
                   </button>
