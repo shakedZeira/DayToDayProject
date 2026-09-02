@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { RoutineView, RoutineCreateInput, ExerciseRecord } from "shared";
 import { getRoutines, createRoutine, updateRoutine, deleteRoutine } from "./routineApi";
 import { getExercises } from "./exerciseApi";
+import ActiveWorkout from "./ActiveWorkout";
 
 interface ExerciseDay {
   name: string;
@@ -27,26 +28,67 @@ const emptyForm: RoutineForm = {
   days: [{ name: "Day 1", exercises: [] }],
 };
 
-export default function Routines({ token }: { token: string }) {
+type Mode = "list" | "new" | "edit" | "active";
+
+interface ActiveInitial {
+  title: string;
+  xes: { exerciseId?: string; exerciseName: string; targetSets?: number; targetReps?: number }[];
+}
+
+export default function Plans({ token }: { token: string }) {
   const [routines, setRoutines] = useState<RoutineView[]>([]);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [mode, setMode] = useState<Mode>("list");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeInitial, setActiveInitial] = useState<ActiveInitial | null>(null);
   const [form, setForm] = useState<RoutineForm>(emptyForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchDayIdx, setSearchDayIdx] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ExerciseRecord[]>([]);
+  const [pickDays, setPickDays] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     try {
       const data = await getRoutines(token);
       setRoutines(data);
+      setError(null);
     } catch (e: any) {
       setError(e.message);
     }
   }, [token]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const startNew = () => {
+    setMode("new");
+    setEditingId(null);
+    setForm(emptyForm);
+    setError(null);
+  };
+
+  const startEdit = (routine: RoutineView) => {
+    setMode("edit");
+    setEditingId(routine.id);
+    setForm({
+      name: routine.name,
+      description: routine.description ?? "",
+      days: routine.days.map((d) => ({
+        name: d.name,
+        exercises: d.exercises.map((re) => ({
+          exerciseId: re.exerciseId,
+          exerciseName: re.exercise.name,
+          order: re.order,
+          targetSets: re.targetSets,
+          targetReps: re.targetReps,
+          targetWeight: re.targetWeight ?? null,
+        })),
+      })),
+    });
+    setError(null);
+  };
 
   const handleSearch = async (q: string, dayIdx: number) => {
     setSearchQuery(q);
@@ -119,32 +161,6 @@ export default function Routines({ token }: { token: string }) {
     }));
   };
 
-  const startNew = () => {
-    setEditing(null);
-    setForm(emptyForm);
-    setError(null);
-  };
-
-  const startEdit = (routine: RoutineView) => {
-    setEditing(routine.id);
-    setForm({
-      name: routine.name,
-      description: routine.description ?? "",
-      days: routine.days.map((d) => ({
-        name: d.name,
-        exercises: d.exercises.map((re) => ({
-          exerciseId: re.exerciseId,
-          exerciseName: re.exercise.name,
-          order: re.order,
-          targetSets: re.targetSets,
-          targetReps: re.targetReps,
-          targetWeight: re.targetWeight ?? null,
-        })),
-      })),
-    });
-    setError(null);
-  };
-
   const handleSave = async () => {
     if (!form.name.trim()) {
       setError("Name is required");
@@ -168,13 +184,14 @@ export default function Routines({ token }: { token: string }) {
           })),
         })),
       };
-      if (editing) {
-        await updateRoutine(token, editing, input);
+      if (editingId) {
+        await updateRoutine(token, editingId, input);
       } else {
         await createRoutine(token, input);
       }
-      setEditing(null);
+      setEditingId(null);
       setForm(emptyForm);
+      setMode("list");
       await load();
     } catch (e: any) {
       setError(e.message);
@@ -184,7 +201,7 @@ export default function Routines({ token }: { token: string }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this routine?")) return;
+    if (!confirm("Delete this plan?")) return;
     setLoading(true);
     try {
       await deleteRoutine(token, id);
@@ -196,27 +213,80 @@ export default function Routines({ token }: { token: string }) {
     }
   };
 
-  const isEditing = editing !== null;
+  const startPlan = (routine: RoutineView, dayIdx: number) => {
+    const day = routine.days[dayIdx];
+    if (!day) return;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const title = `${routine.name} — ${day.name} ${dateStr}`;
+    setActiveInitial({
+      title,
+      xes: day.exercises.map((re) => ({
+        exerciseId: re.exerciseId,
+        exerciseName: re.exercise.name,
+        targetSets: re.targetSets,
+        targetReps: re.targetReps,
+      })),
+    });
+    setMode("active");
+  };
+
+  const onActiveFinish = async () => {
+    setActiveInitial(null);
+    setMode("list");
+    await load();
+  };
+
+  if (mode === "active") {
+    return (
+      <ActiveWorkout
+        token={token}
+        initial={activeInitial ?? undefined}
+        onFinish={onActiveFinish}
+      />
+    );
+  }
+
+  const isEditing = mode === "edit";
+  const inEditor = mode === "new" || isEditing;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-800">Routines</h2>
-        <button
-          onClick={isEditing ? startNew : () => setEditing("new")}
-          className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          {isEditing ? "Cancel" : "New Routine"}
-        </button>
+        <h2 className="text-xl font-bold text-slate-800">My Plans</h2>
+        {!inEditor && (
+          <button
+            onClick={startNew}
+            className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            + New Plan
+          </button>
+        )}
       </div>
 
       {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
 
-      {isEditing ? (
+      {inEditor ? (
         <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-700">
+              {isEditing ? "Edit plan" : "New plan"}
+            </h3>
+            <button
+              onClick={() => {
+                setMode("list");
+                setEditingId(null);
+                setForm(emptyForm);
+                setError(null);
+              }}
+              className="text-sm text-slate-500 hover:text-slate-700"
+            >
+              Cancel
+            </button>
+          </div>
           <input
             type="text"
-            placeholder="Routine name"
+            placeholder="Plan name"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
@@ -256,13 +326,13 @@ export default function Routines({ token }: { token: string }) {
 
               {day.exercises.map((re, exIdx) => (
                 <div key={exIdx} className="flex items-center gap-2 text-sm">
-                  <span className="w-32 truncate text-slate-600">
-                    {re.exerciseName}
-                  </span>
+                  <span className="w-32 truncate text-slate-600">{re.exerciseName}</span>
                   <input
                     type="number"
                     value={re.targetSets}
-                    onChange={(e) => updateExercise(dayIdx, exIdx, "targetSets", parseInt(e.target.value) || 1)}
+                    onChange={(e) =>
+                      updateExercise(dayIdx, exIdx, "targetSets", parseInt(e.target.value) || 1)
+                    }
                     className="w-14 rounded border border-slate-300 px-1 py-0.5 text-center"
                     min={1}
                     title="Sets"
@@ -271,7 +341,9 @@ export default function Routines({ token }: { token: string }) {
                   <input
                     type="number"
                     value={re.targetReps}
-                    onChange={(e) => updateExercise(dayIdx, exIdx, "targetReps", parseInt(e.target.value) || 1)}
+                    onChange={(e) =>
+                      updateExercise(dayIdx, exIdx, "targetReps", parseInt(e.target.value) || 1)
+                    }
                     className="w-14 rounded border border-slate-300 px-1 py-0.5 text-center"
                     min={1}
                     title="Reps"
@@ -280,7 +352,12 @@ export default function Routines({ token }: { token: string }) {
                     type="number"
                     value={re.targetWeight ?? ""}
                     onChange={(e) =>
-                      updateExercise(dayIdx, exIdx, "targetWeight", e.target.value ? parseFloat(e.target.value) : null)
+                      updateExercise(
+                        dayIdx,
+                        exIdx,
+                        "targetWeight",
+                        e.target.value ? parseFloat(e.target.value) : null
+                      )
                     }
                     className="w-16 rounded border border-slate-300 px-1 py-0.5 text-center"
                     placeholder="kg"
@@ -304,8 +381,7 @@ export default function Routines({ token }: { token: string }) {
                       onClick={() => addExercise(dayIdx, ex)}
                       className="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
                     >
-                      {ex.name}{" "}
-                      <span className="text-xs text-slate-400">{ex.muscleGroup}</span>
+                      {ex.name} <span className="text-xs text-slate-400">{ex.muscleGroup}</span>
                     </button>
                   ))}
                 </div>
@@ -331,39 +407,92 @@ export default function Routines({ token }: { token: string }) {
             disabled={loading}
             className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? "Saving..." : "Save"}
+            {loading ? "Saving..." : "Save plan"}
+          </button>
+        </div>
+      ) : routines.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
+          <p className="text-sm text-slate-500">No plans yet — build your first plan</p>
+          <button
+            onClick={startNew}
+            className="mt-4 rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            + New Plan
           </button>
         </div>
       ) : (
         <div className="space-y-2">
-          {routines.length === 0 && (
-            <p className="text-sm text-slate-500">No routines yet. Create one to get started.</p>
-          )}
-          {routines.map((r) => (
-            <div key={r.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3">
-              <div>
-                <div className="font-medium text-slate-800">{r.name}</div>
-                {r.description && <div className="text-xs text-slate-500">{r.description}</div>}
-                <div className="mt-1 text-xs text-slate-400">
-                  {r.days.length} day{r.days.length !== 1 ? "s" : ""}
+          {routines.map((r) => {
+            const totalExercises = r.days.reduce((sum, d) => sum + d.exercises.length, 0);
+            const multipleDays = r.days.length > 1;
+            const dayIdx = pickDays[r.id] ?? 0;
+            const day = r.days[dayIdx];
+            return (
+              <div
+                key={r.id}
+                className="rounded-lg border border-slate-200 bg-white p-4 flex flex-col gap-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-semibold text-slate-800">{r.name}</div>
+                    {r.description && (
+                      <div className="text-xs text-slate-500">{r.description}</div>
+                    )}
+                    <div className="mt-1 text-xs text-slate-400">
+                      {r.days.length} day{r.days.length !== 1 ? "s" : ""} · {totalExercises}{" "}
+                      exercise{totalExercises !== 1 ? "s" : ""}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      onClick={() => startEdit(r)}
+                      className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      className="rounded bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {multipleDays && (
+                    <>
+                      <label className="text-xs text-slate-500">Start day:</label>
+                      <select
+                        className="rounded border border-slate-300 px-2 py-1 text-sm"
+                        value={dayIdx}
+                        onChange={(e) =>
+                          setPickDays((prev) => ({ ...prev, [r.id]: Number(e.target.value) }))
+                        }
+                      >
+                        {r.days.map((d, i) => (
+                          <option key={d.id} value={i}>
+                            {d.name} ({d.exercises.length} exercise{d.exercises.length !== 1 ? "s" : ""})
+                          </option>
+                        ))}
+                      </select>
+                      {day && (
+                        <span className="text-xs text-slate-400">
+                          {day.exercises.length} exercise{day.exercises.length !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <button
+                    onClick={() => startPlan(r, dayIdx)}
+                    className="bg-indigo-600 text-white rounded px-5 py-2 text-sm font-semibold hover:bg-indigo-700"
+                  >
+                    Start
+                  </button>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => startEdit(r)}
-                  className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(r.id)}
-                  className="rounded bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

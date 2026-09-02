@@ -3,7 +3,7 @@ import Login from "./Login";
 import Tasks from "./Tasks";
 import Goals from "./Goals";
 import Workouts from "./Workouts";
-import Routines from "./Routines";
+import Plans from "./Plans";
 import Analytics from "./Analytics";
 import Foods from "./Foods";
 import type { MealLogRecord } from "./foodApi";
@@ -54,7 +54,7 @@ export default function App() {
   const [summary, setSummary] = useState<NutritionSummaryType | null>(null);
   const [targetInput, setTargetInput] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("today");
-  const [workoutSubTab, setWorkoutSubTab] = useState<"session" | "routines" | "progress">("session");
+  const [workoutSubTab, setWorkoutSubTab] = useState<"plans" | "history" | "progress">("plans");
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function App() {
           {activeTab === "workouts" && (
             <div className="flex flex-col gap-3">
               <div className="flex gap-1 border-b border-slate-200 pb-px">
-                {(["session", "routines", "progress"] as const).map((st) => (
+                {(["plans", "history", "progress"] as const).map((st) => (
                   <button
                     key={st}
                     onClick={() => {
@@ -180,12 +180,12 @@ export default function App() {
                         : "text-slate-500 hover:bg-slate-200"
                     }`}
                   >
-                    {st === "session" ? "Session" : st === "routines" ? "Routines" : "Progress"}
+                    {st === "plans" ? "Plans" : st === "history" ? "History" : "Progress"}
                   </button>
                 ))}
               </div>
-              {workoutSubTab === "session" && <Workouts token={token} />}
-              {workoutSubTab === "routines" && <Routines token={token} />}
+              {workoutSubTab === "plans" && <Plans token={token} />}
+              {workoutSubTab === "history" && <Workouts token={token} />}
               {workoutSubTab === "progress" && <Analytics token={token} refreshKey={analyticsRefreshKey} />}
             </div>
           )}
