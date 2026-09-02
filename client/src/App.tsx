@@ -13,13 +13,14 @@ import type { NutritionSummary as NutritionSummaryType } from "shared";
 import Notifications from "./Notifications";
 import PhotoCalories from "./PhotoCalories";
 import Profile from "./Profile";
+import PdfHub from "./PdfHub";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
 
 const TOKEN_KEY = "dtd.token";
 const USER_KEY = "dtd.user";
 
-type Tab = "today" | "goals" | "workouts" | "food" | "profile" | "notifications";
+type Tab = "today" | "goals" | "workouts" | "food" | "profile" | "notifications" | "study";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "today", label: "Today" },
@@ -28,6 +29,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "food", label: "Food" },
   { key: "profile", label: "Profile" },
   { key: "notifications", label: "Notifications" },
+  { key: "study", label: "Study" },
 ];
 
 function readStored(key: string): string | null {
@@ -200,6 +202,8 @@ export default function App() {
           {activeTab === "profile" && <Profile token={token} />}
 
           {activeTab === "notifications" && <Notifications token={token} />}
+
+          {activeTab === "study" && <PdfHub token={token} />}
         </div>
       ) : (
         <Login onAuthed={onAuthed} />
