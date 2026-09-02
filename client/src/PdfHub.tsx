@@ -6,6 +6,7 @@ import {
   getHighlights, createHighlight, deleteHighlight, updatePdfProgress,
   type Pdf, type Highlight
 } from "./pdfApi";
+import StudyView from "./StudyView";
 import { authedFetch } from "./auth";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -23,6 +24,7 @@ export default function PdfHub({ token }: Props) {
   const [currentPage, setCurrentPage] = useState(1);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
+  const [showStudy, setShowStudy] = useState(false);
 
   const refresh = useCallback(async () => {
     setPdfs(await getPdfs(token));
@@ -152,6 +154,19 @@ export default function PdfHub({ token }: Props) {
             <div className="h-full bg-indigo-500 rounded" style={{ width: `${progressPct}%` }} />
           </div>
         </div>
+      )}
+
+      {selectedPdf && (
+        <button
+          onClick={() => setShowStudy((s) => !s)}
+          className="self-start bg-violet-600 text-white rounded px-4 py-2 text-sm"
+        >
+          {showStudy ? "Hide study" : "Study this PDF"}
+        </button>
+      )}
+
+      {selectedPdf && showStudy && (
+        <StudyView token={token} pdfId={selectedId!} />
       )}
 
       {selectedPdf && (

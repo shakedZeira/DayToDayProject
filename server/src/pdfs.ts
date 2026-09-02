@@ -5,6 +5,7 @@ import path from "node:path";
 import { prisma } from "./db";
 import { requireAuth, type AuthedRequest } from "./session";
 import { safePdfPath, deletePdfFile, readPdfFile, pdfFileExists } from "./storage";
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
 
 export const pdfsRouter = Router();
 pdfsRouter.use(requireAuth);
@@ -78,6 +79,17 @@ pdfsRouter.patch("/:id", async (req: AuthedRequest, res) => {
   }
   const updated = await prisma.pdf.update({ where: { id: pdf.id }, data });
   res.json(updated);
+});
+
+pdfsRouter.get("/:id/text", async (req: AuthedRequest, res) => {
+  const pdf = await prisma.pdf.findFirst({ where: { id: req.params.id, ownerId: req.userId } });
+  if (!pdf) return res.status(404).json({ error: "not found" });
+  try {
+    const data = await pdfParse(readPdfFile(pdf.fileName));
+    res.json({ text: data.text });
+  } catch {
+    res.status(500).json({ error: "text extraction failed" });
+  }
 });
 
 pdfsRouter.get("/:id/file", async (req: AuthedRequest, res) => {

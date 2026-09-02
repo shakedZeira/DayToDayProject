@@ -264,6 +264,8 @@ model Pdf {
   updatedAt   DateTime @updatedAt
 
   highlights  Highlight[]
+  flashcards  Flashcard[]
+  quizzes     Quiz[]
 
   @@index([ownerId])
 }
@@ -283,4 +285,39 @@ model Highlight {
 
   @@index([pdfId])
   @@index([ownerId])
+}
+
+model Flashcard {
+  id        String   @id @default(cuid())
+  pdfId     String
+  ownerId   String
+  front     String
+  back      String
+  createdAt DateTime @default(now())
+
+  pdf       Pdf      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+
+  @@index([pdfId])
+}
+
+model Quiz {
+  id        String       @id @default(cuid())
+  pdfId     String
+  ownerId   String
+  question  String
+  options   QuizOption[]
+  answerIndex Int
+  createdAt DateTime     @default(now())
+
+  pdf       Pdf          @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+
+  @@index([pdfId])
+}
+
+model QuizOption {
+  id    String @id @default(cuid())
+  quizId String
+  text  String
+
+  quiz  Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
