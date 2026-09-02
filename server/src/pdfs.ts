@@ -67,6 +67,19 @@ pdfsRouter.get("/:id", async (req: AuthedRequest, res) => {
   res.json(pdf);
 });
 
+pdfsRouter.patch("/:id", async (req: AuthedRequest, res) => {
+  const pdf = await prisma.pdf.findFirst({ where: { id: req.params.id, ownerId: req.userId } });
+  if (!pdf) return res.status(404).json({ error: "not found" });
+  const { lastPage, readProgress } = req.body ?? {};
+  const data: Record<string, unknown> = {};
+  if (typeof lastPage === "number" && lastPage >= 1) data.lastPage = Math.floor(lastPage);
+  if (typeof readProgress === "number") {
+    data.readProgress = Math.max(0, Math.min(1, readProgress));
+  }
+  const updated = await prisma.pdf.update({ where: { id: pdf.id }, data });
+  res.json(updated);
+});
+
 pdfsRouter.get("/:id/file", async (req: AuthedRequest, res) => {
   const pdf = await prisma.pdf.findFirst({ where: { id: req.params.id, ownerId: req.userId } });
   if (!pdf || !pdfFileExists(pdf.fileName)) return res.status(404).json({ error: "not found" });

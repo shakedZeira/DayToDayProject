@@ -44,3 +44,49 @@ export async function deletePdf(token: string, id: string): Promise<void> {
   const res = await authedFetch(token, `/api/pdfs/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error("delete failed");
 }
+
+export interface Highlight {
+  id: string;
+  pdfId: string;
+  pageNumber: number;
+  text: string;
+  note: string | null;
+  color: string;
+  positions: string;
+  createdAt: string;
+}
+
+export async function getHighlights(token: string, pdfId: string): Promise<Highlight[]> {
+  return json<Highlight[]>(await authedFetch(token, `/api/pdfs/${pdfId}/highlights`));
+}
+
+export async function createHighlight(
+  token: string,
+  pdfId: string,
+  input: { pageNumber: number; text: string; note?: string | null; color?: string; positions?: string }
+): Promise<Highlight> {
+  const res = await authedFetch(token, `/api/pdfs/${pdfId}/highlights`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  return json<Highlight>(res);
+}
+
+export async function deleteHighlight(token: string, id: string): Promise<void> {
+  const res = await authedFetch(token, `/api/highlights/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("delete failed");
+}
+
+export async function updatePdfProgress(
+  token: string,
+  id: string,
+  input: { lastPage: number; readProgress: number }
+): Promise<Pdf> {
+  const res = await authedFetch(token, `/api/pdfs/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  return json<Pdf>(res);
+}

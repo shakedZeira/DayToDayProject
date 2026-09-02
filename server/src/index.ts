@@ -15,6 +15,7 @@ import { profileRouter } from "./profile";
 import { routinesRouter } from "./routines";
 import { progressionRouter } from "./progression";
 import { pdfsRouter } from "./pdfs";
+import { highlightsRouter } from "./highlights";
 import { startScheduler } from "./scheduler";
 import { prisma } from "./db";
 
@@ -37,6 +38,7 @@ app.use("/api/nutrition", nutritionRouter);
 app.use("/api/nutrition", nutritionPhotoRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/pdfs", pdfsRouter);
+app.use("/api", highlightsRouter);
 
 // Verify the DB is reachable on boot.
 app.get("/api/ready", async (_req, res) => {

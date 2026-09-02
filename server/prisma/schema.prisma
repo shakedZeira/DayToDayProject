@@ -263,5 +263,24 @@ model Pdf {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  highlights  Highlight[]
+
+  @@index([ownerId])
+}
+
+model Highlight {
+  id         String   @id @default(cuid())
+  pdfId      String
+  ownerId    String
+  pageNumber Int
+  text       String
+  note       String?
+  color      String   @default("yellow")
+  positions  String   @default("[]")
+  createdAt  DateTime @default(now())
+
+  pdf        Pdf      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+
+  @@index([pdfId])
   @@index([ownerId])
 }
