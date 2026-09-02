@@ -109,3 +109,15 @@ export interface AnalyticsSummary {
 export interface ProgressionUpdateInput {
   targetSets?: number; targetReps?: number; targetWeight?: number | null; incrementKg?: number;
 }
+
+export interface FlashcardOut {
+  front: string;
+  back: string;
+}
+
+export interface QuizOut {
+  question: string;
+  choices: string[];
+  answerIndex: number;
+  explanation?: string;
+}
