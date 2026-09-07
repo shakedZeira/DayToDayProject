@@ -18,6 +18,7 @@ import { pdfsRouter } from "./pdfs";
 import { highlightsRouter } from "./highlights";
 import { studyRouter } from "./study";
 import { italianRouter } from "./italian";
+import { digestRouter } from "./digest";
 import { startScheduler } from "./scheduler";
 import { prisma } from "./db";
 
@@ -43,6 +44,7 @@ app.use("/api/pdfs", pdfsRouter);
 app.use("/api", highlightsRouter);
 app.use("/api", studyRouter);
 app.use("/api/italian", italianRouter);
+app.use("/api/digest", digestRouter);
 
 // Verify the DB is reachable on boot.
 app.get("/api/ready", async (_req, res) => {

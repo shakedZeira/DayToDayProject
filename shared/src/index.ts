@@ -165,3 +165,38 @@ export interface ItalianProgress {
   totalLessons: number; // lessons with completedAt set
   totalPractice: number; // practice attempts logged
 }
+
+export interface DigestTaskItem {
+  id: string;
+  title: string;
+  category: string | null;
+  recurrence: string;
+  status: "PENDING" | "DONE";
+}
+
+export interface DigestHealthItem {
+  workoutsThisWeek: number;
+  lastWorkoutDaysAgo: number | null;
+  reminder: string | null;
+}
+
+export interface DigestItalianItem {
+  lessonTitle: string | null;
+  streak: number;
+  totalLessons: number;
+}
+
+export interface DigestStudyItem {
+  type: "pdf" | "flashcards" | "none";
+  title: string | null;
+  detail: string;
+}
+
+export interface DigestResponse {
+  date: string; // local YYYY-MM-DD
+  topTask: DigestTaskItem | null;
+  tasksToday: DigestTaskItem[];
+  health: DigestHealthItem;
+  italian: DigestItalianItem;
+  study: DigestStudyItem;
+}
