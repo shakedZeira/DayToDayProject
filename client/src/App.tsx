@@ -15,6 +15,7 @@ import PhotoCalories from "./PhotoCalories";
 import Profile from "./Profile";
 import PdfHub from "./PdfHub";
 import ItalianLesson from "./ItalianLesson";
+import DigestView from "./DigestView";
 import { getProgress } from "./italianApi";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
@@ -110,6 +111,7 @@ export default function App() {
       </p>
       {token && user ? (
         <div className="w-full max-w-2xl flex flex-col gap-4">
+          <DigestView token={token} />
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-600">
               Logged in as <span className="font-semibold">{user.email}</span>
