@@ -140,3 +140,22 @@ export interface ItalianLesson {
   vocab: ItalianVocabItem[];
   phrases: ItalianPhrase[];
 }
+
+export type MistakeType =
+  | "correct"
+  | "minor"
+  | "vocabulary"
+  | "grammar"
+  | "word-order"
+  | "incomplete"
+  | "other";
+
+export interface ItalianCorrection {
+  isCorrect: boolean;
+  phraseEnglish: string;
+  targetItalian: string;
+  userAttempt: string;
+  mistakeType: MistakeType;
+  hint: string;
+  correctPhrase: string;
+}
