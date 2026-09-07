@@ -121,3 +121,22 @@ export interface QuizOut {
   answerIndex: number;
   explanation?: string;
 }
+
+export interface ItalianVocabItem {
+  english: string;
+  italian: string;
+}
+
+export interface ItalianPhrase {
+  english: string;
+  italian: string;
+}
+
+export interface ItalianLesson {
+  id: string;
+  date: string; // YYYY-MM-DD
+  title: string;
+  tip: string;
+  vocab: ItalianVocabItem[];
+  phrases: ItalianPhrase[];
+}

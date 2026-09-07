@@ -3,6 +3,7 @@ import type { FlashcardOut, QuizOut } from "shared";
 export interface LLMProvider {
   generateFlashcards(material: string, count: number): Promise<FlashcardOut[]>;
   generateQuiz(material: string, count: number): Promise<QuizOut[]>;
+  complete(prompt: string): Promise<string>;
 }
 
 function clampCount(count: number, max: number): number {
@@ -63,6 +64,12 @@ export function llmHttpProvider(): LLMProvider {
       const parsed = JSON.parse(stripCodeFence(raw));
       const qs: QuizOut[] = Array.isArray(parsed?.questions) ? parsed.questions : [];
       return qs.slice(0, n).filter((q) => q && typeof q.question === "string" && Array.isArray(q.choices) && q.choices.length >= 2 && typeof q.answerIndex === "number");
+    },
+    async complete(prompt: string): Promise<string> {
+      return httpComplete(
+        "You are a helpful assistant. Reply concisely using the exact format the user asks for.",
+        prompt
+      );
     }
   };
 }
@@ -74,6 +81,9 @@ function mockProvider(): LLMProvider {
     },
     async generateQuiz(material, count) {
       return useStatefulQuiz(material, count);
+    },
+    async complete(_prompt: string): Promise<string> {
+      return '{"fallback":"canned"}';
     }
   };
 }
@@ -111,3 +121,15 @@ export function getLLMProvider(): LLMProvider {
 }
 
 export { mockProvider as llmMockProvider };
+
+export function extractJson(text: string): Record<string, unknown> | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    const parsed: unknown = JSON.parse(text.slice(start, end + 1));
+    return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}

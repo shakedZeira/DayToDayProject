@@ -321,3 +321,30 @@ model QuizOption {
 
   quiz  Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
+
+model Lesson {
+  id          String    @id @default(cuid())
+  ownerId     String
+  date        String
+  title       String
+  tip         String
+  vocab       String
+  phrases     String
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([ownerId, date])
+  @@index([ownerId])
+}
+
+model PracticeLog {
+  id          String   @id @default(cuid())
+  ownerId     String
+  lessonDate  String
+  phraseIndex Int
+  isCorrect   Boolean
+  userAttempt String
+  createdAt   DateTime @default(now())
+
+  @@index([ownerId, lessonDate])
+}

@@ -41,3 +41,19 @@ describe("provider switch", () => {
     if (oldKey !== undefined) process.env.LLM_HTTP_KEY = oldKey;
   });
 });
+
+describe("complete method (extended for the Italian tutor phase)", () => {
+  it("mock provider's complete returns a deterministic string", async () => {
+    const p = llmMockProvider();
+    const a = await p.complete("anything");
+    const b = await p.complete("anything");
+    expect(a).toBe(b);
+  });
+
+  it("http provider's complete throws without a configured key", async () => {
+    const oldKey = process.env.LLM_HTTP_KEY;
+    delete process.env.LLM_HTTP_KEY;
+    await expect(llmHttpProvider().complete("x")).rejects.toThrow(/LLM_HTTP_KEY/);
+    if (oldKey !== undefined) process.env.LLM_HTTP_KEY = oldKey;
+  });
+});
