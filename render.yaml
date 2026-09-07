@@ -1,8 +1,8 @@
 services:
   - type: web
     name: api
-    runtime: image
-    image: { source: Dockerfile, dockerfilePath: server/Dockerfile }
+    runtime: docker
+    dockerfilePath: server/Dockerfile
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -29,8 +29,8 @@ services:
     autoDeploy: true
   - type: web
     name: client
-    runtime: image
-    image: { source: Dockerfile, dockerfilePath: client/Dockerfile }
+    runtime: docker
+    dockerfilePath: client/Dockerfile
     autoDeploy: true
     envVars:
       - key: VITE_API_URL
