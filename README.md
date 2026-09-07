@@ -1,6 +1,6 @@
 # DayToDayProject
 
-A personal all-in-one daily companion — tasks and clock alerts, health tracking, an Italian tutor, and a study/PDF hub. Built as a React + Vite PWA front-end backed by an Express API with Prisma and PostgreSQL. The Workout module includes routines, a shared exercise library, active sessions with a rest timer, and progress/PR analytics (Epley e1RM).
+A personal all-in-one daily companion — tasks and clock alerts, health tracking, an Italian tutor, and a study/PDF hub. Built as a React + Vite PWA front-end backed by an Express API with Prisma and PostgreSQL. The Workout module includes routines, a shared exercise library, active sessions with a rest timer, and progress/PR analytics (Epley e1RM). A **Today digest** dashboard summarizes your focus task, workout reminder, Italian lesson, and study queue, with a cross-module **Progress** dashboard covering task streaks, weekly completion, workouts, calories, and study stats.
 
 ## Prerequisites
 
@@ -64,6 +64,8 @@ npm test --workspace server
 The `vitest.globalSetup.ts` sets `DATABASE_URL` to `dtd_test` and runs `prisma db push` to ensure schema parity. The `vitest.config.ts` `test.env` also points to `dtd_test` as a belt-and-suspenders measure.
 
 ## Deploy (Render / Railway)
+
+Deploy two services — the API (`server/`, port 4000) and the static PWA (`client/`) — with the client nginx `try_files` fallback to `index.html` for offline/PWA routing.
 
 A `render.yaml` Blueprint deploys three resources:
 
