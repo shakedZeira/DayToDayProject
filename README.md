@@ -75,6 +75,13 @@ A `render.yaml` Blueprint deploys three resources:
 
 The client's nginx config proxies `/api/` to the API service's internal hostname.
 
+## PWA & offline notes
+
+- The app precaches its shell and serves it offline via `vite-plugin-pwa` (workbox).
+- `/api` GET requests are cached network-first (`api-cache-v1`, 1h TTL); POST/PUT/DELETE are never cached.
+- Install from the address bar / Add to Home Screen. Icons: `client/public/pwa-192x192.png`, `pwa-512x512.png` (regenerate with `npm run icons --workspace client`).
+- iOS Safari: push notifications only work for installed home-screen PWAs and may stop after ~7 days of no use (spec §7). Background push on iOS is a known limitation, not a bug to fix.
+
 ## Project Layout
 
 ```

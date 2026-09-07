@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "icons": "node scripts/gen-icons.mjs",
     "dev": "vite",
     "build": "tsc && tsc -p tsconfig.worker.json && vite build",
     "preview": "vite preview",

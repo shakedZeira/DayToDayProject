@@ -11,13 +11,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      strategies: "injectManifest",
-      srcDir: "src",
-      filename: "sw.ts",
-      injectManifest: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
-      },
-      includeAssets: ["favicon.svg"],
+      includeAssets: ["favicon.svg", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "Day To Day",
         short_name: "DayToDay",
@@ -25,8 +19,36 @@ export default defineConfig({
         display: "standalone",
         background_color: "#ffffff",
         theme_color: "#4f46e5",
-        icons: []
-      }
+        description: "Personal daily companion",
+        icons: [
+          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+        ]
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,webmanifest}"],
+        // Offline: any navigation that does not hit /api falls back to the app shell.
+        navigateFallback: "/index.html",
+        // Never serve index.html for API calls; those go through the runtime cache below.
+        navigateFallbackDenylist: [/^\/api/],
+        runtimeCaching: [
+          {
+            // Network-first for API GETs: fresh when online, stale replay when offline.
+            // Mutations (POST/PUT/DELETE) are never cached — workbox-build registers
+            // runtime routes for the GET method only.
+            urlPattern: ({ url }) => url.pathname.startsWith("/api"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-cache-v1",
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          }
+        ]
+      },
+      devOptions: { enabled: true }
     })
   ],
   resolve: {
