@@ -1,9 +1,32 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute } from "workbox-precaching";
+import { registerRoute, NavigationRoute } from "workbox-routing";
+import { NetworkFirst } from "workbox-strategies";
+import { CacheableResponsePlugin } from "workbox-cacheable-response";
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
 precacheAndRoute((self as unknown as ServiceWorkerGlobalScope).__WB_MANIFEST);
+
+// Offline: any navigation that does not hit /api falls back to the app shell.
+registerRoute(
+  new NavigationRoute(async () => {
+    return (await caches.match("/index.html")) || (await fetch("/index.html"));
+  }, {
+    denylist: [/^\/api/]
+  })
+);
+
+// Network-first for API GETs: fresh when online, stale replay when offline.
+// Mutations (POST/PUT/DELETE) are never cached — workbox matches GET only.
+registerRoute(
+  ({ url, request }) => url.pathname.startsWith("/api") && request.method === "GET",
+  new NetworkFirst({
+    cacheName: "api-cache-v1",
+    networkTimeoutSeconds: 3,
+    plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })]
+  })
+);
 
 interface PushPayload {
   title?: string;
