@@ -224,6 +224,46 @@ test("translate: known phrase maps to its Italian, unknown falls back", async ()
   expect(unknown.body.italian).toBe("Non ho capito, puoi ripetere?");
 });
 
+test("progress: computes streak from practice logs", async () => {
+  await prisma.practiceLog.create({
+    data: { ownerId, lessonDate: "2026-08-30", phraseIndex: 0, isCorrect: true, userAttempt: "ciao", createdAt: new Date(2026, 7, 30, 9) }
+  });
+  await prisma.practiceLog.create({
+    data: { ownerId, lessonDate: "2026-08-29", phraseIndex: 0, isCorrect: true, userAttempt: "ciao", createdAt: new Date(2026, 7, 29, 9) }
+  });
+  const res = await request(app)
+    .get("/api/italian/progress")
+    .query({ from: "2026-08-30" })
+    .set("Authorization", `Bearer ${token}`);
+  expect(res.status).toBe(200);
+  expect(res.body).toEqual({ streak: 2, totalLessons: 0, totalPractice: 2 });
+});
+
+test("progress: counts completed lessons and resets streak on a gap", async () => {
+  await prisma.lesson.create({
+    data: {
+      ownerId,
+      date: "2026-08-30",
+      title: "x",
+      tip: "y",
+      vocab: "[]",
+      phrases: "[{\"english\":\"hi\",\"italian\":\"ciao\"}]",
+      completedAt: new Date(2026, 7, 30, 8)
+    }
+  });
+  await prisma.practiceLog.create({
+    data: { ownerId, lessonDate: "2026-08-27", phraseIndex: 0, isCorrect: true, userAttempt: "ciao", createdAt: new Date(2026, 7, 27, 9) }
+  });
+  const res = await request(app)
+    .get("/api/italian/progress")
+    .query({ from: "2026-08-30" })
+    .set("Authorization", `Bearer ${token}`);
+  expect(res.status).toBe(200);
+  expect(res.body.streak).toBe(1); // 30 active, 29/28 inactive, 27 active
+  expect(res.body.totalLessons).toBe(1);
+  expect(res.body.totalPractice).toBe(1);
+});
+
 test("check: completing the lesson increments auto-source weekly goals", async () => {
   const goal = await prisma.weeklyGoal.create({
     data: {

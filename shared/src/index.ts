@@ -159,3 +159,9 @@ export interface ItalianCorrection {
   hint: string;
   correctPhrase: string;
 }
+
+export interface ItalianProgress {
+  streak: number;       // consecutive active days ending at the anchor date
+  totalLessons: number; // lessons with completedAt set
+  totalPractice: number; // practice attempts logged
+}

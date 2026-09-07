@@ -15,6 +15,7 @@ import PhotoCalories from "./PhotoCalories";
 import Profile from "./Profile";
 import PdfHub from "./PdfHub";
 import ItalianLesson from "./ItalianLesson";
+import { getProgress } from "./italianApi";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
 
@@ -59,6 +60,7 @@ export default function App() {
   const [targetInput, setTargetInput] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("today");
   const [workoutSubTab, setWorkoutSubTab] = useState<"plans" | "history" | "progress">("plans");
+  const [progress, setProgress] = useState<{ streak: number; totalLessons: number } | null>(null);
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -81,6 +83,13 @@ export default function App() {
 
   useEffect(() => {
     refreshNutrition();
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    getProgress(token)
+      .then((p) => setProgress({ streak: p.streak, totalLessons: p.totalLessons }))
+      .catch(() => setProgress(null));
   }, [token]);
 
   const summaryMeals: MealLogRecord[] = summary
@@ -207,7 +216,7 @@ export default function App() {
 
           {activeTab === "study" && <PdfHub token={token} />}
 
-          {activeTab === "italian" && <ItalianLesson token={token} />}
+          {activeTab === "italian" && <ItalianLesson token={token} streak={progress?.streak} totalLessons={progress?.totalLessons} />}
         </div>
       ) : (
         <Login onAuthed={onAuthed} />

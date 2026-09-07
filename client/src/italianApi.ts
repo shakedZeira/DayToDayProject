@@ -1,5 +1,5 @@
 import { authedFetch } from "./auth";
-import type { ItalianLesson, ItalianCorrection } from "shared";
+import type { ItalianLesson, ItalianCorrection, ItalianProgress } from "shared";
 
 interface TranslateResult {
   italian: string;
@@ -32,6 +32,11 @@ export async function checkAttempt(
     body: JSON.stringify(input)
   });
   return json<ItalianCorrection>(res);
+}
+
+export async function getProgress(token: string): Promise<ItalianProgress> {
+  const res = await authedFetch(token, "/api/italian/progress");
+  return json<ItalianProgress>(res);
 }
 
 export async function translateText(token: string, text: string): Promise<string> {

@@ -200,6 +200,32 @@ export function createItalianRouter(provider: LLMProvider = getLLMProvider()): R
     res.json({ italian });
   });
 
+  router.get("/progress", async (req: AuthedRequest, res) => {
+    const fromParam = dateParam(req.query.from);
+    const anchor = fromParam ? new Date(`${fromParam}T00:00:00`) : new Date();
+
+    const logs = await prisma.practiceLog.findMany({
+      where: { ownerId: req.userId },
+      select: { createdAt: true }
+    });
+    const completed = await prisma.lesson.findMany({
+      where: { ownerId: req.userId, completedAt: { not: null } },
+      select: { createdAt: true, completedAt: true }
+    });
+
+    const activeDays = new Set<string>(logs.map((l) => dateKeyFor(l.createdAt)));
+    for (const lesson of completed) activeDays.add(dateKeyFor(lesson.completedAt!));
+
+    let streak = 0;
+    const cursor = new Date(anchor);
+    while (activeDays.has(dateKeyFor(cursor))) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    res.json({ streak, totalLessons: completed.length, totalPractice: logs.length });
+  });
+
   return router;
 }
 
