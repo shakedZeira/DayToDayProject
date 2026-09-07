@@ -11,13 +11,21 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CLIENT_URL
+        fromService:
+          type: web
+          name: client
+          property: url
+      - key: LLM_HTTP_URL
+        value: "https://api.groq.com/openai/v1/chat/completions"
+      - key: LLM_MODEL
+        value: "llama-3.1-8b-instant"
+      - key: LLM_HTTP_KEY
         sync: false
-        value: "https://{{client_name}}.onrender.com"
       - key: VISION_PROVIDER
         value: "stub"
       - key: PORT
         value: 4000
-    healthCheckPath: /api/ready
+    healthCheckPath: /api/health
     autoDeploy: true
   - type: web
     name: client

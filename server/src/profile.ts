@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { prisma } from "./db";
 import { requireAuth, type AuthedRequest } from "./session";
-import type { ProfileInput, CalorieRecommendation, ActivityLevel } from "../../shared/src/index";
+import type { ProfileInput, CalorieRecommendation, ActivityLevel } from "shared";
 
 export const profileRouter = Router();
 profileRouter.use(requireAuth);
