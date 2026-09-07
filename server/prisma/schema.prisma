@@ -348,3 +348,14 @@ model PracticeLog {
 
   @@index([ownerId, lessonDate])
 }
+
+model Setting {
+  id        String   @id @default(cuid())
+  ownerId   String
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, key])
+  @@index([ownerId])
+}

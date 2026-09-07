@@ -200,3 +200,43 @@ export interface DigestResponse {
   italian: DigestItalianItem;
   study: DigestStudyItem;
 }
+
+export interface ProgressTaskSummary {
+  total: number;
+  completedThisWeek: number;
+  completionRateWeek: number;
+  streak: number;
+  completedByDay: number[]; // 7 entries, oldest first, ending today
+}
+
+export interface ProgressHealthSummary {
+  workoutsThisWeek: number;
+  workoutsTarget: number;
+  caloriesToday: number;
+  calorieTarget: number;
+}
+
+export interface ProgressStudySummary {
+  pdfs: number;
+  highlights: number;
+  flashcards: number;
+  pdfsInProgress: number;
+}
+
+export interface ProgressItalianSummary {
+  streak: number;
+  totalLessons: number;
+  lessonsThisWeek: number;
+}
+
+export interface ProgressResponse {
+  date: string; // local YYYY-MM-DD
+  tasks: ProgressTaskSummary;
+  health: ProgressHealthSummary;
+  study: ProgressStudySummary;
+  italian: ProgressItalianSummary;
+}
+
+export interface SettingsResponse {
+  settings: Record<string, string>;
+}
