@@ -10,11 +10,10 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      - key: CLIENT_URL
-        fromService:
-          type: web
-          name: client
-          property: url
+      # CORS: the client nginx same-origins /api to http://api:4000, so the browser
+      # never makes cross-origin calls and CORS isn't exercised. CLIENT_URL is left
+      # unset so the server falls back to "*". (If you ever call the API directly,
+      # set CLIENT_URL to your deployed client URL in the api Environment tab.)
       - key: LLM_HTTP_URL
         value: "https://api.groq.com/openai/v1/chat/completions"
       - key: LLM_MODEL
