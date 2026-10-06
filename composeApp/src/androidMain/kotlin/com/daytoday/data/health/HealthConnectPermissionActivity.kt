@@ -23,10 +23,9 @@ class HealthConnectPermissionActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Always launch the permission contract, even after config changes.
-        // The repository's CompletableDeferred is tied to this specific request cycle
-        // via HealthConnectPermissionRequest.next(), so re-launching is safe.
-        launchPermission()
+        if (savedInstanceState == null) {
+            launchPermission()
+        }
     }
 
     private fun launchPermission() {

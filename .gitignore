@@ -11,3 +11,22 @@ vapid.json
 *.vapid.json
 .DS_Store
 server/storage/
+connection_String.txt
+
+# Gradle / Android build output
+.gradle/
+build/
+*.apk
+*.aab
+*.ap_
+local.properties
+*.iml
+.idea/
+
+# Tooling scratch / recovered-source work areas
+.decomp/
+.freebuff/
+window_dump.xml
+window_dump2.xml
+*.bak
+*.bak2

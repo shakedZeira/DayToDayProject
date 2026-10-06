@@ -1,0 +1,10 @@
+-keep class com.daytoday.** { *; }
+-keep class com.nbadaily.** { *; }
+-keep class com.sydneyworkout.** { *; }
+-keepclassmembers class * { @androidx.hilt.AssistedInject *; }
+-keepclassmembers class * { @javax.inject.Inject *; }
+-dontwarn kotlinx.coroutines.**
+-dontwarn io.ktor.**
+-dontwarn androidx.room.**
+-dontwarn androidx.datastore.**
+-dontwarn kotlinx.serialization.**

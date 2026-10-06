@@ -8,13 +8,13 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import com.daytoday.repository.Result
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -35,15 +35,17 @@ class HealthRepositoryImpl @Inject constructor() : HealthRepository {
         }
     }
 
-    override fun getHealthPermissionState(context: Context): HealthPermissionState {
+    override suspend fun getHealthPermissionState(context: Context): Result<HealthPermissionState> {
         val readSteps = HealthPermission.getReadPermission(StepsRecord::class)
         val client = HealthConnectClient.getOrCreate(context)
-        val granted: Set<HealthPermission> = runCatching {
-            client.permissionController.getGrantedPermissions()
-        }.onFailure {
-            Log.e(TAG, "getGrantedPermissions failed", it)
-        }.getOrDefault(emptySet())
-        return if (granted.contains(readSteps)) HealthPermissionState.GRANTED else HealthPermissionState.NOT_GRANTED
+        return try {
+            val granted = client.permissionController.getGrantedPermissions()
+            val hasStepsPermission = granted.contains(readSteps)
+            Result.success(if (hasStepsPermission) HealthPermissionState.GRANTED else HealthPermissionState.NOT_GRANTED)
+        } catch (e: Exception) {
+            Log.e(TAG, "getGrantedPermissions failed", e)
+            Result.failure("Failed to check permissions", e)
+        }
     }
 
     override suspend fun requestStepsPermission(context: Context): Boolean {
@@ -77,7 +79,8 @@ class HealthRepositoryImpl @Inject constructor() : HealthRepository {
     override suspend fun todaySteps(context: Context): DailySteps {
         val now = Instant.now()
         val date = LocalDate.now()
-        if (getHealthPermissionState(context) != HealthPermissionState.GRANTED) {
+        val permissionResult = getHealthPermissionState(context)
+        if (permissionResult.getOrNull() != HealthPermissionState.GRANTED) {
             return DailySteps(date = date, steps = 0, cachedAtMs = now.toEpochMilli())
         }
         val steps = runCatching {
@@ -99,7 +102,8 @@ class HealthRepositoryImpl @Inject constructor() : HealthRepository {
         from: LocalDate,
         to: LocalDate,
     ): Map<LocalDate, Long> {
-        if (getHealthPermissionState(context) != HealthPermissionState.GRANTED) return emptyMap()
+        val permissionResult = getHealthPermissionState(context)
+        if (permissionResult.getOrNull() != HealthPermissionState.GRANTED) return emptyMap()
         return runCatching {
             val client = HealthConnectClient.getOrCreate(context)
             buildMap {

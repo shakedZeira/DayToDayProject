@@ -2,21 +2,24 @@ package com.daytoday.data.remote
 
 import com.daytoday.repository.Result
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * ESPN Site API client for NBA news, injuries, and transactions.
+ * ESPN Site API client for NBA news, injuries, transactions, and scoreboard.
  * Base: https://site.api.espn.com/apis/site/v2/sports/basketball/nba/
  * No auth required.
  */
@@ -26,56 +29,92 @@ class NbaEspnClient @Inject constructor() {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     private val client = HttpClient {
-        install(ContentNegotiation) { json(this@NbaEspnClient.json) }
-        install(Logging) { level = LogLevel.BASIC }
-        defaultRequest {
-            url("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/")
-            header("Accept", "application/json")
+        install(ContentNegotiation) { json(json) }
+        install(Logging) { level = LogLevel.HEADERS }
+    }
+
+    private val baseUrl = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba"
+
+    suspend fun getNews(limit: Int = 20): Result<List<EspNewsArticle>> {
+        return try {
+            val resp: HttpResponse = client.get("$baseUrl/news") {
+                parameter("limit", limit.toString())
+                header(HttpHeaders.Accept, "application/json")
+            }
+            val root = resp.body<JsonObject>()
+            val articles = (root["articles"] as? JsonArray) ?: emptyList()
+            Result.success(articles.mapNotNull { (it as? JsonObject)?.let { obj -> EspNewsArticle(obj) } })
+        } catch (e: Exception) {
+            Result.failure(e.message ?: (e::class.simpleName ?: "Unknown error"), e)
         }
     }
 
-    suspend fun getNews(limit: Int = 20): Result<List<EspNewsArticle>> = runCatching {
-        val resp = client.get("news") { parameters { "limit" to limit.toString() } }
-        val root = resp.body<JsonObject>()
-        val articles = root["articles"] as? JsonArray ?: emptyArray()
-        articles.map { EspNewsArticle(it as JsonObject) }
-    }
-
-    suspend fun getInjuries(): Result<List<EspInjuryParsed>> = runCatching {
-        val resp = client.get("injuries")
-        val root = resp.body<JsonObject>()
-        val teams = root["injuries"] as? JsonArray ?: emptyArray()
-        val all = mutableListOf<EspInjuryParsed>()
-        for (elem in teams) {
-            val obj = elem as? JsonObject ?: continue
-            all.addAll(parseInjuryTeam(obj))
+    suspend fun getInjuries(): Result<List<EspInjuryParsed>> {
+        return try {
+            val resp: HttpResponse = client.get("$baseUrl/injuries") {
+                header(HttpHeaders.Accept, "application/json")
+            }
+            val root = resp.body<JsonObject>()
+            val teams = (root["injuries"] as? JsonArray) ?: emptyList()
+            val all = mutableListOf<EspInjuryParsed>()
+            for (elem in teams) {
+                val obj = elem as? JsonObject ?: continue
+                all.addAll(parseInjuryTeam(obj))
+            }
+            Result.success(all)
+        } catch (e: Exception) {
+            Result.failure(e.message ?: (e::class.simpleName ?: "Unknown error"), e)
         }
-        all
     }
 
-    suspend fun getTransactions(): Result<List<EspTransaction>> = runCatching {
-        val resp = client.get("transactions")
-        val root = resp.body<JsonObject>()
-        val txs = root["transactions"] as? JsonArray ?: emptyArray()
-        txs.map { EspTransaction(it as JsonObject) }
+    suspend fun getTransactions(): Result<List<EspTransaction>> {
+        return try {
+            val resp: HttpResponse = client.get("$baseUrl/transactions") {
+                header(HttpHeaders.Accept, "application/json")
+            }
+            val root = resp.body<JsonObject>()
+            val txs = (root["transactions"] as? JsonArray) ?: emptyList()
+            Result.success(txs.mapNotNull { (it as? JsonObject)?.let { obj -> EspTransaction(obj) } })
+        } catch (e: Exception) {
+            Result.failure(e.message ?: (e::class.simpleName ?: "Unknown error"), e)
+        }
     }
+
+    suspend fun getScoreboard(date: String): Result<List<EspScoreboardGame>> {
+        return try {
+            val resp: HttpResponse = client.get("$baseUrl/scoreboard") {
+                parameter("dates", espnDate(date))
+                header(HttpHeaders.Accept, "application/json")
+            }
+            val root = resp.body<JsonObject>()
+            val events = (root["events"] as? JsonArray) ?: emptyList()
+            Result.success(events.mapNotNull { (it as? JsonObject)?.let { obj -> parseScoreboardEvent(obj) } })
+        } catch (e: Exception) {
+            Result.failure(e.message ?: (e::class.simpleName ?: "Unknown error"), e)
+        }
+    }
+
+    private fun espnDate(date: String): String =
+        if (date.equals("today", ignoreCase = true)) "today" else date.replace("-", "")
 }
 
 // ---------- ESPN news ----------
 
 data class EspNewsArticle(val root: JsonObject) {
-    val id: String get() = root["id"]?.jsonPrimitiveContent() ?: ""
-    val headline: String get() = root["headline"]?.jsonPrimitiveContent() ?: ""
-    val description: String get() = root["description"]?.jsonPrimitiveContent() ?: ""
-    val published: String get() = root["published"]?.jsonPrimitiveContent() ?: ""
+    val id: String get() = root["id"].jsonPrimitiveContent() ?: ""
+    val headline: String get() = root["headline"].jsonPrimitiveContent() ?: ""
+    val description: String get() = root["description"].jsonPrimitiveContent() ?: ""
+    val published: String get() = root["published"].jsonPrimitiveContent() ?: ""
     val url: String get() {
         val links = root["links"] as? JsonObject ?: return ""
         val web = links["web"] as? JsonObject ?: return ""
-        return web["href"]?.jsonPrimitiveContent() ?: ""
+        return web["href"].jsonPrimitiveContent() ?: ""
     }
     val imageUrl: String? get() {
         val images = root["images"] as? JsonArray ?: return null
-        return images.firstOrNull()?.jsonObject?.getString("url")
+        return images.firstNotNullOfOrNull { image ->
+            (image as? JsonObject)?.getString("url")
+        }
     }
     val source: String get() = "ESPN"
     val teamIds: List<String> get() = emptyList()
@@ -102,30 +141,30 @@ data class EspInjuryParsed(
     val lastUpdated: Long = System.currentTimeMillis()
 )
 
-private fun parseInjuryTeam(teamRoot: JsonObject): List<EspInjuryParsed> {
-    val teamName = teamRoot["displayName"]?.jsonPrimitiveContent() ?: "Unknown"
-    val teamAbbr = teamRoot["abbreviation"]?.jsonPrimitiveContent()
-    val teamId = teamRoot["id"]?.jsonPrimitiveContent() ?: ""
-    val injuries = teamRoot["injuries"] as? JsonArray ?: emptyArray()
-    return injuries.map { (it as? JsonObject ?: return@map).parseOneInjury(teamId, teamName, teamAbbr) }
+fun parseInjuryTeam(teamRoot: JsonObject): List<EspInjuryParsed> {
+    val teamName = teamRoot["displayName"].jsonPrimitiveContent() ?: "Unknown"
+    val teamAbbr = teamRoot["abbreviation"].jsonPrimitiveContent()
+    val teamId = teamRoot["id"].jsonPrimitiveContent() ?: ""
+    val injuries = (teamRoot["injuries"] as? JsonArray) ?: emptyList()
+    return injuries.mapNotNull { (it as? JsonObject)?.parseOneInjury(teamId, teamName, teamAbbr) }
 }
 
-private fun JsonObject.parseOneInjury(teamId: String, teamName: String, teamAbbr: String?): EspInjuryParsed {
+fun JsonObject.parseOneInjury(teamId: String, teamName: String, teamAbbr: String?): EspInjuryParsed {
     val athlete = this["athlete"] as? JsonObject
     val details = this["details"] as? JsonObject
     val type = this["type"] as? JsonObject
     return EspInjuryParsed(
-        id = this["id"]?.jsonPrimitiveContent() ?: "",
+        id = this["id"].jsonPrimitiveContent() ?: "",
         playerName = athlete?.getString("displayName")
             ?: "${athlete?.getString("firstName") ?: ""} ${athlete?.getString("lastName") ?: ""}".trim().ifEmpty { null },
         playerId = athlete?.getString("id"),
         teamId = teamId,
         teamName = teamName,
         teamAbbreviation = teamAbbr,
-        status = this["status"]?.jsonPrimitiveContent() ?: "",
-        date = this["date"]?.jsonPrimitiveContent() ?: "",
-        comment = this["longComment"]?.jsonPrimitiveContent()
-            ?: this["shortComment"]?.jsonPrimitiveContent() ?: "",
+        status = this["status"].jsonPrimitiveContent() ?: "",
+        date = this["date"].jsonPrimitiveContent() ?: "",
+        comment = this["longComment"].jsonPrimitiveContent()
+            ?: (this["shortComment"].jsonPrimitiveContent() ?: ""),
         injuryType = type?.getString("name"),
         bodyPart = details?.getString("location"),
         detail = details?.getString("detail"),
@@ -138,17 +177,103 @@ private fun JsonObject.parseOneInjury(teamId: String, teamName: String, teamAbbr
 // ---------- ESPN transactions ----------
 
 data class EspTransaction(val root: JsonObject) {
-    val id: String get() = root["id"]?.jsonPrimitiveContent() ?: ""
-    val date: String get() = root["date"]?.jsonPrimitiveContent() ?: ""
-    val description: String get() = root["description"]?.jsonPrimitiveContent() ?: ""
-    val teamName: String? get() = root["team"]?.jsonObject?.getString("name")
-    val teamAbbreviation: String? get() = root["team"]?.jsonObject?.getString("abbreviation")
+    val id: String get() = root["id"].jsonPrimitiveContent() ?: ""
+    val date: String get() = root["date"].jsonPrimitiveContent() ?: ""
+    val description: String get() = root["description"].jsonPrimitiveContent() ?: ""
+    val teamName: String? get() = (root["team"] as? JsonObject)?.getString("name")
+    val teamAbbreviation: String? get() = (root["team"] as? JsonObject)?.getString("abbreviation")
 }
 
-// ---------- JSON helpers ----------
+// ---------- ESPN scoreboard ----------
 
-private fun JsonPrimitive.jsonPrimitiveContent(): String? = content
+data class EspScoreboardTeam(
+    val id: String = "",
+    val name: String = "",
+    val abbreviation: String = "",
+    val logoUrl: String = "",
+    val color: String = "",
+)
 
-private fun JsonObject.getString(key: String): String? = (this[key] as? JsonPrimitive)?.content
+data class EspScoreboardGame(
+    val id: String,
+    val homeTeam: EspScoreboardTeam,
+    val awayTeam: EspScoreboardTeam,
+    val homeScore: Int,
+    val awayScore: Int,
+    val status: String,
+    val startTime: Long,
+    val quarter: Int,
+    val timeRemaining: String,
+    val isCompleted: Boolean,
+)
 
-private fun JsonPrimitive.jsonPrimitiveContent(): String? = this.content
+fun parseScoreboardEvent(event: JsonObject): EspScoreboardGame {
+    val statusType = (event["status"] as? JsonObject)?.get("type") as? JsonObject
+    val state = statusType?.stringOrNull("state") ?: ""
+    val eventDetail = statusType?.stringOrNull("detail") ?: ""
+    val competition = (event["competitions"] as? JsonArray)?.firstOrNull() as? JsonObject
+    val competitionStatusType = (competition?.get("status") as? JsonObject)?.get("type") as? JsonObject
+    var homeTeam = EspScoreboardTeam()
+    var awayTeam = EspScoreboardTeam()
+    var homeScore = 0
+    var awayScore = 0
+    val competitors = (competition?.get("competitors") as? JsonArray) ?: emptyList()
+    for (element in competitors) {
+        val competitor = element as? JsonObject ?: continue
+        val teamRoot = competitor["team"] as? JsonObject
+        val team = EspScoreboardTeam(
+            id = teamRoot?.stringOrNull("id") ?: "",
+            name = teamRoot?.stringOrNull("displayName") ?: teamRoot?.stringOrNull("name") ?: "",
+            abbreviation = teamRoot?.stringOrNull("abbreviation") ?: "",
+            logoUrl = teamRoot?.stringOrNull("logo") ?: "",
+            color = teamRoot?.stringOrNull("color") ?: "",
+        )
+        val score = competitor.intOrNull("score") ?: 0
+        when (competitor.stringOrNull("homeAway")) {
+            "home" -> {
+                homeTeam = team
+                homeScore = score
+            }
+            "away" -> {
+                awayTeam = team
+                awayScore = score
+            }
+            else -> Unit
+        }
+    }
+    val isCompleted = state == "post"
+    val status = when (state) {
+        "in" -> "Live"
+        "post" -> "Final"
+        else -> "Scheduled"
+    }
+    val quarter = if (state == "in") {
+        Regex("Q(\\d+)").find(eventDetail)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+    } else {
+        0
+    }
+    val timeRemaining = if (state == "in") {
+        (competitionStatusType?.stringOrNull("detail") ?: "")
+            .replace(Regex("^Q\\d+\\s*"), "")
+            .trim()
+    } else {
+        ""
+    }
+    val startTime = runCatching {
+        java.time.Instant.parse(event.getString("date") ?: "").toEpochMilli()
+    }.getOrElse {
+        System.currentTimeMillis()
+    }
+    return EspScoreboardGame(
+        id = event.stringOrNull("id") ?: "",
+        homeTeam = homeTeam,
+        awayTeam = awayTeam,
+        homeScore = homeScore,
+        awayScore = awayScore,
+        status = status,
+        startTime = startTime,
+        quarter = quarter,
+        timeRemaining = timeRemaining,
+        isCompleted = isCompleted,
+    )
+}

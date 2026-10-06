@@ -1,5 +1,7 @@
 package com.daytoday.ui.screen
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,10 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.NavigateNext
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -29,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.StepsRecord
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -132,6 +141,16 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun onPermissionResult(granted: Boolean) {
+        viewModelScope.launch {
+            localSummaryUseCases.setHealthPermissionGranted(granted)
+            if (granted) {
+                val stats = localSummaryUseCases.todayStats()
+                _uiState.value = _uiState.value.copy(stats = stats, healthPermissionGranted = true)
+            }
+        }
+    }
+
     fun checkSdkStatus() {
         viewModelScope.launch {
             try {
@@ -177,6 +196,18 @@ fun HomeScreen(
 
     val effectivePermissionGranted = permissionGranted || uiState.healthPermissionGranted
 
+    val healthConnectPermissions = remember {
+        setOf(
+            HealthPermission.getReadPermission(StepsRecord::class)
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        val hasSteps = granted.contains(HealthPermission.getReadPermission(StepsRecord::class))
+        viewModel.onPermissionResult(hasSteps)
+    }
+
     Scaffold(topBar = { DayTodayTopAppBar(title = "DayToDay") }) { padding ->
         Box(
             modifier = Modifier
@@ -194,7 +225,13 @@ fun HomeScreen(
                     HomeContent(
                         uiState = uiState,
                         permissionGranted = effectivePermissionGranted,
-                        onRequestPermission = { viewModel.requestPermission() },
+                        onRequestPermission = {
+                            try {
+                                permissionLauncher.launch(healthConnectPermissions)
+                            } catch (e: Exception) {
+                                viewModel.requestPermission()
+                            }
+                        },
                         onNavigate = { route -> navController.navigate(route) }
                     )
                 }
@@ -398,6 +435,43 @@ private fun HomeContent(
                     }
                 }
             }
+            DayTodayCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigate(Screen.WorkoutProgress.route) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.TrendingUp,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Workout Progress & History",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "View volume stats, personal bests & workout trends",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        Icons.AutoMirrored.Filled.NavigateNext,
+                        contentDescription = "Open Workout Progress",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
 
         Text("Quick Actions", style = MaterialTheme.typography.titleLarge)
@@ -420,8 +494,9 @@ private fun HomeContent(
                 modifier = Modifier.weight(1f)
             )
             DayTodayButton(
-                text = "Progress",
+                text = "Workout Progress",
                 onClick = { onNavigate(Screen.WorkoutProgress.route) },
+                buttonType = ButtonType.Filled,
                 modifier = Modifier.weight(1f)
             )
         }

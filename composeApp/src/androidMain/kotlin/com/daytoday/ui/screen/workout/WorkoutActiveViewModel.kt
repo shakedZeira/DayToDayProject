@@ -2,44 +2,88 @@ package com.daytoday.ui.screen.workout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.daytoday.usecase.WorkoutUseCases
+import com.daytoday.data.spotify.SpotifyPlayResult
+import com.daytoday.data.spotify.SpotifyRepository
 import com.daytoday.model.Exercise
+import com.daytoday.model.PlanExercise
 import com.daytoday.model.SetRecord
+import com.daytoday.model.WorkoutPlan
 import com.daytoday.model.WorkoutSession
 import com.daytoday.repository.Result
 import com.daytoday.repository.WorkoutRepository
+import com.daytoday.settings.SettingsManager
+import com.daytoday.usecase.WorkoutUseCases
 import com.daytoday.util.CalorieCalculator
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import javax.inject.Inject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.UUID
+import javax.inject.Inject
 import kotlin.math.roundToInt
+
+enum class WorkoutScreenTab {
+    BUILDER,
+    SAVED_PLANS,
+    QUICK_START,
+    PROGRESS
+}
 
 @HiltViewModel
 class WorkoutActiveViewModel @Inject constructor(
     private val workoutUseCases: WorkoutUseCases,
-    private val workoutRepository: WorkoutRepository
+    private val workoutRepository: WorkoutRepository,
+    private val settingsManager: SettingsManager,
+    private val spotifyRepository: SpotifyRepository,
+    @ApplicationContext private val context: android.content.Context
 ) : ViewModel() {
 
+    private val _currentTab = MutableStateFlow(WorkoutScreenTab.BUILDER)
+    val currentTab: StateFlow<WorkoutScreenTab> = _currentTab.asStateFlow()
+
     private val _activeSession = MutableStateFlow<WorkoutSession?>(null)
-    val activeSession: StateFlow<WorkoutSession?> = _activeSession
+    val activeSession: StateFlow<WorkoutSession?> = _activeSession.asStateFlow()
+
+    private val _activePlanQueue = MutableStateFlow<List<PlanExercise>>(emptyList())
+    val activePlanQueue: StateFlow<List<PlanExercise>> = _activePlanQueue.asStateFlow()
+
+    private val _activePlanIndex = MutableStateFlow(0)
+    val activePlanIndex: StateFlow<Int> = _activePlanIndex.asStateFlow()
 
     private val _exercises = MutableStateFlow<UiState<List<Exercise>>>(UiState.Loading)
-    val exercises: StateFlow<UiState<List<Exercise>>> = _exercises
+    val exercises: StateFlow<UiState<List<Exercise>>> = _exercises.asStateFlow()
 
-    private val _builderSessions = MutableStateFlow<List<WorkoutSession>>(emptyList())
-    val builderSessions: StateFlow<List<WorkoutSession>> = _builderSessions
+    // Pre-selected exercises in workout builder
+    private val _selectedExercises = MutableStateFlow<List<Exercise>>(emptyList())
+    val selectedExercises: StateFlow<List<Exercise>> = _selectedExercises.asStateFlow()
 
-    private val _building = MutableStateFlow(false)
-    val building: StateFlow<Boolean> = _building
+    // Configured exercises with per-exercise sets, reps, and weight for workout builder
+    private val _builderExercises = MutableStateFlow<List<PlanExercise>>(emptyList())
+    val builderExercises: StateFlow<List<PlanExercise>> = _builderExercises.asStateFlow()
+    val builderPlanExercises: StateFlow<List<PlanExercise>> get() = builderExercises
+
+    val savedPlans: StateFlow<List<WorkoutPlan>> = settingsManager.savedWorkoutPlans
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val userProfile = settingsManager.userProfile
+        .stateIn(viewModelScope, SharingStarted.Eagerly, com.daytoday.model.UserProfile())
+
+    val spotifyLoggedIn: StateFlow<Boolean> = settingsManager.spotifyLoggedIn
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {
         loadExercises()
     }
 
-    private fun loadExercises() {
+    fun setTab(tab: WorkoutScreenTab) {
+        _currentTab.value = tab
+    }
+
+    fun loadExercises() {
         viewModelScope.launch {
             _exercises.value = UiState.Loading
             val result = workoutRepository.getExercises()
@@ -50,95 +94,214 @@ class WorkoutActiveViewModel @Inject constructor(
         }
     }
 
-    fun retryLoadExercises() {
-        loadExercises()
-    }
+    // ---------- Builder Actions ----------
 
-    // ---------- Build-mode: pick exercises into a saved workout plan ----------
-
-    fun startBuilding() {
-        _building.value = true
-    }
-
-    fun stopBuilding() {
-        _building.value = false
-    }
-
-    fun addExerciseToBuilder(exercise: Exercise) {
-        if (_building.value) {
-            val session = WorkoutSession(
-                id = "wks_builder_${UUID.randomUUID()}",
+    fun toggleExerciseSelection(exercise: Exercise) {
+        val current = _selectedExercises.value
+        if (current.any { it.id == exercise.id }) {
+            _selectedExercises.value = current.filterNot { it.id == exercise.id }
+            _builderExercises.value = _builderExercises.value.filterNot { it.exerciseId == exercise.id }
+        } else {
+            _selectedExercises.value = current + exercise
+            val existing = _builderExercises.value.firstOrNull { it.exerciseId == exercise.id }
+            val planEx = existing ?: PlanExercise(
                 exerciseId = exercise.id,
                 exerciseName = exercise.name,
-                startTime = 0,
-                endTime = null,
-                durationMinutes = 0,
-                caloriesBurned = 0,
-                sets = listOf(
-                    SetRecord(
-                        id = UUID.randomUUID().toString(),
-                        sessionId = "",
-                        setNumber = 1,
-                        weight = 0.0,
-                        reps = 0,
-                        rpe = null,
-                        isCompleted = false,
-                        completedAt = null
-                    )
-                ),
-                isCompleted = false
+                muscleGroup = exercise.muscleGroup,
+                targetSets = 3,
+                targetReps = 10,
+                targetWeightKg = 0.0
             )
-            _builderSessions.value = _builderSessions.value + session
+            _builderExercises.value = _builderExercises.value + planEx
         }
     }
 
-    fun removeFromBuilder(index: Int) {
-        val current = _builderSessions.value.toMutableList()
-        if (index in current.indices) {
-            current.removeAt(index)
-            _builderSessions.value = current
+    fun removeSelectedExercise(exerciseId: String) {
+        _selectedExercises.value = _selectedExercises.value.filterNot { it.id == exerciseId }
+        _builderExercises.value = _builderExercises.value.filterNot { it.exerciseId == exerciseId }
+    }
+
+    fun clearSelectedExercises() {
+        _selectedExercises.value = emptyList()
+        _builderExercises.value = emptyList()
+    }
+
+    fun updateExerciseSets(exerciseId: String, sets: Int) {
+        val safeSets = maxOf(1, sets)
+        _builderExercises.value = _builderExercises.value.map {
+            if (it.exerciseId == exerciseId) it.copy(targetSets = safeSets) else it
         }
     }
 
-    fun saveBuilderAsWorkoutPlan() {
-        viewModelScope.launch {
-            // Persist each builder session to Room as a saved workout plan.
-            // They are incomplete (startTime=0) so they won't show as completed.
-            val sessions = _builderSessions.value
-            if (sessions.isEmpty()) return@launch
-            sessions.forEach { session ->
-                workoutRepository.saveSession(session)
+    fun updateExerciseReps(exerciseId: String, reps: Int) {
+        val safeReps = maxOf(1, reps)
+        _builderExercises.value = _builderExercises.value.map {
+            if (it.exerciseId == exerciseId) it.copy(targetReps = safeReps) else it
+        }
+    }
+
+    fun updateExerciseWeight(exerciseId: String, weight: Double) {
+        val safeWeight = maxOf(0.0, weight)
+        _builderExercises.value = _builderExercises.value.map {
+            if (it.exerciseId == exerciseId) it.copy(targetWeightKg = safeWeight) else it
+        }
+    }
+
+    fun updateExercisePlanSets(exerciseId: String, sets: Int) = updateExerciseSets(exerciseId, sets)
+    fun updateExercisePlanReps(exerciseId: String, reps: Int) = updateExerciseReps(exerciseId, reps)
+    fun updateExercisePlanWeight(exerciseId: String, weightKg: Double) = updateExerciseWeight(exerciseId, weightKg)
+
+    fun saveCurrentPlan(
+        name: String,
+        targetSets: Int = 3,
+        targetReps: Int = 10,
+        targetWeightKg: Double = 0.0
+    ) {
+        val configured = _builderExercises.value
+        val planExercises = if (configured.isNotEmpty()) {
+            configured
+        } else {
+            val selected = _selectedExercises.value
+            if (selected.isEmpty()) return
+            selected.map { ex ->
+                PlanExercise(
+                    exerciseId = ex.id,
+                    exerciseName = ex.name,
+                    muscleGroup = ex.muscleGroup,
+                    targetSets = targetSets,
+                    targetReps = targetReps,
+                    targetWeightKg = targetWeightKg
+                )
             }
         }
-    }
-
-    fun startWorkoutFromBuilder(exercise: Exercise) {
+        val plan = WorkoutPlan(
+            id = "plan_${UUID.randomUUID()}",
+            name = name.ifBlank { "Custom Workout Plan" },
+            exercises = planExercises,
+            createdAt = System.currentTimeMillis()
+        )
         viewModelScope.launch {
-            val session = workoutUseCases.startWorkout(exercise.id).copy(
-                exerciseName = exercise.name
-            )
-            _activeSession.value = session
-            stopBuilding()
-            _builderSessions.value = emptyList()
+            settingsManager.saveWorkoutPlan(plan)
         }
     }
 
-    fun startWorkout(exercise: Exercise) {
+    fun deletePlan(planId: String) {
         viewModelScope.launch {
-            val session = workoutUseCases.startWorkout(exercise.id).copy(
-                exerciseName = exercise.name
+            settingsManager.deleteWorkoutPlan(planId)
+        }
+    }
+
+    // ---------- Starting Workouts ----------
+
+    fun startPlan(plan: WorkoutPlan) {
+        if (plan.exercises.isEmpty()) return
+        _activePlanQueue.value = plan.exercises
+        _activePlanIndex.value = 0
+        startExerciseFromPlan(plan.exercises[0])
+    }
+
+    fun startSelectedAsWorkout(targetSets: Int = 3, targetReps: Int = 10) {
+        val configured = _builderExercises.value
+        val planExercises = if (configured.isNotEmpty()) {
+            configured
+        } else {
+            val selected = _selectedExercises.value
+            if (selected.isEmpty()) return
+            selected.map { ex ->
+                PlanExercise(
+                    exerciseId = ex.id,
+                    exerciseName = ex.name,
+                    muscleGroup = ex.muscleGroup,
+                    targetSets = targetSets,
+                    targetReps = targetReps,
+                    targetWeightKg = 0.0
+                )
+            }
+        }
+        _activePlanQueue.value = planExercises
+        _activePlanIndex.value = 0
+        startExerciseFromPlan(planExercises[0])
+    }
+
+    fun startSingleExercise(exercise: Exercise) {
+        _activePlanQueue.value = emptyList()
+        _activePlanIndex.value = 0
+        val sessionId = UUID.randomUUID().toString()
+        val initialSets = (1..3).map { setNumber ->
+            SetRecord(
+                id = UUID.randomUUID().toString(),
+                sessionId = sessionId,
+                setNumber = setNumber,
+                weight = 0.0,
+                reps = 10,
+                rpe = null,
+                isCompleted = false,
+                completedAt = null
             )
-            _activeSession.value = session
+        }
+        val session = WorkoutSession(
+            id = sessionId,
+            exerciseId = exercise.id,
+            exerciseName = exercise.name,
+            startTime = System.currentTimeMillis(),
+            endTime = null,
+            durationMinutes = 0,
+            caloriesBurned = 0,
+            sets = initialSets,
+            isCompleted = false
+        )
+        _activeSession.value = session
+    }
+
+    private fun startExerciseFromPlan(planExercise: PlanExercise) {
+        val sessionId = UUID.randomUUID().toString()
+        val setCount = if (planExercise.targetSets > 0) planExercise.targetSets else 3
+        val repCount = if (planExercise.targetReps > 0) planExercise.targetReps else 10
+        val initialSets = (1..setCount).map { setNumber ->
+            SetRecord(
+                id = UUID.randomUUID().toString(),
+                sessionId = sessionId,
+                setNumber = setNumber,
+                weight = planExercise.targetWeightKg,
+                reps = repCount,
+                rpe = null,
+                isCompleted = false,
+                completedAt = null
+            )
+        }
+        val session = WorkoutSession(
+            id = sessionId,
+            exerciseId = planExercise.exerciseId,
+            exerciseName = planExercise.exerciseName,
+            startTime = System.currentTimeMillis(),
+            endTime = null,
+            durationMinutes = 0,
+            caloriesBurned = 0,
+            sets = initialSets,
+            isCompleted = false
+        )
+        _activeSession.value = session
+    }
+
+    fun nextExerciseInPlan() {
+        val currentSession = _activeSession.value ?: return
+        val queue = _activePlanQueue.value
+        val currentIndex = _activePlanIndex.value
+
+        // Complete & save current exercise session
+        saveCompletedSession(currentSession)
+
+        val nextIndex = currentIndex + 1
+        if (nextIndex < queue.size) {
+            _activePlanIndex.value = nextIndex
+            startExerciseFromPlan(queue[nextIndex])
+        } else {
+            // All exercises in plan finished!
+            _activeSession.value = currentSession.copy(isCompleted = true)
         }
     }
 
-    // ---------- Active workout ----------
-
-    fun onBackPressed() {
-        if (_activeSession.value != null) {
-            _activeSession.value = null
-        }
-    }
+    // ---------- Set and Session Logging ----------
 
     fun addSet() {
         _activeSession.value?.let { session ->
@@ -146,8 +309,8 @@ class WorkoutActiveViewModel @Inject constructor(
                 id = UUID.randomUUID().toString(),
                 sessionId = session.id,
                 setNumber = session.sets.size + 1,
-                weight = 0.0,
-                reps = 0,
+                weight = session.sets.lastOrNull()?.weight ?: 0.0,
+                reps = session.sets.lastOrNull()?.reps ?: 10,
                 rpe = null,
                 isCompleted = false,
                 completedAt = null
@@ -159,7 +322,7 @@ class WorkoutActiveViewModel @Inject constructor(
 
     fun updateSetWeight(setIndex: Int, weight: Double) {
         _activeSession.value?.let { session ->
-            if (setIndex < session.sets.size) {
+            if (setIndex in session.sets.indices) {
                 val updatedSets = session.sets.toMutableList()
                 updatedSets[setIndex] = updatedSets[setIndex].copy(weight = weight)
                 _activeSession.value = session.copy(sets = updatedSets)
@@ -169,7 +332,7 @@ class WorkoutActiveViewModel @Inject constructor(
 
     fun updateSetReps(setIndex: Int, reps: Int) {
         _activeSession.value?.let { session ->
-            if (setIndex < session.sets.size) {
+            if (setIndex in session.sets.indices) {
                 val updatedSets = session.sets.toMutableList()
                 updatedSets[setIndex] = updatedSets[setIndex].copy(reps = reps)
                 _activeSession.value = session.copy(sets = updatedSets)
@@ -179,7 +342,7 @@ class WorkoutActiveViewModel @Inject constructor(
 
     fun updateSetRpe(setIndex: Int, rpe: Double?) {
         _activeSession.value?.let { session ->
-            if (setIndex < session.sets.size) {
+            if (setIndex in session.sets.indices) {
                 val updatedSets = session.sets.toMutableList()
                 updatedSets[setIndex] = updatedSets[setIndex].copy(rpe = rpe)
                 _activeSession.value = session.copy(sets = updatedSets)
@@ -189,63 +352,76 @@ class WorkoutActiveViewModel @Inject constructor(
 
     fun completeSet(setIndex: Int) {
         _activeSession.value?.let { session ->
-            if (setIndex < session.sets.size) {
+            if (setIndex in session.sets.indices) {
                 val updatedSets = session.sets.toMutableList()
-                updatedSets[setIndex] = updatedSets[setIndex].copy(
-                    isCompleted = true,
-                    completedAt = System.currentTimeMillis()
+                val current = updatedSets[setIndex]
+                updatedSets[setIndex] = current.copy(
+                    isCompleted = !current.isCompleted,
+                    completedAt = if (!current.isCompleted) System.currentTimeMillis() else null
                 )
-                _activeSession.value = session.copy(sets = updatedSets)
+                val updated = session.copy(sets = updatedSets)
+                _activeSession.value = updated.copy(caloriesBurned = calculateCalories(updated))
             }
         }
     }
 
     fun completeWorkout() {
-        _activeSession.value?.let { session ->
-            viewModelScope.launch {
-                val now = System.currentTimeMillis()
-                val completedSession = session.copy(
-                    isCompleted = true,
-                    endTime = now,
-                    durationMinutes = ((now - session.startTime) / 1000 / 60).toInt(),
-                    // Calculate calories from weight, reps, and exercise type.
-                    caloriesBurned = calculateCaloriesBurned(session)
-                )
-                val result = workoutUseCases.completeWorkout(completedSession)
-                if (result is Result.Success) {
-                    _activeSession.value = completedSession
+        val session = _activeSession.value ?: return
+        val now = System.currentTimeMillis()
+        val durationMins = maxOf(1, ((now - session.startTime) / 1000 / 60).toInt())
+        val burned = calculateCalories(session)
+        val completedSession = session.copy(
+            isCompleted = true,
+            endTime = now,
+            durationMinutes = durationMins,
+            caloriesBurned = burned
+        )
+        _activeSession.value = completedSession
+        saveCompletedSession(completedSession)
+    }
+
+    private fun saveCompletedSession(session: WorkoutSession) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val durationMins = maxOf(1, ((now - session.startTime) / 1000 / 60).toInt())
+            val burned = calculateCalories(session)
+            val completed = session.copy(
+                isCompleted = true,
+                endTime = now,
+                durationMinutes = durationMins,
+                caloriesBurned = burned
+            )
+            workoutRepository.saveSession(completed)
+        }
+    }
+
+    fun calculateCalories(session: WorkoutSession): Int {
+        val userWeight = userProfile.value.weightKg.takeIf { it > 0.0 } ?: CalorieCalculator.DEFAULT_WEIGHT_KG
+        return CalorieCalculator.workoutCalories(userWeight, listOf(session)).roundToInt()
+    }
+
+    fun playSpotifyMusic() {
+        viewModelScope.launch {
+            when (val result = spotifyRepository.playPlaylist(context)) {
+                SpotifyPlayResult.PLAYING -> {
+                    // Success - music is playing
+                }
+                SpotifyPlayResult.NOT_LOGGED_IN -> {
+                    // User needs to log in first
+                }
+                is SpotifyPlayResult.NO_DEVICE -> {
+                    // Spotify app opened, user needs to tap play
+                }
+                is SpotifyPlayResult.ERROR -> {
+                    // Error occurred
                 }
             }
         }
     }
 
-    /** Derive calories burned from completed sets: weight × reps × per-rep factor,
-     *  scaled by the user's body weight relative to the reference weight.
-     *
-     *  Uses the same per-rep coefficients as [CalorieCalculator] so the numbers shown
-     *  on the home dashboard (workoutCalories) match what the workout screen reports. */
-    private fun calculateCaloriesBurned(session: WorkoutSession): Int {
-        var kcal = 0.0
-        session.sets.forEach { set ->
-            if (!set.isCompleted || set.reps <= 0) return@forEach
-            val kcalPerRep = kcalPerRepFor(session.exerciseName)
-            kcal += kcalPerRep * set.reps
-        }
-        if (kcal <= 0.0) return 0
-        // Weight scaling: heavier users burn more per rep.
-        // Default to 70 kg; a full impl reads the saved profile from SettingsManager.
-        val weightKg = 70.0
-        val scaled = kcal * (weightKg / 70.0)
-        return scaled.roundToInt()
-    }
-
-    private fun kcalPerRepFor(exerciseName: String): Double {
-        val name = exerciseName.lowercase()
-        return when {
-            name.contains("pull") -> 0.60
-            name.contains("push") -> 0.45
-            name.contains("squat") -> 0.30
-            else -> 0.30
-        }
+    fun exitActiveWorkout() {
+        _activeSession.value = null
+        _activePlanQueue.value = emptyList()
+        _activePlanIndex.value = 0
     }
 }

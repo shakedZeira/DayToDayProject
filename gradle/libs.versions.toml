@@ -1,0 +1,90 @@
+[versions]
+agp = "8.4.0"
+kotlin = "1.9.23"
+kotlinxCoroutines = "1.8.0"
+kotlinxSerialization = "1.6.0"
+ktor = "2.3.8"
+compose = "1.6.10"
+composeCompiler = "1.5.13"
+material3 = "1.2.1"
+materialIcons = "1.2.1"
+room = "2.6.1"
+hilt = "2.48"
+healthConnect = "1.1.0"
+coil = "2.5.0"
+lifecycle = "2.7.0"
+navigation = "2.7.6"
+junit = "4.13.2"
+junitJupiter = "5.10.2"
+mockk = "1.13.13"
+robolectric = "4.11"
+espresso = "3.5.1"
+composeUiTest = "1.6.10"
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+hilt = { id = "com.google.dagger.hilt", version.ref = "hilt" }
+composeDesktop = { id = "org.jetbrains.compose.desktop", version.ref = "compose" }
+
+[libraries]
+# Kotlin
+kotlinxCoroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinxCoroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+kotlinxSerializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+# Ktor
+ktorClientCore = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktorClientAndroid = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
+ktorClientJson = { module = "io.ktor:ktor-client-json", version.ref = "ktor" }
+ktorSerializationKotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktorClientLogging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktorClientContentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+
+# Compose Multiplatform
+composeBom = { module = "androidx.compose:compose-bom", version.ref = "compose" }
+composeCompiler = { module = "org.jetbrains.kotlin:kotlin-compiler-plugin-compose", version.ref = "composeCompiler" }
+composeMaterial3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+composeMaterialIconsExtended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIcons" }
+composeRuntime = { module = "androidx.compose.runtime:runtime", version.ref = "compose" }
+composeUi = { module = "androidx.compose.ui:ui", version.ref = "compose" }
+composeFoundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose" }
+composeAnimation = { module = "androidx.compose.animation:animation", version.ref = "compose" }
+composeUiTooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
+composeUiTest = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose" }
+composeUiTestManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "compose" }
+composeDesktopCore = { module = "org.jetbrains.compose.desktop:compose-desktop-core", version.ref = "compose" }
+
+# Navigation
+navigationCompose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
+navigationRuntime = { module = "androidx.navigation:navigation-runtime", version.ref = "navigation" }
+
+# Room
+roomRuntime = { module = "androidx.room:room-runtime", version.ref = "room" }
+roomKtx = { module = "androidx.room:room-ktx", version.ref = "room" }
+roomCompiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# Hilt
+hiltAndroid = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hiltCompiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+hiltNavigationCompose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hilt" }
+
+# Health Connect
+healthConnectClient = { module = "androidx.health.connect:healthconnect-client", version.ref = "healthConnect" }
+
+# Coil
+coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+
+# Lifecycle
+lifecycleRuntimeKtx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+lifecycleViewModelCompose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycleViewModelKtx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+
+# Testing
+junit = { module = "junit:junit", version.ref = "junit" }
+junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+espressoCore = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
+espressoContrib = { module = "androidx.test.espresso:espresso-contrib", version.ref = "espresso" }

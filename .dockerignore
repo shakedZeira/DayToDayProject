@@ -1,0 +1,14 @@
+.git
+node_modules
+**/node_modules
+**/dist
+**/*.test.js
+.env
+.env.*
+!.env.example
+*.log
+D:\Temp
+docs
+README.md
+.dockerignore
+.docker

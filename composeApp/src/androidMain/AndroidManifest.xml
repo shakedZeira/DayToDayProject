@@ -59,6 +59,10 @@
         android:theme="@style/Theme.DayToday"
         tools:targetApi="31">
 
+            <property
+                android:name="android.support.health_app_types"
+                android:value="fitness" />
+
             <activity
                 android:name="com.daytoday.ui.screen.MainActivity"
             android:exported="true"
@@ -89,6 +93,17 @@
                     <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
                 </intent-filter>
             </activity>
+
+            <activity-alias
+                android:name="com.daytoday.data.health.ViewPermissionUsageActivity"
+                android:exported="true"
+                android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
+                android:targetActivity="com.daytoday.ui.screen.MainActivity">
+                <intent-filter>
+                    <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                    <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+                </intent-filter>
+            </activity-alias>
 
             <!-- Spotify OAuth callback activity (PKCE flow).
                  Handles the daytoday://callback redirect from Spotify authorization. -->

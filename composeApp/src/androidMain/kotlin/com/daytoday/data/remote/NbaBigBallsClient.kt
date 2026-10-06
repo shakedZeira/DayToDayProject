@@ -2,17 +2,20 @@ package com.daytoday.data.remote
 
 import com.daytoday.repository.Result
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.get
 import io.ktor.client.request.header
-import io.ktor.client.request.parameters
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,43 +36,49 @@ class NbaBigBallsClient @Inject constructor() {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     private val client = HttpClient {
-        install(ContentNegotiation) { json(this@NbaBigBallsClient.json) }
-        install(Logging) { level = LogLevel.BASIC }
-        defaultRequest {
-            url("https://api.bigballsdata.com/v1/nba/")
-            header("Accept", "application/json")
-        }
+        install(ContentNegotiation) { json(json) }
+        install(Logging) { level = LogLevel.HEADERS }
     }
+
+    private val baseUrl = "https://api.bigballsdata.com/v1/nba"
 
     /**
      * Today's games / box scores list.
      * BBS /matches endpoint with sport=basketball&league=nba&date=today
      * returns live NBA games with team info.
      */
-    suspend fun getMatches(date: String = "today", limit: Int = 50): Result<List<BbsMatchDto>> = runCatching {
-        val resp = client.get("matches") {
-            parameters {
-                "sport" to "basketball"
-                "league" to "nba"
-                "date" to date
-                "limit" to limit.toString()
+    suspend fun getMatches(date: String = "today", limit: Int = 50): Result<List<BbsMatchDto>> {
+        return try {
+            val resp: HttpResponse = client.get("$baseUrl/matches") {
+                parameter("sport", "basketball")
+                parameter("league", "nba")
+                parameter("date", date)
+                parameter("limit", limit.toString())
+                header(HttpHeaders.Accept, "application/json")
             }
+            val root = resp.body<JsonObject>()
+            val data = (root["data"] as? JsonArray) ?: emptyList()
+            Result.success(data.mapNotNull { (it as? JsonObject)?.let { obj -> BbsMatchDto(obj) } })
+        } catch (e: Exception) {
+            Result.failure(e.message ?: (e::class.simpleName ?: "Unknown error"), e)
         }
-        val root = resp.body<JsonObject>()
-        val data = root["data"] as? JsonArray ?: emptyArray()
-        data.map { BbsMatchDto(it as JsonObject) }
     }
 
     /**
      * Box-score detail for a single game (player stats).
      * BBS: GET /games/{matchId}/matchup?view=nerd
      */
-    suspend fun getMatchup(matchId: String): Result<BbsMatchupDto> = runCatching {
-        val resp = client.get("games/$matchId/matchup") {
-            parameters { "view" to "nerd" }
+    suspend fun getMatchup(matchId: String): Result<BbsMatchupDto> {
+        return try {
+            val resp: HttpResponse = client.get("$baseUrl/games/$matchId/matchup") {
+                parameter("view", "nerd")
+                header(HttpHeaders.Accept, "application/json")
+            }
+            val root = resp.body<JsonObject>()
+            Result.success(BbsMatchupDto(root))
+        } catch (e: Exception) {
+            Result.failure(e.message ?: (e::class.simpleName ?: "Unknown error"), e)
         }
-        val root = resp.body<JsonObject>()
-        BbsMatchupDto(root)
     }
 }
 
@@ -77,38 +86,38 @@ class NbaBigBallsClient @Inject constructor() {
 
 data class BbsMatchDto(val root: JsonObject) {
     val matchId: String
-        get() = string("match_id", "id").ifEmpty { "bbs_${System.currentTimeMillis()}_${(0..9999).random()}" }
+        get() = root.stringOrNull("match_id", "id")?.ifEmpty { "bbs_${System.currentTimeMillis()}_${(0..9999).random()}" } ?: "bbs_${System.currentTimeMillis()}_${(0..9999).random()}"
     val date: String
-        get() = string("game_date", "date")
+        get() = root.stringOrNull("game_date", "date") ?: ""
     val status: String
-        get() = string("status").ifEmpty { "scheduled" }
+        get() = root.stringOrNull("status") ?: "scheduled"
     val homeTeam: BbsTeamDto
-        get() = BbsTeamDto(root["home"] as? JsonObject ?: root["home_team"] as? JsonObject ?: JsonObject.empty())
+        get() = BbsTeamDto(root["home"] as? JsonObject ?: root["home_team"] as? JsonObject ?: JsonObject(emptyMap()))
     val awayTeam: BbsTeamDto
-        get() = BbsTeamDto(root["away"] as? JsonObject ?: root["away_team"] as? JsonObject ?: JsonObject.empty())
+        get() = BbsTeamDto(root["away"] as? JsonObject ?: root["away_team"] as? JsonObject ?: JsonObject(emptyMap()))
     val venue: String?
         get() = (root["venue"] as? JsonObject)?.getString("name")
     val periods: List<BbsPeriodDto>
         get() {
             val p = root["periods"] as? JsonArray ?: return emptyList()
-            return p.map { BbsPeriodDto(it as JsonObject) }
+            return p.mapNotNull { (it as? JsonObject)?.let { obj -> BbsPeriodDto(obj) } }
         }
     val attendance: Long
         get() = (root["attendance"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L
 }
 
 data class BbsTeamDto(val root: JsonObject) {
-    val id: String? get() = stringOrNull("id")
-    val name: String? get() = stringOrNull("name")
-    val abbreviation: String? get() = stringOrNull("abbreviation", "short_name")
-    val score: Int? get() = intOrNull("score", "pts")
+    val id: String? get() = root.stringOrNull("id")
+    val name: String? get() = root.stringOrNull("name")
+    val abbreviation: String? get() = root.stringOrNull("abbreviation", "short_name")
+    val score: Int? get() = root.intOrNull("score", "pts")
 }
 
 data class BbsPeriodDto(val root: JsonObject) {
-    val period: Int? get() = intOrNull("period")
-    val homeScore: Int? get() = intOrNull("home_score", "home")
-    val awayScore: Int? get() = intOrNull("away_score", "away")
-    val timeRemaining: String? get() = stringOrNull("time_remaining")
+    val period: Int? get() = root.intOrNull("period")
+    val homeScore: Int? get() = root.intOrNull("home_score", "home")
+    val awayScore: Int? get() = root.intOrNull("away_score", "away")
+    val timeRemaining: String? get() = root.stringOrNull("time_remaining")
 }
 
 // ---------- BBS matchup (box score) ----------
@@ -116,8 +125,8 @@ data class BbsPeriodDto(val root: JsonObject) {
 data class BbsMatchupDto(val root: JsonObject) {
     val error: String?
         get() = (root["error"] as? JsonObject)?.getString("message")
-    val matchId: String? get() = stringOrNull("match_id", "id")
-    val status: String? get() = stringOrNull("status")
+    val matchId: String? get() = root.stringOrNull("match_id", "id")
+    val status: String? get() = root.stringOrNull("status")
     val venue: String?
         get() = (root["venue"] as? JsonObject)?.getString("name")
     val homeTeam: BbsMatchupTeamDto?
@@ -129,58 +138,36 @@ data class BbsMatchupDto(val root: JsonObject) {
 }
 
 data class BbsMatchupTeamDto(val root: JsonObject) {
-    val id: String? get() = stringOrNull("id")
-    val name: String? get() = stringOrNull("name")
-    val abbreviation: String? get() = stringOrNull("abbreviation", "short_name")
-    val score: Int? get() = intOrNull("score", "home_score", "away_score")
+    val id: String? get() = root.stringOrNull("id")
+    val name: String? get() = root.stringOrNull("name")
+    val abbreviation: String? get() = root.stringOrNull("abbreviation", "short_name")
+    val score: Int? get() = root.intOrNull("score", "home_score", "away_score")
     val players: List<BbsPlayerDto>
-        get() = (root["players"] as? JsonArray)?.map { BbsPlayerDto(it as JsonObject) } ?: emptyList()
+        get() = (root["players"] as? JsonArray)?.mapNotNull { (it as? JsonObject)?.let { obj -> BbsPlayerDto(obj) } } ?: emptyList()
 }
 
 data class BbsPlayerDto(val root: JsonObject) {
-    val id: String? get() = stringOrNull("id", "player_id")
-    val name: String? get() = stringOrNull("name", "player_name")
-    val position: String? get() = stringOrNull("position")
-    val jerseyNumber: Int? get() = intOrNull("jersey_number", "jersey")
+    val id: String? get() = root.stringOrNull("id", "player_id")
+    val name: String? get() = root.stringOrNull("name", "player_name")
+    val position: String? get() = root.stringOrNull("position")
+    val jerseyNumber: Int? get() = root.intOrNull("jersey_number", "jersey")
     val stats: BbsPlayerStatsDto?
         get() = root["stats"]?.let { (it as? JsonObject)?.let { BbsPlayerStatsDto(it) } }
             ?: root["season_averages"]?.let { (it as? JsonObject)?.let { BbsPlayerStatsDto(it) } }
 }
 
 data class BbsPlayerStatsDto(val root: JsonObject) {
-    val points: Int? get() = intOrNull("points", "pts")
-    val rebounds: Int? get() = intOrNull("rebounds", "reb")
-    val assists: Int? get() = intOrNull("assists", "ast")
-    val steals: Int? get() = intOrNull("steals", "stl")
-    val blocks: Int? get() = intOrNull("blocks", "blk")
-    val turnovers: Int? get() = intOrNull("turnovers", "tov")
-    val fgMade: Int? get() = intOrNull("fgm", "field_goals_made")
-    val fgAttempted: Int? get() = intOrNull("fga", "field_goals_attempted")
-    val fg3Made: Int? get() = intOrNull("3pm", "three_pointers_made", "tpm")
-    val fg3Attempted: Int? get() = intOrNull("3pa", "three_pointers_attempted", "tpa")
-    val ftMade: Int? get() = intOrNull("ftm", "free_throws_made")
-    val ftAttempted: Int? get() = intOrNull("fta", "free_throws_attempted")
-    val plusMinus: Int? get() = intOrNull("plus_minus", "pm")
+    val points: Int? get() = root.intOrNull("points", "pts")
+    val rebounds: Int? get() = root.intOrNull("rebounds", "reb")
+    val assists: Int? get() = root.intOrNull("assists", "ast")
+    val steals: Int? get() = root.intOrNull("steals", "stl")
+    val blocks: Int? get() = root.intOrNull("blocks", "blk")
+    val turnovers: Int? get() = root.intOrNull("turnovers", "tov")
+    val fgMade: Int? get() = root.intOrNull("fgm", "field_goals_made")
+    val fgAttempted: Int? get() = root.intOrNull("fga", "field_goals_attempted")
+    val fg3Made: Int? get() = root.intOrNull("3pm", "three_pointers_made", "tpm")
+    val fg3Attempted: Int? get() = root.intOrNull("3pa", "three_pointers_attempted", "tpa")
+    val ftMade: Int? get() = root.intOrNull("ftm", "free_throws_made")
+    val ftAttempted: Int? get() = root.intOrNull("fta", "free_throws_attempted")
+    val plusMinus: Int? get() = root.intOrNull("plus_minus", "pm")
 }
-
-// ---------- JSON helpers ----------
-
-private fun JsonPrimitive.contentOrNull(): String? = content
-
-private fun JsonObject.stringOrNull(vararg keys: String): String? {
-    for (k in keys) {
-        (this[k] as? JsonPrimitive)?.let { return it.content }
-    }
-    return null
-}
-
-private fun JsonObject.intOrNull(vararg keys: String): Int? {
-    for (k in keys) {
-        (this[k] as? JsonPrimitive)?.let {
-            return it.content.toIntOrNull()
-        }
-    }
-    return null
-}
-
-private fun JsonPrimitive.toLongOrNull(): Long? = content.toLongOrNull()

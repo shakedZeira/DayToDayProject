@@ -1,0 +1,75 @@
+# Koyeb deploy config for the DayToDay PWA (single combined container).
+#
+# Topology: ONE container that runs nginx (serves the static client PWA and
+# proxies /api/* to 127.0.0.1:4000) AND the node Express API on a fixed internal
+# port 4000. The client is a fully static SPA that calls the same-origin /api
+# path only, so no VITE_API_URL / absolute URLs are needed and there is no
+# cross-service networking.
+#
+# Database: Koyeb has NO managed Postgres. Use ANY cardless free Postgres
+# (Neon recommended - permanent, no card, Prisma-friendly) and set its full
+# connection string (with ?sslmode=require for Neon) as the DATABASE_URL secret.
+#
+# Secrets (create in Koyeb Control Panel -> Settings -> Secrets, then paste the
+# secret NAME in `value: '@<name>'`):
+#   - dtd-db-url   : Neon Postgres URL, e.g.
+#                    postgresql://user:pass@ep-xxx.eu-central-1.aws.neon.tech/neondb?sslmode=require
+#   - dtd-jwt-secret : JWT_SECRET - strong random string (REQUIRED; insecure default otherwise)
+#   - dtd-groq-key : your Groq API key (optional - only needed for real LLM/Italian content)
+#
+# Then replace the corresponding `value: '@...'` entries below with those names.
+
+services:
+  - name: dtd
+    type: web
+    instance_types:
+      - type: nano
+    git:
+      branch: main
+      repository: shakedZeira/DayToDayProject
+    docker:
+      dockerfile: Dockerfile
+      # container-image-type is not required; default web routing applies.
+      entrypoint: /entrypoint.sh
+      command: ""
+      args: ""
+    ports:
+      - port: 8080
+        protocol: http
+    routes:
+      - path: /
+        port: 8080
+    scalings:
+      - min: 0
+        max: 1
+    health_checks:
+      - grace_period: 30
+        interval: 10
+        restart_limit: 5
+        timeout: 5
+        path: /api/health
+        port: 8080
+        protocol: http
+    regions:
+      - fra
+    env:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        value: "https://{{ KOYEB_PUBLIC_DOMAIN }}"
+      - key: DATABASE_URL
+        value: "@dtd-db-url"
+      - key: JWT_SECRET
+        value: "@dtd-jwt-secret"
+      - key: LLM_PROVIDER
+        value: mock
+      - key: LLM_HTTP_KEY
+        value: "@dtd-groq-key"
+      - key: LLM_HTTP_URL
+        value: "https://api.groq.com/openai/v1/chat/completions"
+      - key: LLM_MODEL
+        value: "llama-3.1-8b-instant"
+      - key: VISION_PROVIDER
+        value: stub
+      - key: NGINX_PORT
+        value: "8080"

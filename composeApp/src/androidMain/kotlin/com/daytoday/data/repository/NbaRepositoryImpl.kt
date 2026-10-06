@@ -10,6 +10,8 @@ import com.daytoday.data.remote.BbsMatchDto
 import com.daytoday.data.remote.BbsMatchupDto
 import com.daytoday.data.remote.EspInjuryParsed
 import com.daytoday.data.remote.EspNewsArticle
+import com.daytoday.data.remote.EspScoreboardGame
+import com.daytoday.data.remote.EspScoreboardTeam
 import com.daytoday.data.remote.NbaBigBallsClient
 import com.daytoday.data.remote.NbaEspnClient
 import com.daytoday.model.Injury
@@ -18,6 +20,7 @@ import com.daytoday.model.NbaNews
 import com.daytoday.model.NbaTeam
 import com.daytoday.repository.NbaRepository
 import com.daytoday.repository.Result
+import com.daytoday.ui.screen.nba.matchesTeamFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -58,28 +61,30 @@ class NbaRepositoryImpl @Inject constructor(
     private suspend fun fetchScoreboardFromApi(date: String): Result<List<NbaGame>> = withContext(Dispatchers.IO) {
         // 1) Try BigBallsData (real NBA game data, needs API key).
         val bbs = bbsClient.getMatches(date = if (date == "today") "today" else date)
-        if (bbs.isSuccess) {
-            val games = bbs.getOrThrow().map { it.toNbaGame(date) }
+        val bbsGames = bbs.getOrElse(emptyList())
+        if (bbsGames.isNotEmpty()) {
+            val games = bbsGames.map { it.toNbaGame(date) }
             val entities = games.map { NbaGameEntity.fromModel(it, date) }
             gameDao.insertAll(entities)
             Log.d(TAG, "BBS returned ${games.size} games for $date")
             return@withContext Result.success(games)
         }
-        Log.w(TAG, "BBS failed: ${bbs.exceptionOrNull()?.message}")
+        Log.w(TAG, "BBS failed or empty: ${bbs.exceptionOrNull()?.message}")
 
         // 2) Try ESPN scoreboard as fallback (free, no key).
         val espn = fetchEspnScoreboard(date)
-        if (espn.isSuccess && espn.getOrNull()?.isNotEmpty() == true) {
-            val games = espn.getOrThrow()
+        if (espn.isFailure) {
+            val e = espn.exceptionOrNull()
+            Log.w(TAG, "ESPN scoreboard failed", e)
+            return@withContext Result.failure("Scoreboard unavailable", e)
+        }
+        val games = espn.getOrThrow()
+        if (games.isNotEmpty()) {
             val entities = games.map { NbaGameEntity.fromModel(it, date) }
             gameDao.insertAll(entities)
             Log.d(TAG, "ESPN returned ${games.size} games for $date")
-            return@withContext Result.success(games)
         }
-        Log.w(TAG, "ESPN scoreboard also failed or empty")
-
-        // 3) Nothing worked — return empty so the screen shows "no games".
-        Result.success(emptyList())
+        Result.success(games)
     }
 
     private fun BbsMatchDto.toNbaGame(date: String): NbaGame {
@@ -121,10 +126,38 @@ class NbaRepositoryImpl @Inject constructor(
         )
     }
 
-    /** ESPN doesn't have a clean "today's games" list endpoint; skip for now.
-     *  The BBS endpoint is the primary live source. ESPN news/injuries are the
-     *  fallback content channels. */
-    private suspend fun fetchEspnScoreboard(date: String): Result<List<NbaGame>> = Result.success(emptyList())
+    private suspend fun fetchEspnScoreboard(date: String): Result<List<NbaGame>> {
+        val espn = espnClient.getScoreboard(date)
+        if (espn.isFailure) {
+            return Result.failure(espn.errorOrNull() ?: "ESPN scoreboard unavailable", espn.exceptionOrNull())
+        }
+        val games = espn.getOrThrow().map { game -> game.toNbaGame() }
+        return Result.success(games)
+    }
+
+    private fun EspScoreboardGame.toNbaGame(): NbaGame = NbaGame(
+        id = id,
+        homeTeam = homeTeam.toNbaTeam(),
+        awayTeam = awayTeam.toNbaTeam(),
+        homeScore = homeScore,
+        awayScore = awayScore,
+        status = status,
+        startTime = startTime,
+        quarter = quarter,
+        timeRemaining = timeRemaining,
+        isCompleted = isCompleted,
+        boxScore = null,
+    )
+
+    private fun EspScoreboardTeam.toNbaTeam(): NbaTeam = NbaTeam(
+        id = id,
+        name = name,
+        abbreviation = abbreviation,
+        city = "",
+        logoUrl = logoUrl,
+        primaryColor = color,
+        secondaryColor = color,
+    )
 
     private suspend fun launchBackgroundRefresh(date: String) {
         GlobalScope.launch(Dispatchers.IO) {
@@ -385,17 +418,16 @@ class NbaRepositoryImpl @Inject constructor(
             Log.w(TAG, "ESPN injuries failed", e)
             return@withContext Result.failure("Injury reports unavailable", e)
         }
-        val parsed = espn.getOrThrow()
-        val filtered = if (teamId != null) {
-            parsed.filter { it.teamId == teamId }
-        } else {
-            parsed
-        }
-        val injuries = filtered.map { it.toNbaInjury() }
+        val injuries = espn.getOrThrow().map { it.toNbaInjury() }
         val entities = injuries.map { com.daytoday.data.database.InjuryEntity.fromModel(it) }
         injuryDao.insertAll(entities)
         Log.d(TAG, "Cached ${injuries.size} ESPN injury reports")
-        Result.success(injuries)
+        val filtered = if (teamId != null) {
+            injuries.filter { injury -> injury.matchesTeamFilter(teamId) }
+        } else {
+            injuries
+        }
+        Result.success(filtered)
     }
 
     private fun EspInjuryParsed.toNbaInjury(): Injury = Injury(
