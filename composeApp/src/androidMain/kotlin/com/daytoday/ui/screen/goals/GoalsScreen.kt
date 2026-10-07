@@ -1,5 +1,6 @@
 package com.daytoday.ui.screen.goals
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,21 +16,27 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,14 +48,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.daytoday.settings.GoalType
+import com.daytoday.settings.StatsSource
 import com.daytoday.ui.screen.workout.UiState
+import com.daytoday.ui.theme.DayTodayButton
 import com.daytoday.ui.theme.DayTodayCard
 import com.daytoday.ui.theme.DayTodayTopAppBar
 import com.daytoday.ui.theme.ErrorState
 import com.daytoday.ui.theme.LoadingOverlay
-
-private const val MAX_CALORIES_GOAL = 10000
-private const val MAX_WEEKLY_WORKOUT_GOAL = 14
+import java.util.Locale
+import kotlin.math.roundToLong
 
 @Composable
 fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel()) {
@@ -57,7 +66,7 @@ fun GoalsScreen(viewModel: GoalsViewModel = hiltViewModel()) {
             DayTodayTopAppBar(
                 title = "Goals",
                 actions = {
-                    IconButton(onClick = { viewModel.load() }) {
+                    IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, "Refresh")
                     }
                 }
@@ -83,7 +92,7 @@ private fun GoalsScreenContent(
                 LoadingOverlay("Loading goals...")
             }
             is UiState.Error -> {
-                ErrorState(state.message, viewModel::load)
+                ErrorState(state.message, viewModel::refresh)
             }
             is UiState.Success -> {
                 GoalsContent(state = state.data, viewModel = viewModel)
@@ -97,8 +106,18 @@ private fun GoalsContent(
     state: GoalsUiState,
     viewModel: GoalsViewModel
 ) {
-    var showCaloriesDialog by remember { mutableStateOf(false) }
-    var showWorkoutDialog by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showAllAddedMessage by remember { mutableStateOf(false) }
+    var editingGoalId by remember { mutableStateOf<String?>(null) }
+    var pendingRemovalId by remember { mutableStateOf<String?>(null) }
+
+    val availableTypes = GoalType.values().filter { type ->
+        state.goals.none { it.entry.type == type }
+    }
+    val editingGoal = state.goals.firstOrNull { it.entry.id == editingGoalId }
+    val removalGoal = state.goals.firstOrNull { it.entry.id == pendingRemovalId }
+    val todayGoals = state.goals.filter { it.entry.type.source == StatsSource.TODAY }
+    val weekGoals = state.goals.filter { it.entry.type.source == StatsSource.WEEK }
 
     Column(
         modifier = Modifier
@@ -107,68 +126,220 @@ private fun GoalsContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Text("Today", style = MaterialTheme.typography.titleLarge)
-        GoalCard(
-            title = "Calories Burned",
-            icon = Icons.Default.LocalFireDepartment,
-            current = state.caloriesToday,
-            goal = state.caloriesGoal,
-            unit = "kcal",
-            emptyHint = "No calories burned yet today",
-            onEdit = { showCaloriesDialog = true }
+        DayTodayButton(
+            onClick = {
+                if (availableTypes.isEmpty()) {
+                    showAllAddedMessage = true
+                } else {
+                    showAddDialog = true
+                }
+            },
+            text = "Add goal",
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Text("This Week", style = MaterialTheme.typography.titleLarge)
-        GoalCard(
-            title = "Workout Sessions",
-            icon = Icons.Default.FitnessCenter,
-            current = state.workoutsThisWeek,
-            goal = state.weeklyWorkoutGoal,
-            unit = "sessions",
-            emptyHint = "No workouts yet this week",
-            onEdit = { showWorkoutDialog = true }
-        )
+        if (state.goals.isEmpty()) {
+            Text(
+                text = "No goals yet. Tap \"Add goal\" to create one.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        if (todayGoals.isNotEmpty()) {
+            Text("Today", style = MaterialTheme.typography.titleLarge)
+            todayGoals.forEach { item ->
+                GoalCard(
+                    title = item.entry.type.label,
+                    icon = item.entry.type.icon(),
+                    current = item.current,
+                    goal = item.entry.target,
+                    unit = item.entry.type.unit,
+                    emptyHint = item.entry.type.emptyHint(),
+                    onEdit = { editingGoalId = item.entry.id },
+                    onRemove = { pendingRemovalId = item.entry.id }
+                )
+            }
+        }
+
+        if (weekGoals.isNotEmpty()) {
+            Text("This Week", style = MaterialTheme.typography.titleLarge)
+            weekGoals.forEach { item ->
+                GoalCard(
+                    title = item.entry.type.label,
+                    icon = item.entry.type.icon(),
+                    current = item.current,
+                    goal = item.entry.target,
+                    unit = item.entry.type.unit,
+                    emptyHint = item.entry.type.emptyHint(),
+                    onEdit = { editingGoalId = item.entry.id },
+                    onRemove = { pendingRemovalId = item.entry.id }
+                )
+            }
+        }
     }
 
-    if (showCaloriesDialog) {
-        EditGoalDialog(
-            title = "Daily Calories Goal",
-            initialValue = state.caloriesGoal,
-            maxValue = MAX_CALORIES_GOAL,
-            onDismiss = { showCaloriesDialog = false },
-            onConfirm = { value ->
-                showCaloriesDialog = false
-                viewModel.updateCaloriesGoal(value)
+    if (showAddDialog && availableTypes.isNotEmpty()) {
+        AddGoalDialog(
+            availableTypes = availableTypes,
+            onDismiss = { showAddDialog = false },
+            onConfirm = { type, target ->
+                showAddDialog = false
+                viewModel.addGoal(type, target)
             }
         )
     }
 
-    if (showWorkoutDialog) {
-        EditGoalDialog(
-            title = "Weekly Workout Goal",
-            initialValue = state.weeklyWorkoutGoal,
-            maxValue = MAX_WEEKLY_WORKOUT_GOAL,
-            onDismiss = { showWorkoutDialog = false },
-            onConfirm = { value ->
-                showWorkoutDialog = false
-                viewModel.updateWeeklyWorkoutGoal(value)
+    if (showAllAddedMessage) {
+        AlertDialog(
+            onDismissRequest = { showAllAddedMessage = false },
+            title = { Text("All goals added") },
+            text = { Text("Every supported goal type is already on your list.") },
+            confirmButton = {
+                TextButton(onClick = { showAllAddedMessage = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    editingGoal?.let { item ->
+        key(item.entry.id) {
+            EditGoalDialog(
+                title = "${item.entry.type.label} goal",
+                initialValue = item.entry.target.toInt(),
+                maxValue = item.entry.type.maxValue,
+                onDismiss = { editingGoalId = null },
+                onConfirm = { value ->
+                    editingGoalId = null
+                    viewModel.updateGoalTarget(item.entry.id, value.toDouble())
+                }
+            )
+        }
+    }
+
+    removalGoal?.let { item ->
+        AlertDialog(
+            onDismissRequest = { pendingRemovalId = null },
+            title = { Text("Remove goal?") },
+            text = { Text("Remove \"${item.entry.type.label}\" from your goals?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingRemovalId = null
+                    viewModel.removeGoal(item.entry.id)
+                }) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRemovalId = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }
 }
 
 @Composable
+private fun AddGoalDialog(
+    availableTypes: List<GoalType>,
+    onDismiss: () -> Unit,
+    onConfirm: (GoalType, Double) -> Unit
+) {
+    var selectedType by remember { mutableStateOf(availableTypes.first()) }
+    var targetText by remember { mutableStateOf(selectedType.defaultValue.toInt().toString()) }
+
+    fun select(type: GoalType) {
+        selectedType = type
+        targetText = type.defaultValue.toInt().toString()
+    }
+
+    val parsed = targetText.trim().toIntOrNull()
+    val valid = parsed != null && parsed > 0 && parsed <= selectedType.maxValue
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add goal") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                availableTypes.forEach { type ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { select(type) }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedType == type,
+                            onClick = { select(type) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(type.label, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                text = "Default ${type.defaultValue.toInt()} ${type.unit}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = targetText,
+                    onValueChange = { newText ->
+                        targetText = newText.filter { it.isDigit() }
+                    },
+                    label = { Text("Target (${selectedType.unit})") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    isError = !valid,
+                    supportingText = {
+                        if (!valid) {
+                            Text("Enter a number between 1 and ${selectedType.maxValue}")
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { parsed?.let { onConfirm(selectedType, it.toDouble()) } },
+                enabled = valid
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
 private fun GoalCard(
     title: String,
     icon: ImageVector,
-    current: Int,
-    goal: Int,
+    current: Double,
+    goal: Double,
     unit: String,
     emptyHint: String,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onRemove: () -> Unit
 ) {
-    val safeGoal = goal.coerceAtLeast(1)
-    val fraction = (current.toFloat() / safeGoal).coerceIn(0f, 1f)
+    val safeGoal = goal.coerceAtLeast(1.0)
+    val fraction = if (safeGoal > 0.0) {
+        (current / safeGoal).toFloat().coerceIn(0f, 1f)
+    } else {
+        0f
+    }
     val met = goal > 0 && current >= goal
 
     DayTodayCard(modifier = Modifier.fillMaxWidth()) {
@@ -190,14 +361,26 @@ private fun GoalCard(
                     )
                     Text(title, style = MaterialTheme.typography.titleMedium)
                 }
-                TextButton(onClick = onEdit) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit $title",
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Edit")
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onEdit) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit $title",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Edit")
+                    }
+                    IconButton(onClick = onRemove) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Remove $title",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 
@@ -208,14 +391,14 @@ private fun GoalCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    "$current / $goal $unit",
+                    "${formatValue(current)} / ${formatValue(goal)} $unit",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 if (met) {
                     Text(
                         text = if (current > goal) {
-                            "Over by ${current - goal} $unit"
+                            "Over by ${formatValue(current - goal)} $unit"
                         } else {
                             "Completed"
                         },
@@ -291,4 +474,27 @@ private fun EditGoalDialog(
             }
         }
     )
+}
+
+private fun formatValue(value: Double): String =
+    String.format(Locale.getDefault(), "%,d", value.roundToLong())
+
+private fun GoalType.icon(): ImageVector = when (this) {
+    GoalType.CALORIES_TODAY -> Icons.Default.LocalFireDepartment
+    GoalType.WORKOUTS_PER_WEEK -> Icons.Default.FitnessCenter
+    GoalType.STEPS_TODAY -> Icons.Default.DirectionsWalk
+    GoalType.ACTIVE_MINUTES_TODAY -> Icons.Default.Timer
+    GoalType.WORKOUT_MINUTES_PER_WEEK -> Icons.Default.FitnessCenter
+    GoalType.CALORIES_BURNED_PER_WEEK -> Icons.Default.LocalFireDepartment
+    GoalType.LIFTING_VOLUME_PER_WEEK -> Icons.Default.FitnessCenter
+}
+
+private fun GoalType.emptyHint(): String = when (this) {
+    GoalType.CALORIES_TODAY -> "No calories burned yet today"
+    GoalType.WORKOUTS_PER_WEEK -> "No workouts yet this week"
+    GoalType.STEPS_TODAY -> "No steps recorded yet today"
+    GoalType.ACTIVE_MINUTES_TODAY -> "No active minutes yet today"
+    GoalType.WORKOUT_MINUTES_PER_WEEK -> "No workout minutes yet this week"
+    GoalType.CALORIES_BURNED_PER_WEEK -> "No calories burned yet this week"
+    GoalType.LIFTING_VOLUME_PER_WEEK -> "No lifting volume yet this week"
 }

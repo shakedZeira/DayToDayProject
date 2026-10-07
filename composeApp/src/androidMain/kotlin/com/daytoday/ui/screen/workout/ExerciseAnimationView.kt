@@ -309,7 +309,6 @@ fun ExerciseAnimationView(
                 fontWeight = FontWeight.Bold,
                 softWrap = false,
                 maxLines = 1,
-                minLines = 0,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp)
             )
         }

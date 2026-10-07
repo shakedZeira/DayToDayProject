@@ -218,8 +218,7 @@ fun WorkoutActiveScreen(
                     spotifyLoggedIn = viewModel.spotifyLoggedIn.value,
                     spotifyMessage = spotifyMessage,
                     spotifyPlaylistName = spotifyPlaylistName,
-                    onPlaySpotify = viewModel::playSpotifyMusic,
-                    onConnectSpotify = viewModel::connectSpotify
+                    onPlaySpotify = viewModel::playSpotifyMusic
                 )
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -956,8 +955,7 @@ private fun ActiveWorkoutScreen(
     spotifyLoggedIn: Boolean,
     spotifyMessage: String?,
     spotifyPlaylistName: String?,
-    onPlaySpotify: () -> Unit,
-    onConnectSpotify: () -> Unit
+    onPlaySpotify: () -> Unit
 ) {
     var now by remember(session.id) { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(session.id) {
@@ -1101,13 +1099,6 @@ private fun ActiveWorkoutScreen(
                     onClick = onPlaySpotify,
                     text = "Play Spotify Music",
                     buttonType = ButtonType.Tonal,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else {
-                DayTodayButton(
-                    onClick = onConnectSpotify,
-                    text = "Connect Spotify",
-                    buttonType = ButtonType.Outlined,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

@@ -38,6 +38,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
         private const val CALORIES_GOAL_KEY = "goals_calories_goal"
         private const val WEEKLY_WORKOUT_GOAL_KEY = "goals_weekly_workout_goal"
+        private const val GOALS_LIST_KEY = "goals_list_json"
         private const val DEFAULT_CALORIES_GOAL = 500
         private const val DEFAULT_WEEKLY_WORKOUT_GOAL = 2
         private const val MIN_CALORIES_GOAL = 1
@@ -64,6 +65,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     private val caloriesGoalKey = intPreferencesKey(CALORIES_GOAL_KEY)
     private val weeklyWorkoutGoalKey = intPreferencesKey(WEEKLY_WORKOUT_GOAL_KEY)
+    private val goalsListKey = stringPreferencesKey(GOALS_LIST_KEY)
 
     private val defaultProfile = UserProfile()
 
@@ -131,6 +133,15 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         .map { it[weeklyWorkoutGoalKey] ?: DEFAULT_WEEKLY_WORKOUT_GOAL }
         .distinctUntilChanged()
 
+    /**
+     * The user's goal list. When nothing has been stored yet (or the stored JSON is
+     * unreadable) the list is derived from the legacy [caloriesGoal]/[weeklyWorkoutGoal]
+     * keys, so existing users keep the targets they already edited.
+     */
+    val goals: kotlinx.coroutines.flow.Flow<List<GoalEntry>> = dataStore.data
+        .map { it.readGoals() }
+        .distinctUntilChanged()
+
     suspend fun setCaloriesGoal(goal: Int) {
         val safe = goal.coerceIn(MIN_CALORIES_GOAL, MAX_CALORIES_GOAL)
         dataStore.edit { it[caloriesGoalKey] = safe }
@@ -139,6 +150,23 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     suspend fun setWeeklyWorkoutGoal(goal: Int) {
         val safe = goal.coerceIn(MIN_WEEKLY_WORKOUT_GOAL, MAX_WEEKLY_WORKOUT_GOAL)
         dataStore.edit { it[weeklyWorkoutGoalKey] = safe }
+    }
+
+    suspend fun setGoals(goals: List<GoalEntry>) {
+        val safe = goals.map { entry ->
+            val target = if (entry.target.isFinite()) entry.target else entry.type.defaultValue
+            entry.copy(target = target.coerceIn(1.0, entry.type.maxValue.toDouble()))
+        }
+        dataStore.edit { it[goalsListKey] = Json.encodeToString(safe) }
+    }
+
+    /** Persists the default pair (migrated from the legacy keys) if no list is stored yet. */
+    suspend fun seedGoalsIfAbsent() {
+        dataStore.edit { prefs ->
+            if (prefs[goalsListKey] == null) {
+                prefs[goalsListKey] = Json.encodeToString(prefs.readGoals())
+            }
+        }
     }
 
     suspend fun saveWorkoutPlan(plan: WorkoutPlan) {
@@ -228,6 +256,21 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
             it[spotifyPlaylistUriKey] = uri
             it[spotifyPlaylistNameKey] = name
         }
+    }
+
+    private fun Preferences.readGoals(): List<GoalEntry> {
+        val json = this[goalsListKey]
+        if (json != null) {
+            runCatching { Json.decodeFromString<List<GoalEntry>>(json) }
+                .getOrNull()
+                ?.let { return it }
+        }
+        val calories = this[caloriesGoalKey] ?: DEFAULT_CALORIES_GOAL
+        val workouts = this[weeklyWorkoutGoalKey] ?: DEFAULT_WEEKLY_WORKOUT_GOAL
+        return listOf(
+            GoalEntry(GoalType.CALORIES_TODAY.id, GoalType.CALORIES_TODAY, calories.toDouble()),
+            GoalEntry(GoalType.WORKOUTS_PER_WEEK.id, GoalType.WORKOUTS_PER_WEEK, workouts.toDouble()),
+        )
     }
 
     private fun Preferences.readWeightKg(): Double =

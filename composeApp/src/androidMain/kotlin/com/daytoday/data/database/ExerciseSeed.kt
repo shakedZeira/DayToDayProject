@@ -958,6 +958,41 @@ object ExerciseSeed {
             muscleGroup = "Lower Back",
             equipment = "Dumbbell",
             instructions = "Hold a dumbbell at the chest, hinge over the pad, then extend the hips and squeeze the glutes to a straight line."
+        ),
+        exercise(
+            id = "ex_pec_deck_fly",
+            name = "Pec Deck Fly",
+            muscleGroup = "Chest",
+            equipment = "Machine",
+            instructions = "Set the pads at shoulder height, keep the elbows softly bent, and bring the forearms together in front of the chest."
+        ),
+        exercise(
+            id = "ex_seated_chest_press",
+            name = "Seated Chest Press",
+            muscleGroup = "Chest",
+            equipment = "Machine",
+            instructions = "Sit with the back flat against the pad and press the handles forward until the arms are straight, then return under control."
+        ),
+        exercise(
+            id = "ex_standing_cable_chest_press",
+            name = "Standing Cable Chest Press",
+            muscleGroup = "Chest",
+            equipment = "Cable Machine",
+            instructions = "Stand in a staggered stance between the cables and press the handles forward at chest height while bracing the trunk."
+        ),
+        exercise(
+            id = "ex_seated_overhead_press",
+            name = "Seated Overhead Press",
+            muscleGroup = "Shoulders",
+            equipment = "Machine",
+            instructions = "Sit with the back supported and press the handles from shoulder height to full lockout overhead, then lower slowly."
+        ),
+        exercise(
+            id = "ex_twisted_cable_overhead_press",
+            name = "Twisted Cable Overhead Press",
+            muscleGroup = "Shoulders",
+            equipment = "Cable Machine",
+            instructions = "Set a cable at shoulder height, press the handle overhead while rotating the palm up, then lower with control."
         )
     )
 
