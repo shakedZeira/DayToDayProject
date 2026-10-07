@@ -1,5 +1,8 @@
 package com.daytoday.data.remote
 
+import com.daytoday.model.BoxScore
+import com.daytoday.model.PlayerStat
+import com.daytoday.model.TeamStats
 import com.daytoday.repository.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -12,6 +15,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -89,6 +93,19 @@ class NbaEspnClient @Inject constructor() {
             val root = resp.body<JsonObject>()
             val events = (root["events"] as? JsonArray) ?: emptyList()
             Result.success(events.mapNotNull { (it as? JsonObject)?.let { obj -> parseScoreboardEvent(obj) } })
+        } catch (e: Exception) {
+            Result.failure(e.message ?: (e::class.simpleName ?: "Unknown error"), e)
+        }
+    }
+
+    suspend fun getGameSummary(eventId: String): Result<EspnGameSummary> {
+        return try {
+            val resp: HttpResponse = client.get("$baseUrl/summary") {
+                parameter("event", eventId)
+                header(HttpHeaders.Accept, "application/json")
+            }
+            val summary = resp.body<EspnGameSummary>()
+            Result.success(summary)
         } catch (e: Exception) {
             Result.failure(e.message ?: (e::class.simpleName ?: "Unknown error"), e)
         }
@@ -277,3 +294,200 @@ fun parseScoreboardEvent(event: JsonObject): EspScoreboardGame {
         isCompleted = isCompleted,
     )
 }
+
+// ---------- ESPN game summary (box score) ----------
+
+@Serializable
+data class EspnGameSummary(
+    val boxscore: EspnBoxscore? = null,
+)
+
+@Serializable
+data class EspnBoxscore(
+    val teams: List<EspnBoxscoreTeam> = emptyList(),
+    val players: List<EspnBoxscorePlayers> = emptyList(),
+)
+
+@Serializable
+data class EspnBoxscoreTeam(
+    val team: EspnBoxscoreTeamInfo? = null,
+    val statistics: List<EspnStatEntry> = emptyList(),
+)
+
+@Serializable
+data class EspnBoxscorePlayers(
+    val team: EspnBoxscoreTeamInfo? = null,
+    val statistics: List<EspnPlayerStatsBlock> = emptyList(),
+)
+
+@Serializable
+data class EspnBoxscoreTeamInfo(
+    val id: String = "",
+    val displayName: String = "",
+    val abbreviation: String = "",
+)
+
+@Serializable
+data class EspnStatEntry(
+    val name: String = "",
+    val label: String = "",
+    val displayValue: String = "",
+)
+
+@Serializable
+data class EspnPlayerStatsBlock(
+    val labels: List<String> = emptyList(),
+    val athletes: List<EspnAthleteLine> = emptyList(),
+)
+
+@Serializable
+data class EspnAthleteLine(
+    val athlete: EspnAthleteInfo? = null,
+    val didNotPlay: Boolean = false,
+    val stats: List<String> = emptyList(),
+)
+
+@Serializable
+data class EspnAthleteInfo(
+    val id: String = "",
+    val displayName: String = "",
+)
+
+/**
+ * Maps an ESPN game summary into a domain BoxScore.
+ * Returns null when the summary has no team/player data yet (e.g. scheduled games).
+ * Team points come from the game's own scores because the summary team statistics
+ * carry no "points" entry.
+ */
+fun EspnGameSummary.toBoxScore(
+    gameId: String,
+    homeTeamId: String,
+    awayTeamId: String,
+    homeScore: Int,
+    awayScore: Int,
+    homeAbbr: String = "",
+    awayAbbr: String = "",
+): BoxScore? {
+    val teamBlocks = boxscore?.teams.orEmpty()
+    val playerBlocks = boxscore?.players.orEmpty()
+    if (teamBlocks.size < 2) return null
+    val (homeIdx, awayIdx) = resolveHomeAwayIndices(
+        teamBlocks.map { it.team },
+        homeTeamId, awayTeamId, homeAbbr, awayAbbr,
+    )
+    val homeTeamBlock = teamBlocks[homeIdx]
+    val awayTeamBlock = teamBlocks[awayIdx]
+
+    val playerStats = mutableListOf<PlayerStat>()
+    for (block in playerBlocks) {
+        val matchesHome = sameTeam(block.team, homeTeamBlock.team)
+        val matchesAway = sameTeam(block.team, awayTeamBlock.team)
+        if (!matchesHome && !matchesAway) continue
+        val teamId = if (matchesHome) homeTeamId else awayTeamId
+        val statsBlock = block.statistics.firstOrNull() ?: continue
+        if (statsBlock.labels.isEmpty()) continue
+        for (athlete in statsBlock.athletes) {
+            playerStats.add(athlete.toPlayerStat(statsBlock.labels, teamId) ?: continue)
+        }
+    }
+    if (playerStats.isEmpty()) return null
+
+    return BoxScore(
+        gameId = gameId,
+        homeTeamStats = homeTeamBlock.toTeamStats(homeScore, homeTeamId),
+        awayTeamStats = awayTeamBlock.toTeamStats(awayScore, awayTeamId),
+        playerStats = playerStats,
+    )
+}
+
+private fun resolveHomeAwayIndices(
+    teams: List<EspnBoxscoreTeamInfo?>,
+    homeTeamId: String,
+    awayTeamId: String,
+    homeAbbr: String,
+    awayAbbr: String,
+): Pair<Int, Int> {
+    val homeById = teams.indexOfFirst { it?.id == homeTeamId }
+    val awayById = teams.indexOfFirst { it?.id == awayTeamId }
+    if (homeById >= 0 && awayById >= 0 && homeById != awayById) return homeById to awayById
+    if (homeAbbr.isNotEmpty() && awayAbbr.isNotEmpty()) {
+        val homeByAbbr = teams.indexOfFirst { it?.abbreviation.equals(homeAbbr, ignoreCase = true) }
+        val awayByAbbr = teams.indexOfFirst { it?.abbreviation.equals(awayAbbr, ignoreCase = true) }
+        if (homeByAbbr >= 0 && awayByAbbr >= 0 && homeByAbbr != awayByAbbr) return homeByAbbr to awayByAbbr
+    }
+    // Unmatched: first summary team is away, second is home.
+    return 1 to 0
+}
+
+private fun sameTeam(a: EspnBoxscoreTeamInfo?, b: EspnBoxscoreTeamInfo?): Boolean {
+    if (a == null || b == null) return false
+    if (a.id.isNotEmpty() && a.id == b.id) return true
+    return a.abbreviation.isNotEmpty() && a.abbreviation.equals(b.abbreviation, ignoreCase = true)
+}
+
+private fun EspnBoxscoreTeam.toTeamStats(points: Int, teamId: String): TeamStats {
+    val byName = statistics.associateBy { it.name }
+    fun value(name: String): String = byName[name]?.displayValue ?: ""
+    val fg = parseMadeAttempted(value("fieldGoalsMade-fieldGoalsAttempted"))
+    val fg3 = parseMadeAttempted(value("threePointFieldGoalsMade-threePointFieldGoalsAttempted"))
+    val ft = parseMadeAttempted(value("freeThrowsMade-freeThrowsAttempted"))
+    return TeamStats(
+        teamId = teamId,
+        points = points,
+        rebounds = value("totalRebounds").toIntOrZero(),
+        assists = value("assists").toIntOrZero(),
+        steals = value("steals").toIntOrZero(),
+        blocks = value("blocks").toIntOrZero(),
+        turnovers = value("turnovers").toIntOrZero(),
+        fgMade = fg.first,
+        fgAttempted = fg.second,
+        fg3Made = fg3.first,
+        fg3Attempted = fg3.second,
+        ftMade = ft.first,
+        ftAttempted = ft.second,
+        fastBreakPoints = value("fastBreakPoints").toIntOrZero(),
+        pointsInPaint = value("pointsInPaint").toIntOrZero(),
+        largestLead = value("largestLead").toIntOrZero(),
+    )
+}
+
+private fun EspnAthleteLine.toPlayerStat(labels: List<String>, teamId: String): PlayerStat? {
+    if (didNotPlay || stats.isEmpty()) return null
+    fun col(key: String): String? = stats.getOrNull(labels.indexOf(key))
+    val fg = parseMadeAttempted(col("FG"))
+    val fg3 = parseMadeAttempted(col("3PT"))
+    val ft = parseMadeAttempted(col("FT"))
+    return PlayerStat(
+        playerId = athlete?.id ?: "",
+        playerName = athlete?.displayName ?: "",
+        teamId = teamId,
+        minutes = col("MIN") ?: "",
+        points = col("PTS").toIntOrZero(),
+        rebounds = col("REB").toIntOrZero(),
+        assists = col("AST").toIntOrZero(),
+        steals = col("STL").toIntOrZero(),
+        blocks = col("BLK").toIntOrZero(),
+        turnovers = col("TO").toIntOrZero(),
+        fgMade = fg.first,
+        fgAttempted = fg.second,
+        fg3Made = fg3.first,
+        fg3Attempted = fg3.second,
+        ftMade = ft.first,
+        ftAttempted = ft.second,
+        plusMinus = parseSignedInt(col("+/-")),
+    )
+}
+
+/** Splits "39-93" into made/attempted; malformed input yields (0, 0). */
+private fun parseMadeAttempted(displayValue: String?): Pair<Int, Int> {
+    val parts = displayValue?.split("-") ?: return 0 to 0
+    val made = parts.getOrNull(0)?.trim()?.toIntOrNull() ?: 0
+    val attempted = parts.getOrNull(1)?.trim()?.toIntOrNull() ?: 0
+    return made to attempted
+}
+
+/** Parses "+11"/"-5" into a signed int; malformed input yields 0. */
+private fun parseSignedInt(value: String?): Int =
+    value?.trim()?.removePrefix("+")?.toIntOrNull() ?: 0
+
+private fun String?.toIntOrZero(): Int = this?.trim()?.toIntOrNull() ?: 0

@@ -14,6 +14,7 @@ import com.daytoday.data.remote.EspScoreboardGame
 import com.daytoday.data.remote.EspScoreboardTeam
 import com.daytoday.data.remote.NbaBigBallsClient
 import com.daytoday.data.remote.NbaEspnClient
+import com.daytoday.data.remote.toBoxScore
 import com.daytoday.model.Injury
 import com.daytoday.model.NbaGame
 import com.daytoday.model.NbaNews
@@ -180,15 +181,65 @@ class NbaRepositoryImpl @Inject constructor(
     override suspend fun getGameDetail(gameId: String): Result<NbaGame> = withContext(Dispatchers.IO) {
         val cached = gameDao.getGameById(gameId)?.toModel()
         if (cached != null) {
-            Log.d(TAG, "Returning cached game detail for $gameId")
-            launchBackgroundBoxScore(gameId)
-            Result.success(cached)
+            if (cached.boxScore != null) {
+                Log.d(TAG, "Returning cached game detail for $gameId")
+                Result.success(cached)
+            } else {
+                // No stats stored yet: fetch them now so the screen does not need a re-entry
+                // to show the box score. fetchBoxScore never fails just because stats are absent.
+                Log.d(TAG, "Cached game $gameId has no box score, fetching summary")
+                fetchBoxScore(gameId)
+            }
         } else {
             fetchBoxScore(gameId)
         }
     }
 
     private suspend fun fetchBoxScore(gameId: String): Result<NbaGame> = withContext(Dispatchers.IO) {
+        val base = gameDao.getGameById(gameId)?.toModel() ?: findEspnScoreboardGame(gameId)
+        if (base == null) {
+            Log.w(TAG, "No base game found for $gameId, trying legacy BBS matchup")
+            return@withContext fetchBoxScoreViaBbs(gameId)
+        }
+
+        // Scheduled games have no stats yet — skip the summary request entirely.
+        if (!base.isCompleted && base.status.equals("Scheduled", ignoreCase = true)) {
+            return@withContext Result.success(base)
+        }
+
+        // 1) ESPN game summary (current path, no auth required).
+        val summary = espnClient.getGameSummary(gameId)
+        if (summary.isFailure) {
+            Log.w(TAG, "ESPN summary failed for $gameId", summary.exceptionOrNull())
+        } else {
+            val boxScore = summary.getOrThrow().toBoxScore(
+                gameId = gameId,
+                homeTeamId = base.homeTeam.id,
+                awayTeamId = base.awayTeam.id,
+                homeScore = base.homeScore,
+                awayScore = base.awayScore,
+                homeAbbr = base.homeTeam.abbreviation,
+                awayAbbr = base.awayTeam.abbreviation,
+            )
+            if (boxScore != null) {
+                val game = base.copy(boxScore = boxScore)
+                val entity = NbaGameEntity.fromModel(game, "")
+                gameDao.insert(entity)
+                Log.d(TAG, "Cached box score for $gameId")
+                return@withContext Result.success(game)
+            }
+            Log.d(TAG, "No box score available yet for $gameId")
+        }
+
+        // 2) Legacy BBS fallback (kept intact; currently dead — returns 401).
+        val legacy = fetchBoxScoreViaBbs(gameId)
+        if (legacy.isSuccess) return@withContext legacy
+
+        // Stats unavailable — never surface an error just because the box score is missing.
+        Result.success(base)
+    }
+
+    private suspend fun fetchBoxScoreViaBbs(gameId: String): Result<NbaGame> = withContext(Dispatchers.IO) {
         val bbs = bbsClient.getMatchup(gameId)
         if (bbs.isFailure) {
             val e = bbs.exceptionOrNull()
@@ -203,8 +254,18 @@ class NbaRepositoryImpl @Inject constructor(
         val game = matchup.toNbaGame()
         val entity = NbaGameEntity.fromModel(game, "")
         gameDao.insert(entity)
-        Log.d(TAG, "Cached box score for $gameId")
+        Log.d(TAG, "Cached legacy box score for $gameId")
         Result.success(game)
+    }
+
+    private suspend fun findEspnScoreboardGame(gameId: String): NbaGame? {
+        val today = java.time.LocalDate.now()
+        for (date in listOf(today.minusDays(1), today, today.plusDays(1))) {
+            val espn = espnClient.getScoreboard(date.toString())
+            val game = espn.getOrElse(emptyList()).firstOrNull { it.id == gameId }
+            if (game != null) return game.toNbaGame()
+        }
+        return null
     }
 
     private suspend fun launchBackgroundBoxScore(gameId: String) {
