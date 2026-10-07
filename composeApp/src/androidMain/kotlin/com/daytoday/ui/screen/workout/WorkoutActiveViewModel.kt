@@ -2,6 +2,7 @@ package com.daytoday.ui.screen.workout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.daytoday.data.spotify.SpotifyLoginResult
 import com.daytoday.data.spotify.SpotifyPlayResult
 import com.daytoday.data.spotify.SpotifyRepository
 import com.daytoday.model.Exercise
@@ -16,6 +17,7 @@ import com.daytoday.usecase.WorkoutUseCases
 import com.daytoday.util.CalorieCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -74,6 +76,12 @@ class WorkoutActiveViewModel @Inject constructor(
 
     val spotifyLoggedIn: StateFlow<Boolean> = settingsManager.spotifyLoggedIn
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val spotifyPlaylistName: StateFlow<String?> = settingsManager.spotifyPlaylistName
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val _spotifyMessage = MutableStateFlow<String?>(null)
+    val spotifyMessage: StateFlow<String?> = _spotifyMessage.asStateFlow()
 
     init {
         loadExercises()
@@ -404,17 +412,54 @@ class WorkoutActiveViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = spotifyRepository.playPlaylist(context)) {
                 SpotifyPlayResult.PLAYING -> {
-                    // Success - music is playing
+                    val playlistName = spotifyPlaylistName.value
+                    _spotifyMessage.value = if (playlistName.isNullOrBlank()) {
+                        "Playing on Spotify"
+                    } else {
+                        "Playing $playlistName on Spotify"
+                    }
                 }
                 SpotifyPlayResult.NOT_LOGGED_IN -> {
-                    // User needs to log in first
+                    _spotifyMessage.value = "Connect Spotify first"
                 }
                 is SpotifyPlayResult.NO_DEVICE -> {
-                    // Spotify app opened, user needs to tap play
+                    _spotifyMessage.value = "Opening Spotify — tap play in the app"
                 }
                 is SpotifyPlayResult.ERROR -> {
-                    // Error occurred
+                    _spotifyMessage.value = result.message
                 }
+            }
+            scheduleSpotifyMessageClear()
+        }
+    }
+
+    fun connectSpotify() {
+        viewModelScope.launch {
+            when (val result = spotifyRepository.login(context)) {
+                SpotifyLoginResult.LOGGED_IN -> {
+                    _spotifyMessage.value = "Connected to Spotify"
+                }
+                SpotifyLoginResult.CANCELLED -> {
+                    _spotifyMessage.value = "Spotify login cancelled"
+                }
+                is SpotifyLoginResult.ERROR -> {
+                    _spotifyMessage.value = result.message
+                }
+            }
+            scheduleSpotifyMessageClear()
+        }
+    }
+
+    fun clearSpotifyMessage() {
+        _spotifyMessage.value = null
+    }
+
+    private fun scheduleSpotifyMessageClear() {
+        val message = _spotifyMessage.value ?: return
+        viewModelScope.launch {
+            delay(4_000L)
+            if (_spotifyMessage.value == message) {
+                _spotifyMessage.value = null
             }
         }
     }

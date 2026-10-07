@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -148,7 +149,9 @@ private fun RowScope.TeamView(
             style = MaterialTheme.typography.headlineMedium,
             color = parseHexColor(team.primaryColor),
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.width(40.dp)
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier.width(IntrinsicSize.Min)
         )
     }
 }

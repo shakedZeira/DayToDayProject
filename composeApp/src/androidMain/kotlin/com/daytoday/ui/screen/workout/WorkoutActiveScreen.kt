@@ -92,6 +92,8 @@ fun WorkoutActiveScreen(
     val savedPlans by viewModel.savedPlans.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val spotifyLoggedIn by viewModel.spotifyLoggedIn.collectAsStateWithLifecycle()
+    val spotifyMessage by viewModel.spotifyMessage.collectAsStateWithLifecycle()
+    val spotifyPlaylistName by viewModel.spotifyPlaylistName.collectAsStateWithLifecycle()
 
     var showExitDialog by remember { mutableStateOf(false) }
     var detailExercise by remember { mutableStateOf<Exercise?>(null) }
@@ -214,7 +216,10 @@ fun WorkoutActiveScreen(
                         if (!popped) navController.navigate(Screen.Home.route)
                     },
                     spotifyLoggedIn = viewModel.spotifyLoggedIn.value,
-                    onPlaySpotify = viewModel::playSpotifyMusic
+                    spotifyMessage = spotifyMessage,
+                    spotifyPlaylistName = spotifyPlaylistName,
+                    onPlaySpotify = viewModel::playSpotifyMusic,
+                    onConnectSpotify = viewModel::connectSpotify
                 )
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -949,7 +954,10 @@ private fun ActiveWorkoutScreen(
     onFinishWorkout: () -> Unit,
     onDone: () -> Unit,
     spotifyLoggedIn: Boolean,
-    onPlaySpotify: () -> Unit
+    spotifyMessage: String?,
+    spotifyPlaylistName: String?,
+    onPlaySpotify: () -> Unit,
+    onConnectSpotify: () -> Unit
 ) {
     var now by remember(session.id) { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(session.id) {
@@ -1094,6 +1102,29 @@ private fun ActiveWorkoutScreen(
                     text = "Play Spotify Music",
                     buttonType = ButtonType.Tonal,
                     modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                DayTodayButton(
+                    onClick = onConnectSpotify,
+                    text = "Connect Spotify",
+                    buttonType = ButtonType.Outlined,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            spotifyMessage?.let { message ->
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            spotifyPlaylistName?.let { playlistName ->
+                Text(
+                    "Playlist: $playlistName",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 

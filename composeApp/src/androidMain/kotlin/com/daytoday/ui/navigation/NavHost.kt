@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.daytoday.ui.screen.HomeScreen
+import com.daytoday.ui.screen.goals.GoalsScreen
 import com.daytoday.ui.screen.nba.NbaGameDetailScreen
 import com.daytoday.ui.screen.nba.NbaInjuriesScreen
 import com.daytoday.ui.screen.nba.NbaNewsScreen
@@ -56,6 +57,9 @@ fun DayTodayNavHost(
         }
         composable(Screen.Settings.route) {
             SettingsScreen()
+        }
+        composable(Screen.Goals.route) {
+            GoalsScreen()
         }
     }
 }

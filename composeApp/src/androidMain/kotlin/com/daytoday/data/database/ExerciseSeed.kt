@@ -642,6 +642,322 @@ object ExerciseSeed {
             muscleGroup = "Full Body",
             equipment = "Dumbbell",
             instructions = "Hold one dumbbell at the chest and squat between the feet, then stand up and keep the weight on the heels."
+        ),
+
+        exercise(
+            id = "ex_floor_press",
+            name = "Floor Press",
+            muscleGroup = "Chest",
+            equipment = "Barbell",
+            instructions = "Lie on the floor with the bar over the chest, lower until the triceps touch, then press back to lockout."
+        ),
+        exercise(
+            id = "ex_incline_cable_fly",
+            name = "Incline Cable Fly",
+            muscleGroup = "Chest",
+            equipment = "Cable Machine",
+            instructions = "Set the bench to a low incline between the cables and sweep the handles together over the chest, controlling the stretch."
+        ),
+        exercise(
+            id = "ex_wide_grip_push_up",
+            name = "Wide-Grip Push-Up",
+            muscleGroup = "Chest",
+            equipment = "Bodyweight",
+            instructions = "Place the hands well outside the shoulders and lower the chest between them, keeping the elbows flared and the body rigid."
+        ),
+        exercise(
+            id = "ex_dumbbell_pullover",
+            name = "Dumbbell Pullover",
+            muscleGroup = "Chest",
+            equipment = "Dumbbell",
+            instructions = "Lie across a bench or on the floor, lower the dumbbell behind the head with soft elbows, then pull it back over the chest."
+        ),
+        exercise(
+            id = "ex_chest_supported_row",
+            name = "Chest-Supported Row",
+            muscleGroup = "Back",
+            equipment = "Dumbbell",
+            instructions = "Lie face down on an incline bench and row both dumbbells to the ribs, pausing to squeeze the shoulder blades together."
+        ),
+        exercise(
+            id = "ex_straight_arm_pulldown",
+            name = "Straight-Arm Pulldown",
+            muscleGroup = "Back",
+            equipment = "Cable Machine",
+            instructions = "Face the stack with straight arms and sweep the bar down to the thighs, keeping the elbows locked and the lats engaged."
+        ),
+        exercise(
+            id = "ex_meadows_row",
+            name = "Meadows Row",
+            muscleGroup = "Back",
+            equipment = "Dumbbell",
+            instructions = "Hinge with one hand supported and row the dumbbell high with the elbow flaring out, lowering slowly to a full stretch."
+        ),
+        exercise(
+            id = "ex_dead_hang",
+            name = "Dead Hang",
+            muscleGroup = "Back",
+            equipment = "Bodyweight",
+            instructions = "Grip the bar with the arms fully extended and hold the body still, letting the shoulders stay active rather than slacking."
+        ),
+        exercise(
+            id = "ex_single_arm_pulldown",
+            name = "Single-Arm Lat Pulldown",
+            muscleGroup = "Back",
+            equipment = "Cable Machine",
+            instructions = "Kneel or sit and pull one handle to the shoulder blade while keeping the torso square, then control the weight back up."
+        ),
+        exercise(
+            id = "ex_hack_squat",
+            name = "Hack Squat",
+            muscleGroup = "Legs",
+            equipment = "Machine",
+            instructions = "Set the back flat on the pad, lower until the knees reach ninety degrees, then drive through the whole foot."
+        ),
+        exercise(
+            id = "ex_nordic_curl",
+            name = "Nordic Hamstring Curl",
+            muscleGroup = "Legs",
+            equipment = "Bodyweight",
+            instructions = "Kneel with the ankles anchored and lower the torso forward as slowly as possible, then use the hamstrings to pull back up."
+        ),
+        exercise(
+            id = "ex_goblet_squat",
+            name = "Goblet Squat",
+            muscleGroup = "Legs",
+            equipment = "Dumbbell",
+            instructions = "Hold the dumbbell vertically at the chest, squat deep between the feet with the elbows inside the knees, then stand tall."
+        ),
+        exercise(
+            id = "ex_lateral_lunge",
+            name = "Lateral Lunge",
+            muscleGroup = "Legs",
+            equipment = "Bodyweight",
+            instructions = "Step wide to one side, sit the hips back over that heel with the other leg straight, then push back to standing."
+        ),
+        exercise(
+            id = "ex_seated_calf_raise",
+            name = "Seated Calf Raise",
+            muscleGroup = "Legs",
+            equipment = "Machine",
+            instructions = "Sit with the knees bent and the pads on the thighs, raise the heels as high as possible, then lower for a full stretch."
+        ),
+        exercise(
+            id = "ex_cable_kickback",
+            name = "Cable Kickback",
+            muscleGroup = "Glutes",
+            equipment = "Cable Machine",
+            instructions = "With a low cuff on the ankle, drive one leg back and squeeze the glute at full extension, then return under control."
+        ),
+        exercise(
+            id = "ex_clamshell",
+            name = "Clamshell",
+            muscleGroup = "Glutes",
+            equipment = "Band",
+            instructions = "Lie on the side with the knees bent and the band above the knees, then open the top knee while keeping the feet together."
+        ),
+        exercise(
+            id = "ex_donkey_kick",
+            name = "Donkey Kick",
+            muscleGroup = "Glutes",
+            equipment = "Bodyweight",
+            instructions = "From all fours, drive one heel toward the ceiling with the knee bent, squeezing the glute at the top before lowering."
+        ),
+        exercise(
+            id = "ex_single_leg_hip_thrust",
+            name = "Single-Leg Hip Thrust",
+            muscleGroup = "Glutes",
+            equipment = "Dumbbell",
+            instructions = "Rest the upper back on a bench, place one foot flat, and drive the hips to lockout while the free leg stays extended."
+        ),
+        exercise(
+            id = "ex_cable_lateral_raise",
+            name = "Cable Lateral Raise",
+            muscleGroup = "Shoulders",
+            equipment = "Cable Machine",
+            instructions = "Stand beside the low pulley and raise the arm out to the side to shoulder height, leading with the elbow and lowering slowly."
+        ),
+        exercise(
+            id = "ex_machine_shoulder_press",
+            name = "Machine Shoulder Press",
+            muscleGroup = "Shoulders",
+            equipment = "Machine",
+            instructions = "Adjust the seat so the handles sit at shoulder height, press until the arms lock out, then return with control."
+        ),
+        exercise(
+            id = "ex_rear_delt_machine",
+            name = "Rear Delt Machine",
+            muscleGroup = "Shoulders",
+            equipment = "Machine",
+            instructions = "Set the chest against the pad, push the handles outward with soft elbows, and pause as the rear delts contract."
+        ),
+        exercise(
+            id = "ex_scaption_raise",
+            name = "Scaption Raise",
+            muscleGroup = "Shoulders",
+            equipment = "Dumbbell",
+            instructions = "Raise the dumbbells in a V shape slightly in front of the body to shoulder height, then lower them under control."
+        ),
+        exercise(
+            id = "ex_cable_front_raise",
+            name = "Cable Front Raise",
+            muscleGroup = "Shoulders",
+            equipment = "Cable Machine",
+            instructions = "Face the low pulley and raise the handle straight in front to eye level, keeping the torso still and the movement smooth."
+        ),
+        exercise(
+            id = "ex_concentration_curl",
+            name = "Concentration Curl",
+            muscleGroup = "Arms",
+            equipment = "Dumbbell",
+            instructions = "Sit with the elbow braced against the inner thigh and curl the dumbbell to the shoulder, lowering slowly without swinging."
+        ),
+        exercise(
+            id = "ex_cable_hammer_curl",
+            name = "Cable Hammer Curl",
+            muscleGroup = "Arms",
+            equipment = "Cable Machine",
+            instructions = "Hold the rope with a neutral grip and curl toward the shoulders while keeping the elbows pinned to the sides."
+        ),
+        exercise(
+            id = "ex_tricep_kickback",
+            name = "Tricep Kickback",
+            muscleGroup = "Arms",
+            equipment = "Dumbbell",
+            instructions = "Hinge forward with the upper arm parallel to the floor, extend the elbow until the arm is straight, then return slowly."
+        ),
+        exercise(
+            id = "ex_reverse_curl",
+            name = "Reverse Curl",
+            muscleGroup = "Arms",
+            equipment = "Barbell",
+            instructions = "Grip the bar with the palms facing down and curl to shoulder height, keeping the wrists neutral throughout the movement."
+        ),
+        exercise(
+            id = "ex_spider_curl",
+            name = "Spider Curl",
+            muscleGroup = "Arms",
+            equipment = "Barbell",
+            instructions = "Lie chest down on a steep incline bench, curl the bar to the shoulders, and lower it to full arm extension."
+        ),
+        exercise(
+            id = "ex_ab_wheel_rollout",
+            name = "Ab Wheel Rollout",
+            muscleGroup = "Core",
+            equipment = "Bodyweight",
+            instructions = "Kneel with the wheel under the shoulders, roll forward until the hips extend, then pull back using the abdominals."
+        ),
+        exercise(
+            id = "ex_hanging_leg_raise",
+            name = "Hanging Leg Raise",
+            muscleGroup = "Core",
+            equipment = "Bodyweight",
+            instructions = "Hang from the bar with straight legs and raise them to hip height or above, lowering slowly without swinging."
+        ),
+        exercise(
+            id = "ex_cable_woodchop",
+            name = "Cable Woodchop",
+            muscleGroup = "Core",
+            equipment = "Cable Machine",
+            instructions = "Set the pulley high, pull the handle diagonally across the body with straight arms, and rotate through the trunk under control."
+        ),
+        exercise(
+            id = "ex_v_up",
+            name = "V-Up",
+            muscleGroup = "Core",
+            equipment = "Bodyweight",
+            instructions = "Lie flat with the arms overhead, then lift the legs and torso together so the hands meet the shins at the top."
+        ),
+        exercise(
+            id = "ex_bird_dog",
+            name = "Bird Dog",
+            muscleGroup = "Core",
+            equipment = "Bodyweight",
+            instructions = "From all fours, extend the opposite arm and leg until both are level with the torso, pause, then return with control."
+        ),
+        exercise(
+            id = "ex_jump_rope",
+            name = "Jump Rope",
+            muscleGroup = "Cardio",
+            equipment = "Bodyweight",
+            instructions = "Spin the rope from the wrists and spring over it on the balls of the feet with soft, quick bounces."
+        ),
+        exercise(
+            id = "ex_sprint",
+            name = "Sprint",
+            muscleGroup = "Cardio",
+            equipment = "Bodyweight",
+            instructions = "Drive the knees and arms hard for a short maximal effort, staying tall and landing lightly under the hips."
+        ),
+        exercise(
+            id = "ex_plyo_lunge",
+            name = "Plyo Lunge",
+            muscleGroup = "Cardio",
+            equipment = "Bodyweight",
+            instructions = "Jump explosively from a lunge and switch the legs in midair, landing softly with the front knee tracking over the foot."
+        ),
+        exercise(
+            id = "ex_broad_jump",
+            name = "Broad Jump",
+            muscleGroup = "Cardio",
+            equipment = "Bodyweight",
+            instructions = "Load the hips, swing the arms, and jump forward as far as possible, landing softly in a quarter squat."
+        ),
+        exercise(
+            id = "ex_air_bike",
+            name = "Air Bike",
+            muscleGroup = "Cardio",
+            equipment = "Machine",
+            instructions = "Push and pull the handles while pedaling hard, keeping the chest up and breathing steadily through the entire interval."
+        ),
+        exercise(
+            id = "ex_snatch",
+            name = "Dumbbell Snatch",
+            muscleGroup = "Full Body",
+            equipment = "Dumbbell",
+            instructions = "Hinge with a flat back, pull the dumbbell from the floor and punch it overhead in one continuous motion."
+        ),
+        exercise(
+            id = "ex_thruster",
+            name = "Barbell Thruster",
+            muscleGroup = "Full Body",
+            equipment = "Barbell",
+            instructions = "Squat to full depth with the bar at the shoulders, then drive up and press it overhead in one fluid repetition."
+        ),
+        exercise(
+            id = "ex_turkish_get_up",
+            name = "Turkish Get-Up",
+            muscleGroup = "Full Body",
+            equipment = "Kettlebell",
+            instructions = "Lie down holding the bell overhead, then rise to standing through each stage while keeping the arm locked and eyes on the bell."
+        ),
+        exercise(
+            id = "ex_farmer_walk",
+            name = "Farmer Walk",
+            muscleGroup = "Full Body",
+            equipment = "Dumbbell",
+            instructions = "Hold a heavy dumbbell at each side and walk with tall posture and braced core, setting the weights down gently."
+        ),
+        exercise(
+            id = "ex_good_morning",
+            name = "Good Morning",
+            muscleGroup = "Lower Back",
+            equipment = "Barbell",
+            instructions = "Rest the bar across the upper back, hinge forward with soft knees until the torso is near parallel, then stand tall."
+        ),
+        exercise(
+            id = "ex_superman",
+            name = "Superman",
+            muscleGroup = "Lower Back",
+            equipment = "Bodyweight",
+            instructions = "Lie face down and lift the arms, chest, and legs off the floor at the same time, then lower with control."
+        ),
+        exercise(
+            id = "ex_weighted_back_extension",
+            name = "Weighted Back Extension",
+            muscleGroup = "Lower Back",
+            equipment = "Dumbbell",
+            instructions = "Hold a dumbbell at the chest, hinge over the pad, then extend the hips and squeeze the glutes to a straight line."
         )
     )
 

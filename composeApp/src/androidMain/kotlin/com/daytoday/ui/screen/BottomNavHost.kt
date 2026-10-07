@@ -3,6 +3,7 @@ package com.daytoday.ui.screen
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Settings
@@ -33,6 +34,7 @@ fun BottomNavHost(navController: NavController) {
         BottomNavItem(Screen.Home, Icons.Default.Home, "Home"),
         BottomNavItem(Screen.NbaScoreboard, Icons.Default.SportsBasketball, "NBA"),
         BottomNavItem(Screen.WorkoutActive, Icons.Default.FitnessCenter, "Workout"),
+        BottomNavItem(Screen.Goals, Icons.Default.Flag, "Goals"),
         BottomNavItem(Screen.PdfMerge, Icons.Default.PictureAsPdf, "PDF"),
         BottomNavItem(Screen.Settings, Icons.Default.Settings, "Settings")
     )

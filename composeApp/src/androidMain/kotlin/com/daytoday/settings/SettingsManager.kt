@@ -35,6 +35,15 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         private const val SPOTIFY_PLAYLIST_URI_KEY = "spotify_playlist_uri"
         private const val SPOTIFY_PLAYLIST_NAME_KEY = "spotify_playlist_name"
         private const val SAVED_WORKOUT_PLANS_KEY = "saved_workout_plans"
+
+        private const val CALORIES_GOAL_KEY = "goals_calories_goal"
+        private const val WEEKLY_WORKOUT_GOAL_KEY = "goals_weekly_workout_goal"
+        private const val DEFAULT_CALORIES_GOAL = 500
+        private const val DEFAULT_WEEKLY_WORKOUT_GOAL = 2
+        private const val MIN_CALORIES_GOAL = 1
+        private const val MAX_CALORIES_GOAL = 10000
+        private const val MIN_WEEKLY_WORKOUT_GOAL = 1
+        private const val MAX_WEEKLY_WORKOUT_GOAL = 14
     }
 
     private val tokenKey = stringPreferencesKey(TOKEN_KEY)
@@ -52,6 +61,9 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     private val spotifyLoggedInKey = booleanPreferencesKey(SPOTIFY_LOGGED_IN_KEY)
     private val spotifyPlaylistUriKey = stringPreferencesKey(SPOTIFY_PLAYLIST_URI_KEY)
     private val spotifyPlaylistNameKey = stringPreferencesKey(SPOTIFY_PLAYLIST_NAME_KEY)
+
+    private val caloriesGoalKey = intPreferencesKey(CALORIES_GOAL_KEY)
+    private val weeklyWorkoutGoalKey = intPreferencesKey(WEEKLY_WORKOUT_GOAL_KEY)
 
     private val defaultProfile = UserProfile()
 
@@ -110,6 +122,24 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
             }.getOrDefault(emptyList())
         }
         .distinctUntilChanged()
+
+    val caloriesGoal: kotlinx.coroutines.flow.Flow<Int> = dataStore.data
+        .map { it[caloriesGoalKey] ?: DEFAULT_CALORIES_GOAL }
+        .distinctUntilChanged()
+
+    val weeklyWorkoutGoal: kotlinx.coroutines.flow.Flow<Int> = dataStore.data
+        .map { it[weeklyWorkoutGoalKey] ?: DEFAULT_WEEKLY_WORKOUT_GOAL }
+        .distinctUntilChanged()
+
+    suspend fun setCaloriesGoal(goal: Int) {
+        val safe = goal.coerceIn(MIN_CALORIES_GOAL, MAX_CALORIES_GOAL)
+        dataStore.edit { it[caloriesGoalKey] = safe }
+    }
+
+    suspend fun setWeeklyWorkoutGoal(goal: Int) {
+        val safe = goal.coerceIn(MIN_WEEKLY_WORKOUT_GOAL, MAX_WEEKLY_WORKOUT_GOAL)
+        dataStore.edit { it[weeklyWorkoutGoalKey] = safe }
+    }
 
     suspend fun saveWorkoutPlan(plan: WorkoutPlan) {
         dataStore.edit { prefs ->
