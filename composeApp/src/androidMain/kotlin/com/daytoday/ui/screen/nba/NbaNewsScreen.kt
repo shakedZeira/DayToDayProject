@@ -52,8 +52,8 @@ import com.daytoday.ui.theme.DayTodayTopAppBar
 import com.daytoday.ui.theme.EmptyState
 import com.daytoday.ui.theme.ErrorState
 import com.daytoday.ui.theme.LoadingOverlay
-import com.squareup.okhttp3.OkHttpClient
-import com.squareup.okhttp3.Request
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
