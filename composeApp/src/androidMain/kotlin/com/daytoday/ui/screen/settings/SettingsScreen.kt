@@ -66,6 +66,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import com.daytoday.data.spotify.SpotifyPlaylist
 import com.daytoday.model.UserProfile
 import com.daytoday.ui.theme.DayTodayTextField
@@ -87,13 +97,24 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val spotifyPlaylists by viewModel.spotifyPlaylists.collectAsStateWithLifecycle()
     val spotifyPlaylistsLoading by viewModel.spotifyPlaylistsLoading.collectAsStateWithLifecycle()
     val spotifyMessage by viewModel.spotifyMessage.collectAsStateWithLifecycle()
+    val reminderMinutes by viewModel.reminderMinutes.collectAsStateWithLifecycle()
+    val reminderHour = reminderMinutes / 60
+    val reminderMinute = reminderMinutes % 60
+    val context = LocalContext.current
     var showPlaylistsDialog by remember { mutableStateOf(false) }
+    var showReminderTimeDialog by remember { mutableStateOf(false) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        viewModel.setWorkoutReminders(granted)
+    }
 
     Scaffold(topBar = { DayTodayTopAppBar(title = "Settings") }) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
             val profileExpanded = remember { mutableStateOf(false) }
@@ -149,13 +170,63 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     title = "Workout Reminders",
                     icon = Icons.Default.Schedule,
                     checked = workoutReminders,
-                    onCheckedChange = viewModel::setWorkoutReminders
+                    onCheckedChange = { enabled ->
+                        val canNotify = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        if (enabled && !canNotify) {
+                            notificationPermissionLauncher.launch(
+                                Manifest.permission.POST_NOTIFICATIONS
+                            )
+                        } else {
+                            viewModel.setWorkoutReminders(enabled)
+                        }
+                    }
+                )
+                SettingsRow(
+                    title = "Reminder time",
+                    icon = Icons.Default.AccessTime,
+                    subtitle = String.format("%02d:%02d", reminderHour, reminderMinute),
+                    onClick = { showReminderTimeDialog = true }
                 )
                 SettingsSwitch(
                     title = "NBA Game Alerts",
                     icon = Icons.Default.SportsBasketball,
                     checked = nbaAlerts,
                     onCheckedChange = viewModel::setNbaAlerts
+                )
+            }
+
+            if (showReminderTimeDialog) {
+                val timePickerState = rememberTimePickerState(
+                    initialHour = reminderHour,
+                    initialMinute = reminderMinute,
+                    is24Hour = true
+                )
+                AlertDialog(
+                    onDismissRequest = { showReminderTimeDialog = false },
+                    title = { Text("Reminder time") },
+                    text = {
+                        TimePicker(state = timePickerState)
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.setReminderTime(
+                                timePickerState.hour,
+                                timePickerState.minute
+                            )
+                            showReminderTimeDialog = false
+                        }) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showReminderTimeDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
                 )
             }
 

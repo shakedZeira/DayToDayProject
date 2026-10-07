@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.daytoday.data.notification.WorkoutReminderReceiver
 import com.daytoday.data.spotify.SpotifyLoginResult
 import com.daytoday.data.spotify.SpotifyPlayResult
 import com.daytoday.data.spotify.SpotifyPlaylist
@@ -42,6 +43,9 @@ class SettingsViewModel @Inject constructor(
 
     private val _workoutReminders = MutableStateFlow(true)
     val workoutReminders: StateFlow<Boolean> = _workoutReminders.asStateFlow()
+
+    private val _reminderMinutes = MutableStateFlow(18 * 60)
+    val reminderMinutes: StateFlow<Int> = _reminderMinutes.asStateFlow()
 
     private val _nbaAlerts = MutableStateFlow(true)
     val nbaAlerts: StateFlow<Boolean> = _nbaAlerts.asStateFlow()
@@ -88,6 +92,12 @@ class SettingsViewModel @Inject constructor(
                 .collect { profile -> _userProfile.value = profile }
         }
 
+        viewModelScope.launch {
+            settingsManager.workoutReminderMinutes
+                .distinctUntilChanged()
+                .collect { minutes -> _reminderMinutes.value = minutes }
+        }
+
         _workoutReminders.value = getWorkoutRemindersPref()
         _nbaAlerts.value = getNbaAlertsPref()
     }
@@ -131,6 +141,27 @@ class SettingsViewModel @Inject constructor(
     fun setWorkoutReminders(enabled: Boolean) {
         _workoutReminders.value = enabled
         saveWorkoutRemindersPref(enabled)
+        if (enabled) {
+            WorkoutReminderReceiver.schedule(
+                context,
+                _reminderMinutes.value / 60,
+                _reminderMinutes.value % 60
+            )
+        } else {
+            WorkoutReminderReceiver.cancel(context)
+        }
+    }
+
+    fun setReminderTime(hour: Int, minute: Int) {
+        val minutes = hour * 60 + minute
+        _reminderMinutes.value = minutes
+        viewModelScope.launch {
+            settingsManager.setWorkoutReminderMinutes(minutes)
+        }
+        saveReminderTimePref(minutes)
+        if (_workoutReminders.value) {
+            WorkoutReminderReceiver.schedule(context, hour, minute)
+        }
     }
 
     fun setNbaAlerts(enabled: Boolean) {
@@ -247,6 +278,15 @@ class SettingsViewModel @Inject constructor(
     private fun saveWorkoutRemindersPref(enabled: Boolean) {
         application.getSharedPreferences("settings", 0)
             .edit().putBoolean("workout_reminders", enabled).apply()
+    }
+
+    /**
+     * Mirror of the DataStore value in the same prefs file as [saveWorkoutRemindersPref],
+     * so WorkoutBootReceiver can reschedule after a reboot without Hilt or DataStore.
+     */
+    private fun saveReminderTimePref(minutes: Int) {
+        application.getSharedPreferences("settings", 0)
+            .edit().putInt("workout_reminder_minutes", minutes).apply()
     }
 
     private fun getNbaAlertsPref(): Boolean {

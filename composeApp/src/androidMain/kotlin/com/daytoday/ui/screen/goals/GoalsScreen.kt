@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsWalk
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -45,10 +47,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.daytoday.settings.GoalType
+import com.daytoday.settings.MAX_CUSTOM_GOAL_LENGTH
 import com.daytoday.settings.StatsSource
 import com.daytoday.ui.screen.workout.UiState
 import com.daytoday.ui.theme.DayTodayButton
@@ -112,12 +116,13 @@ private fun GoalsContent(
     var pendingRemovalId by remember { mutableStateOf<String?>(null) }
 
     val availableTypes = GoalType.values().filter { type ->
-        state.goals.none { it.entry.type == type }
+        type == GoalType.CUSTOM || state.goals.none { it.entry.type == type }
     }
     val editingGoal = state.goals.firstOrNull { it.entry.id == editingGoalId }
     val removalGoal = state.goals.firstOrNull { it.entry.id == pendingRemovalId }
     val todayGoals = state.goals.filter { it.entry.type.source == StatsSource.TODAY }
     val weekGoals = state.goals.filter { it.entry.type.source == StatsSource.WEEK }
+    val customGoals = state.goals.filter { it.entry.type == GoalType.CUSTOM }
 
     Column(
         modifier = Modifier
@@ -177,6 +182,19 @@ private fun GoalsContent(
                 )
             }
         }
+
+        if (customGoals.isNotEmpty()) {
+            Text("Custom", style = MaterialTheme.typography.titleLarge)
+            customGoals.forEach { item ->
+                CustomGoalCard(
+                    title = item.entry.label,
+                    completed = item.entry.completed,
+                    onToggle = { viewModel.toggleGoalCompleted(item.entry.id) },
+                    onEdit = { editingGoalId = item.entry.id },
+                    onRemove = { pendingRemovalId = item.entry.id }
+                )
+            }
+        }
     }
 
     if (showAddDialog && availableTypes.isNotEmpty()) {
@@ -186,6 +204,10 @@ private fun GoalsContent(
             onConfirm = { type, target ->
                 showAddDialog = false
                 viewModel.addGoal(type, target)
+            },
+            onConfirmCustom = { text ->
+                showAddDialog = false
+                viewModel.addCustomGoal(text)
             }
         )
     }
@@ -205,16 +227,28 @@ private fun GoalsContent(
 
     editingGoal?.let { item ->
         key(item.entry.id) {
-            EditGoalDialog(
-                title = "${item.entry.type.label} goal",
-                initialValue = item.entry.target.toInt(),
-                maxValue = item.entry.type.maxValue,
-                onDismiss = { editingGoalId = null },
-                onConfirm = { value ->
-                    editingGoalId = null
-                    viewModel.updateGoalTarget(item.entry.id, value.toDouble())
-                }
-            )
+            if (item.entry.type == GoalType.CUSTOM) {
+                CustomGoalTextDialog(
+                    title = "Edit goal",
+                    initialValue = item.entry.label,
+                    onDismiss = { editingGoalId = null },
+                    onConfirm = { text ->
+                        editingGoalId = null
+                        viewModel.updateCustomGoalLabel(item.entry.id, text)
+                    }
+                )
+            } else {
+                EditGoalDialog(
+                    title = "${item.entry.type.label} goal",
+                    initialValue = item.entry.target.toInt(),
+                    maxValue = item.entry.type.maxValue,
+                    onDismiss = { editingGoalId = null },
+                    onConfirm = { value ->
+                        editingGoalId = null
+                        viewModel.updateGoalTarget(item.entry.id, value.toDouble())
+                    }
+                )
+            }
         }
     }
 
@@ -222,7 +256,14 @@ private fun GoalsContent(
         AlertDialog(
             onDismissRequest = { pendingRemovalId = null },
             title = { Text("Remove goal?") },
-            text = { Text("Remove \"${item.entry.type.label}\" from your goals?") },
+            text = {
+                val name = if (item.entry.type == GoalType.CUSTOM) {
+                    item.entry.label
+                } else {
+                    item.entry.type.label
+                }
+                Text("Remove \"$name\" from your goals?")
+            },
             confirmButton = {
                 TextButton(onClick = {
                     pendingRemovalId = null
@@ -244,10 +285,12 @@ private fun GoalsContent(
 private fun AddGoalDialog(
     availableTypes: List<GoalType>,
     onDismiss: () -> Unit,
-    onConfirm: (GoalType, Double) -> Unit
+    onConfirm: (GoalType, Double) -> Unit,
+    onConfirmCustom: (String) -> Unit
 ) {
     var selectedType by remember { mutableStateOf(availableTypes.first()) }
     var targetText by remember { mutableStateOf(selectedType.defaultValue.toInt().toString()) }
+    var customText by remember { mutableStateOf("") }
 
     fun select(type: GoalType) {
         selectedType = type
@@ -255,7 +298,12 @@ private fun AddGoalDialog(
     }
 
     val parsed = targetText.trim().toIntOrNull()
-    val valid = parsed != null && parsed > 0 && parsed <= selectedType.maxValue
+    val customValid = customText.trim().isNotEmpty()
+    val valid = if (selectedType == GoalType.CUSTOM) {
+        customValid
+    } else {
+        parsed != null && parsed > 0 && parsed <= selectedType.maxValue
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -281,7 +329,11 @@ private fun AddGoalDialog(
                         Column {
                             Text(type.label, style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                text = "Default ${type.defaultValue.toInt()} ${type.unit}",
+                                text = if (type == GoalType.CUSTOM) {
+                                    "Write your own goal"
+                                } else {
+                                    "Default ${type.defaultValue.toInt()} ${type.unit}"
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -289,27 +341,55 @@ private fun AddGoalDialog(
                     }
                 }
 
-                OutlinedTextField(
-                    value = targetText,
-                    onValueChange = { newText ->
-                        targetText = newText.filter { it.isDigit() }
-                    },
-                    label = { Text("Target (${selectedType.unit})") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    isError = !valid,
-                    supportingText = {
-                        if (!valid) {
-                            Text("Enter a number between 1 and ${selectedType.maxValue}")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (selectedType == GoalType.CUSTOM) {
+                    OutlinedTextField(
+                        value = customText,
+                        onValueChange = { newText ->
+                            customText = newText.take(MAX_CUSTOM_GOAL_LENGTH)
+                        },
+                        label = { Text("Goal") },
+                        singleLine = true,
+                        isError = !customValid,
+                        supportingText = {
+                            if (!customValid) {
+                                Text("Enter your goal")
+                            } else {
+                                Text("${customText.trim().length}/$MAX_CUSTOM_GOAL_LENGTH")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = targetText,
+                        onValueChange = { newText ->
+                            targetText = newText.filter { it.isDigit() }
+                        },
+                        label = { Text("Target (${selectedType.unit})") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        isError = !valid,
+                        supportingText = {
+                            if (!valid) {
+                                Text("Enter a number between 1 and ${selectedType.maxValue}")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { parsed?.let { onConfirm(selectedType, it.toDouble()) } },
+                onClick = {
+                    if (selectedType == GoalType.CUSTOM) {
+                        if (customValid) {
+                            onConfirmCustom(customText.trim())
+                        }
+                    } else {
+                        parsed?.let { onConfirm(selectedType, it.toDouble()) }
+                    }
+                },
                 enabled = valid
             ) {
                 Text("Add")
@@ -476,6 +556,119 @@ private fun EditGoalDialog(
     )
 }
 
+@Composable
+private fun CustomGoalCard(
+    title: String,
+    completed: Boolean,
+    onToggle: (Boolean) -> Unit,
+    onEdit: () -> Unit,
+    onRemove: () -> Unit
+) {
+    DayTodayCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = completed,
+                        onCheckedChange = onToggle
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.titleMedium,
+                            textDecoration = if (completed) TextDecoration.LineThrough else null,
+                            color = if (completed) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
+                        )
+                        Text(
+                            text = if (completed) "Done" else "Not done",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onEdit) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit $title",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Edit")
+                    }
+                    IconButton(onClick = onRemove) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Remove $title",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomGoalTextDialog(
+    title: String,
+    initialValue: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(initialValue) }
+    val valid = text.trim().isNotEmpty()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { newText ->
+                    text = newText.take(MAX_CUSTOM_GOAL_LENGTH)
+                },
+                label = { Text("Goal") },
+                singleLine = true,
+                isError = !valid,
+                supportingText = {
+                    if (!valid) {
+                        Text("Enter your goal")
+                    } else {
+                        Text("${text.trim().length}/$MAX_CUSTOM_GOAL_LENGTH")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { text.trim().let(onConfirm) }, enabled = valid) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 private fun formatValue(value: Double): String =
     String.format(Locale.getDefault(), "%,d", value.roundToLong())
 
@@ -487,6 +680,7 @@ private fun GoalType.icon(): ImageVector = when (this) {
     GoalType.WORKOUT_MINUTES_PER_WEEK -> Icons.Default.FitnessCenter
     GoalType.CALORIES_BURNED_PER_WEEK -> Icons.Default.LocalFireDepartment
     GoalType.LIFTING_VOLUME_PER_WEEK -> Icons.Default.FitnessCenter
+    GoalType.CUSTOM -> Icons.Default.Check
 }
 
 private fun GoalType.emptyHint(): String = when (this) {
@@ -497,4 +691,5 @@ private fun GoalType.emptyHint(): String = when (this) {
     GoalType.WORKOUT_MINUTES_PER_WEEK -> "No workout minutes yet this week"
     GoalType.CALORIES_BURNED_PER_WEEK -> "No calories burned yet this week"
     GoalType.LIFTING_VOLUME_PER_WEEK -> "No lifting volume yet this week"
+    GoalType.CUSTOM -> ""
 }

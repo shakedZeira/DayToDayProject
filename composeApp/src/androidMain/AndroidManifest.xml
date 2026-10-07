@@ -139,6 +139,21 @@
             -->
 
 
+        <!-- Daily workout reminder. Only ever targeted by an explicit PendingIntent. -->
+        <receiver
+            android:name="com.daytoday.data.notification.WorkoutReminderReceiver"
+            android:exported="false" />
+
+        <!-- Re-schedules the reminder after a reboot or an app update. -->
+        <receiver
+            android:name="com.daytoday.data.notification.WorkoutBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <meta-data
             android:name="android.app.lib_name"
             android:value="" />

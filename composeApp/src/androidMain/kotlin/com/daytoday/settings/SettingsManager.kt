@@ -45,6 +45,11 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         private const val MAX_CALORIES_GOAL = 10000
         private const val MIN_WEEKLY_WORKOUT_GOAL = 1
         private const val MAX_WEEKLY_WORKOUT_GOAL = 14
+
+        private const val WORKOUT_REMINDER_MINUTES_KEY = "workout_reminder_minutes"
+        private const val DEFAULT_WORKOUT_REMINDER_MINUTES = 18 * 60
+        private const val MIN_WORKOUT_REMINDER_MINUTES = 0
+        private const val MAX_WORKOUT_REMINDER_MINUTES = 23 * 60 + 59
     }
 
     private val tokenKey = stringPreferencesKey(TOKEN_KEY)
@@ -66,8 +71,15 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     private val caloriesGoalKey = intPreferencesKey(CALORIES_GOAL_KEY)
     private val weeklyWorkoutGoalKey = intPreferencesKey(WEEKLY_WORKOUT_GOAL_KEY)
     private val goalsListKey = stringPreferencesKey(GOALS_LIST_KEY)
+    private val workoutReminderMinutesKey = intPreferencesKey(WORKOUT_REMINDER_MINUTES_KEY)
 
     private val defaultProfile = UserProfile()
+
+    /**
+     * Goals written by newer app versions may contain fields this build does not
+     * know about, so unknown keys are ignored when the list is decoded.
+     */
+    private val goalsJson = Json { ignoreUnknownKeys = true }
 
     val authToken: kotlinx.coroutines.flow.Flow<String> = dataStore.data
         .map { it[tokenKey] ?: "" }
@@ -133,6 +145,11 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         .map { it[weeklyWorkoutGoalKey] ?: DEFAULT_WEEKLY_WORKOUT_GOAL }
         .distinctUntilChanged()
 
+    /** Minutes since local midnight for the daily workout reminder (default 18:00). */
+    val workoutReminderMinutes: kotlinx.coroutines.flow.Flow<Int> = dataStore.data
+        .map { it[workoutReminderMinutesKey] ?: DEFAULT_WORKOUT_REMINDER_MINUTES }
+        .distinctUntilChanged()
+
     /**
      * The user's goal list. When nothing has been stored yet (or the stored JSON is
      * unreadable) the list is derived from the legacy [caloriesGoal]/[weeklyWorkoutGoal]
@@ -152,19 +169,24 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[weeklyWorkoutGoalKey] = safe }
     }
 
+    suspend fun setWorkoutReminderMinutes(minutes: Int) {
+        val safe = minutes.coerceIn(MIN_WORKOUT_REMINDER_MINUTES, MAX_WORKOUT_REMINDER_MINUTES)
+        dataStore.edit { it[workoutReminderMinutesKey] = safe }
+    }
+
     suspend fun setGoals(goals: List<GoalEntry>) {
         val safe = goals.map { entry ->
             val target = if (entry.target.isFinite()) entry.target else entry.type.defaultValue
             entry.copy(target = target.coerceIn(1.0, entry.type.maxValue.toDouble()))
         }
-        dataStore.edit { it[goalsListKey] = Json.encodeToString(safe) }
+        dataStore.edit { it[goalsListKey] = goalsJson.encodeToString(safe) }
     }
 
     /** Persists the default pair (migrated from the legacy keys) if no list is stored yet. */
     suspend fun seedGoalsIfAbsent() {
         dataStore.edit { prefs ->
             if (prefs[goalsListKey] == null) {
-                prefs[goalsListKey] = Json.encodeToString(prefs.readGoals())
+                prefs[goalsListKey] = goalsJson.encodeToString(prefs.readGoals())
             }
         }
     }
@@ -261,7 +283,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     private fun Preferences.readGoals(): List<GoalEntry> {
         val json = this[goalsListKey]
         if (json != null) {
-            runCatching { Json.decodeFromString<List<GoalEntry>>(json) }
+            runCatching { goalsJson.decodeFromString<List<GoalEntry>>(json) }
                 .getOrNull()
                 ?.let { return it }
         }

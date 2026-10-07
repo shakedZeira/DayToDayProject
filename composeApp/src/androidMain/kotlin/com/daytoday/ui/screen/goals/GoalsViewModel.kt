@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.daytoday.settings.GoalEntry
 import com.daytoday.settings.GoalType
+import com.daytoday.settings.MAX_CUSTOM_GOAL_LENGTH
 import com.daytoday.settings.SettingsManager
 import com.daytoday.settings.generateGoalId
 import com.daytoday.ui.screen.workout.UiState
@@ -64,6 +65,10 @@ class GoalsViewModel @Inject constructor(
     }
 
     fun addGoal(type: GoalType, target: Double) {
+        if (type == GoalType.CUSTOM) {
+            // Custom goals carry free text instead of a numeric target.
+            return
+        }
         viewModelScope.launch {
             val entries = settingsManager.goals.first()
             val entry = GoalEntry(
@@ -72,6 +77,44 @@ class GoalsViewModel @Inject constructor(
                 target = target,
             )
             settingsManager.setGoals(entries + entry)
+            refresh()
+        }
+    }
+
+    fun addCustomGoal(text: String) {
+        val label = text.trim()
+        if (label.isEmpty() || label.length > MAX_CUSTOM_GOAL_LENGTH) return
+        viewModelScope.launch {
+            val entries = settingsManager.goals.first()
+            val entry = GoalEntry(
+                id = generateGoalId(GoalType.CUSTOM, entries.map { it.id }),
+                type = GoalType.CUSTOM,
+                target = 1.0,
+                label = label,
+            )
+            settingsManager.setGoals(entries + entry)
+            refresh()
+        }
+    }
+
+    fun updateCustomGoalLabel(id: String, text: String) {
+        val label = text.trim()
+        if (label.isEmpty() || label.length > MAX_CUSTOM_GOAL_LENGTH) return
+        viewModelScope.launch {
+            val entries = settingsManager.goals.first()
+            settingsManager.setGoals(
+                entries.map { if (it.id == id) it.copy(label = label) else it }
+            )
+            refresh()
+        }
+    }
+
+    fun toggleGoalCompleted(id: String) {
+        viewModelScope.launch {
+            val entries = settingsManager.goals.first()
+            settingsManager.setGoals(
+                entries.map { if (it.id == id) it.copy(completed = !it.completed) else it }
+            )
             refresh()
         }
     }
@@ -103,5 +146,6 @@ class GoalsViewModel @Inject constructor(
             GoalType.WORKOUT_MINUTES_PER_WEEK -> week.durationMinutes.toDouble()
             GoalType.CALORIES_BURNED_PER_WEEK -> week.caloriesBurned.toDouble()
             GoalType.LIFTING_VOLUME_PER_WEEK -> week.volume
+            GoalType.CUSTOM -> 0.0
         }
 }

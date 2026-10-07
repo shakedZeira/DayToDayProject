@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 enum class StatsSource {
     TODAY,
     WEEK,
+    NONE,
 }
 
 @Serializable
@@ -71,6 +72,14 @@ enum class GoalType(
         defaultValue = 10_000.0,
         maxValue = 1_000_000,
         source = StatsSource.WEEK,
+    ),
+    CUSTOM(
+        id = "custom",
+        label = "Custom goal",
+        unit = "",
+        defaultValue = 1.0,
+        maxValue = 1,
+        source = StatsSource.NONE,
     );
 }
 
@@ -79,7 +88,12 @@ data class GoalEntry(
     val id: String,
     val type: GoalType,
     val target: Double,
+    val label: String = "",
+    val completed: Boolean = false,
 )
+
+/** Maximum length of the free text typed into a [GoalType.CUSTOM] goal. */
+const val MAX_CUSTOM_GOAL_LENGTH = 80
 
 fun generateGoalId(type: GoalType, existingIds: Collection<String>): String {
     var id = "${type.id}_${System.currentTimeMillis()}"
