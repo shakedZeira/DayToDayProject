@@ -90,9 +90,7 @@ fun NbaGameDetailScreen(
                     val game = state.data
                     Column(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
+                            .fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         // Stale data indicator

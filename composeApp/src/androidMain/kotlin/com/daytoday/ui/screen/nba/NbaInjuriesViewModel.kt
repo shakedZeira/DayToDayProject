@@ -86,7 +86,7 @@ class NbaInjuriesViewModel @Inject constructor(
         }
         val sortedTeams = byTeamId.entries
             .sortedBy { entry -> entry.value.lowercase() }
-            .map { entry -> entry.key to entry.value }
+            .map { entry -> entry.value to entry.key }
         return listOf("All" to ALL_TEAMS_FILTER) + sortedTeams
     }
 }

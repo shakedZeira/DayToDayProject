@@ -40,6 +40,14 @@ data class LocalDayStats(
     val totalVolume: Double = 0.0,
 )
 
+data class LocalWeekStats(
+    val weekStart: Long = 0,
+    val workouts: Int = 0,
+    val durationMinutes: Int = 0,
+    val caloriesBurned: Int = 0,
+    val volume: Double = 0.0,
+)
+
 @Singleton
 class LocalSummaryUseCases @Inject constructor(
     private val healthRepository: HealthRepository,
@@ -77,6 +85,25 @@ class LocalSummaryUseCases @Inject constructor(
             completedSessions = completedToday.size,
             durationMinutes = completedToday.sumOf { it.durationMinutes },
             totalVolume = completedToday.sumOf { session -> volumeOf(session) },
+        )
+    }
+
+    suspend fun weekStats(): LocalWeekStats = withContext(Dispatchers.IO) {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        val startMillis = weekStart.atStartOfDay(zone).toInstant().toEpochMilli()
+        val endMillis = weekStart.plusWeeks(1).atStartOfDay(zone).toInstant().toEpochMilli()
+
+        val sessions = workoutRepository.getSessions(SESSION_SCAN_LIMIT, 0).getOrElse(emptyList())
+        val inWeek = sessions.filter { it.startTime >= startMillis && it.startTime < endMillis }
+
+        LocalWeekStats(
+            weekStart = startMillis,
+            workouts = inWeek.size,
+            durationMinutes = inWeek.sumOf { it.durationMinutes },
+            caloriesBurned = inWeek.sumOf { it.caloriesBurned },
+            volume = inWeek.sumOf { session -> volumeOf(session) },
         )
     }
 

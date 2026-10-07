@@ -12,11 +12,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.minus
 import javax.inject.Inject
 
 @HiltViewModel
@@ -94,46 +89,30 @@ class WorkoutProgressViewModel @Inject constructor(
     private fun loadWeeklyProgress() {
         _weeklyProgress.value = UiState.Loading
         viewModelScope.launch {
-            val weekStart = Clock.System.todayIn(TimeZone.currentSystemDefault()).toString()
+            val localWeek = computeLocalWeeklyProgress()
+            val weekStart = java.time.Instant.ofEpochMilli(localWeek.weekStart)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+                .toString()
             val result = workoutUseCases.getWeeklyProgress(weekStart)
-            _weeklyProgress.value = when (result) {
-                is Result.Success -> UiState.Success(result.data)
-                is Result.Failure -> {
-                    // Network unavailable — build a local weekly summary from Room sessions.
-                    val localWeek = computeLocalWeeklyProgress()
-                    UiState.Success(localWeek)
-                }
+            val remoteWeek = (result as? Result.Success)?.data
+            val week = when {
+                localWeek.workouts > 0 -> localWeek
+                remoteWeek != null -> remoteWeek
+                else -> localWeek
             }
+            _weeklyProgress.value = UiState.Success(week)
         }
     }
 
-    /** Local approximation of weekly progress from Room sessions. */
     private suspend fun computeLocalWeeklyProgress(): WeeklyProgress {
-        val sessionsResult = workoutUseCases.getSessions(50, 0)
-        val sessions = (sessionsResult as? Result.Success)?.data ?: emptyList()
-        val weekStart = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            .minus(7, DateTimeUnit.DAY)
-            .toString()
-        val weekStartLong = try {
-            java.time.LocalDate.parse(weekStart)
-                .atStartOfDay(java.time.ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli()
-        } catch (_: Exception) {
-            0L
-        }
-
-        val inWeek = sessions.filter { it.startTime >= weekStartLong }
-        val volume = inWeek.sumOf { session ->
-            session.sets.filter { it.isCompleted }.sumOf { it.weight * it.reps }
-        }
-
+        val week = localSummaryUseCases.weekStats()
         return WeeklyProgress(
-            weekStart = weekStartLong,
-            workouts = inWeek.size,
-            durationMinutes = inWeek.sumOf { it.durationMinutes },
-            caloriesBurned = inWeek.sumOf { it.caloriesBurned },
-            volume = volume,
+            weekStart = week.weekStart,
+            workouts = week.workouts,
+            durationMinutes = week.durationMinutes,
+            caloriesBurned = week.caloriesBurned,
+            volume = week.volume,
         )
     }
 
