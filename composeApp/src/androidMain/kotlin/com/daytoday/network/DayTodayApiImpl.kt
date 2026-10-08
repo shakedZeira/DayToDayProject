@@ -23,6 +23,8 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 
 class DayTodayApiImpl : DayTodayApi {
@@ -92,4 +94,25 @@ class DayTodayApiImpl : DayTodayApi {
 
     override suspend fun register(request: RegisterRequest): AuthResponse =
         client.post(absoluteUrl("api/auth/register")) { setBody(request) }.body()
+
+    override suspend fun getItalianCourse(authToken: String): ItalianCourseDto =
+        client.get(absoluteUrl("api/italian-path/course")) {
+            header("Authorization", "Bearer $authToken")
+        }.body()
+
+    override suspend fun getItalianProgress(authToken: String): ItalianPathProgressDto =
+        client.get(absoluteUrl("api/italian-path/progress")) {
+            header("Authorization", "Bearer $authToken")
+        }.body()
+
+    override suspend fun submitItalianLesson(
+        authToken: String,
+        lessonId: String,
+        answers: List<ItalianAnswerDto>,
+    ): ItalianSubmitResultDto =
+        client.post(absoluteUrl("api/italian-path/lesson/$lessonId/submit")) {
+            header("Authorization", "Bearer $authToken")
+            contentType(ContentType.Application.Json)
+            setBody(ItalianSubmitRequest(answers))
+        }.body()
 }

@@ -43,4 +43,10 @@ interface DayTodayApi {
     suspend fun login(request: LoginRequest): AuthResponse
 
     suspend fun register(request: RegisterRequest): AuthResponse
+
+    suspend fun getItalianCourse(authToken: String): ItalianCourseDto
+
+    suspend fun getItalianProgress(authToken: String): ItalianPathProgressDto
+
+    suspend fun submitItalianLesson(authToken: String, lessonId: String, answers: List<ItalianAnswerDto>): ItalianSubmitResultDto
 }

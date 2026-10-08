@@ -15,6 +15,7 @@ internal val networkJson: Json = Json {
     ignoreUnknownKeys = true
     isLenient = true
     encodeDefaults = false
+    classDiscriminator = "kind"
 }
 
 inline fun <reified T> typeInfo(): KSerializer<T> = serializer()
