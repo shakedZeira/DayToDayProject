@@ -80,6 +80,14 @@ enum class GoalType(
         maxValue = 1_000_000,
         source = StatsSource.WEEK,
     ),
+    ITALIAN_LESSONS(
+        id = "italian_lessons",
+        label = "Italian lessons",
+        unit = "lessons",
+        defaultValue = 3.0,
+        maxValue = 30,
+        source = StatsSource.NONE,
+    ),
     CUSTOM(
         id = "custom",
         label = "Custom goal",
@@ -117,4 +125,18 @@ fun generateGoalId(type: GoalType, existingIds: Collection<String>): String {
         id = "${type.id}_${System.currentTimeMillis()}_${suffix++}"
     }
     return id
+}
+
+fun italianWeekStart(): String =
+    java.time.LocalDate.now()
+        .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.SUNDAY))
+        .toString()
+
+fun italianWeeklyReset(entry: GoalEntry, anchor: String): GoalEntry {
+    if (entry.type != GoalType.ITALIAN_LESSONS || entry.period != GoalPeriod.WEEK) return entry
+    return when {
+        entry.lastResetWeekStart.isEmpty() -> entry.copy(lastResetWeekStart = anchor)
+        entry.lastResetWeekStart != anchor -> entry.copy(progress = 0.0, lastResetWeekStart = anchor)
+        else -> entry
+    }
 }

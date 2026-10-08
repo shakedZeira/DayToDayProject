@@ -59,7 +59,11 @@ class GoalsViewModel @Inject constructor(
                         goals = entries.map { entry ->
                             GoalProgress(
                                 entry = entry,
-                                current = currentValue(entry.type, day, week),
+                                current = if (entry.type == GoalType.ITALIAN_LESSONS || entry.type == GoalType.CUSTOM) {
+                                    entry.progress
+                                } else {
+                                    currentValue(entry.type, day, week)
+                                },
                             )
                         }
                     )
@@ -188,7 +192,8 @@ class GoalsViewModel @Inject constructor(
      * recorded, never zeroed. DAY-period goals never auto-reset.
      */
     private fun weeklyReset(entry: GoalEntry, anchor: String): GoalEntry {
-        if (entry.type != GoalType.CUSTOM || entry.period != GoalPeriod.WEEK) return entry
+        if (entry.type != GoalType.CUSTOM && entry.type != GoalType.ITALIAN_LESSONS) return entry
+        if (entry.period != GoalPeriod.WEEK) return entry
         return when {
             entry.lastResetWeekStart.isEmpty() -> entry.copy(lastResetWeekStart = anchor)
             entry.lastResetWeekStart != anchor ->
@@ -215,6 +220,7 @@ class GoalsViewModel @Inject constructor(
             GoalType.WORKOUT_MINUTES_PER_WEEK -> week.durationMinutes.toDouble()
             GoalType.CALORIES_BURNED_PER_WEEK -> week.caloriesBurned.toDouble()
             GoalType.LIFTING_VOLUME_PER_WEEK -> week.volume
+            GoalType.ITALIAN_LESSONS -> 0.0
             GoalType.CUSTOM -> 0.0
         }
 }
