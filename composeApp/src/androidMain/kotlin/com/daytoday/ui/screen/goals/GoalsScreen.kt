@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Timer
@@ -120,13 +121,15 @@ private fun GoalsContent(
     var pendingRemovalId by remember { mutableStateOf<String?>(null) }
 
     val availableTypes = GoalType.values().filter { type ->
-        type == GoalType.CUSTOM || state.goals.none { it.entry.type == type }
+        type != GoalType.ITALIAN_LESSONS &&
+            (type == GoalType.CUSTOM || state.goals.none { it.entry.type == type })
     }
     val editingGoal = state.goals.firstOrNull { it.entry.id == editingGoalId }
     val removalGoal = state.goals.firstOrNull { it.entry.id == pendingRemovalId }
     val todayGoals = state.goals.filter { it.entry.type.source == StatsSource.TODAY }
     val weekGoals = state.goals.filter { it.entry.type.source == StatsSource.WEEK }
     val customGoals = state.goals.filter { it.entry.type == GoalType.CUSTOM }
+    val italianGoals = state.goals.filter { it.entry.type == GoalType.ITALIAN_LESSONS }
 
     Column(
         modifier = Modifier
@@ -197,6 +200,22 @@ private fun GoalsContent(
                     period = item.entry.period,
                     onIncrement = { viewModel.incrementCustomProgress(item.entry.id) },
                     onDecrement = { viewModel.decrementCustomProgress(item.entry.id) },
+                    onEdit = { editingGoalId = item.entry.id },
+                    onRemove = { pendingRemovalId = item.entry.id }
+                )
+            }
+        }
+
+        if (italianGoals.isNotEmpty()) {
+            Text("Italian", style = MaterialTheme.typography.titleLarge)
+            italianGoals.forEach { item ->
+                GoalCard(
+                    title = item.entry.type.label,
+                    icon = item.entry.type.icon(),
+                    current = item.current,
+                    goal = item.entry.target,
+                    unit = item.entry.type.unit,
+                    emptyHint = item.entry.type.emptyHint(),
                     onEdit = { editingGoalId = item.entry.id },
                     onRemove = { pendingRemovalId = item.entry.id }
                 )
@@ -817,6 +836,7 @@ private fun GoalType.icon(): ImageVector = when (this) {
     GoalType.WORKOUT_MINUTES_PER_WEEK -> Icons.Default.FitnessCenter
     GoalType.CALORIES_BURNED_PER_WEEK -> Icons.Default.LocalFireDepartment
     GoalType.LIFTING_VOLUME_PER_WEEK -> Icons.Default.FitnessCenter
+    GoalType.ITALIAN_LESSONS -> Icons.Default.MenuBook
     GoalType.CUSTOM -> Icons.Default.Check
 }
 
@@ -828,5 +848,6 @@ private fun GoalType.emptyHint(): String = when (this) {
     GoalType.WORKOUT_MINUTES_PER_WEEK -> "No workout minutes yet this week"
     GoalType.CALORIES_BURNED_PER_WEEK -> "No calories burned yet this week"
     GoalType.LIFTING_VOLUME_PER_WEEK -> "No lifting volume yet this week"
+    GoalType.ITALIAN_LESSONS -> "No lessons yet this week"
     GoalType.CUSTOM -> ""
 }
