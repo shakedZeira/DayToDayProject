@@ -8,6 +8,9 @@
         <package android:name="com.google.android.apps.healthdata" />
         <package android:name="com.samsung.android.service.health" />
         <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+        <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
         </intent>
     </queries>

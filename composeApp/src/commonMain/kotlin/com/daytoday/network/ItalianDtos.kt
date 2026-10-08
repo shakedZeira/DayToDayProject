@@ -102,7 +102,7 @@ object ItalianGrading {
         "ì" to "i", "í" to "i", "î" to "i", "ï" to "i",
         "ò" to "o", "ó" to "o", "ô" to "o", "õ" to "o", "ö" to "o",
         "ù" to "u", "ú" to "u", "û" to "u", "ü" to "u",
-        "ç" to "c", "ñ" to "n", "ß" to "ss",
+        "ç" to "c", "ñ" to "n",
     )
 
     fun normalize(s: String): String {
