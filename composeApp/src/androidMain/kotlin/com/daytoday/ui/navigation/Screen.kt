@@ -46,4 +46,8 @@ sealed interface Screen {
     data object Goals : Screen {
         override val route: String = "Goals"
     }
+
+    data object Italian : Screen {
+        override val route: String = "Italian"
+    }
 }

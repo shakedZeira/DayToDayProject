@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsBasketball
@@ -35,6 +36,7 @@ fun BottomNavHost(navController: NavController) {
         BottomNavItem(Screen.NbaScoreboard, Icons.Default.SportsBasketball, "NBA"),
         BottomNavItem(Screen.WorkoutActive, Icons.Default.FitnessCenter, "Workout"),
         BottomNavItem(Screen.Goals, Icons.Default.Flag, "Goals"),
+        BottomNavItem(Screen.Italian, Icons.Default.MenuBook, "Italian"),
         BottomNavItem(Screen.PdfMerge, Icons.Default.PictureAsPdf, "PDF"),
         BottomNavItem(Screen.Settings, Icons.Default.Settings, "Settings")
     )
