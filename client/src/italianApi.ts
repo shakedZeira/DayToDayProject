@@ -1,5 +1,13 @@
 import { authedFetch } from "./auth";
-import type { ItalianLesson, ItalianCorrection, ItalianProgress } from "shared";
+import type {
+  ItalianLesson,
+  ItalianCorrection,
+  ItalianProgress,
+  ItalianCourse,
+  ItalianPathProgress,
+  ItalianSubmitResult,
+  ItalianAnswer
+} from "shared";
 
 interface TranslateResult {
   italian: string;
@@ -47,4 +55,27 @@ export async function translateText(token: string, text: string): Promise<string
   });
   const result = await json<TranslateResult>(res);
   return result.italian;
+}
+
+export async function getCourse(token: string): Promise<ItalianCourse> {
+  const res = await authedFetch(token, "/api/italian-path/course");
+  return json<ItalianCourse>(res);
+}
+
+export async function getPathProgress(token: string): Promise<ItalianPathProgress> {
+  const res = await authedFetch(token, "/api/italian-path/progress");
+  return json<ItalianPathProgress>(res);
+}
+
+export async function submitPathLesson(
+  token: string,
+  lessonId: string,
+  answers: ItalianAnswer[]
+): Promise<ItalianSubmitResult> {
+  const res = await authedFetch(token, `/api/italian-path/lesson/${lessonId}/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ answers })
+  });
+  return json<ItalianSubmitResult>(res);
 }
