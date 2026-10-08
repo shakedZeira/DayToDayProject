@@ -240,3 +240,70 @@ export interface ProgressResponse {
 export interface SettingsResponse {
   settings: Record<string, string>;
 }
+
+export interface ItalianChoiceExercise {
+  id: string;
+  kind: "choice";
+  direction: "en_to_it" | "it_to_en" | "listen";
+  prompt: string;
+  choices: string[];
+  answerIndex: number;
+  speak?: string;
+}
+
+export interface ItalianTypeExercise {
+  id: string;
+  kind: "type";
+  prompt: string;
+  accepted: string[];
+}
+
+export interface ItalianMatchExercise {
+  id: string;
+  kind: "match";
+  pairs: { left: string; right: string }[];
+}
+
+export type ItalianExercise = ItalianChoiceExercise | ItalianTypeExercise | ItalianMatchExercise;
+
+export interface ItalianLessonDef {
+  id: string;
+  title: string;
+  exercises: ItalianExercise[];
+}
+
+export interface ItalianUnitDef {
+  id: string;
+  title: string;
+  lessons: ItalianLessonDef[];
+}
+
+export interface ItalianCourse {
+  language: "it";
+  units: ItalianUnitDef[];
+}
+
+export type ItalianAnswer =
+  | { exerciseId: string; kind: "choice"; choiceIndex: number }
+  | { exerciseId: string; kind: "type"; text: string }
+  | { exerciseId: string; kind: "match"; pairs: { left: string; right: string }[] };
+
+export interface ItalianReviewDue {
+  lessonId: string;
+  exerciseId: string;
+}
+
+export interface ItalianPathProgress {
+  xp: number;
+  streak: number;
+  completedLessonIds: string[];
+  totalLessons: number;
+  reviewDue: ItalianReviewDue[];
+}
+
+export interface ItalianSubmitResult {
+  results: { exerciseId: string; isCorrect: boolean }[];
+  xpGained: number;
+  lessonCompleted: boolean;
+  progress: ItalianPathProgress;
+}
