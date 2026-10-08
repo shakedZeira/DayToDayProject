@@ -3,7 +3,9 @@ package com.daytoday.ui.screen.goals
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.daytoday.settings.GoalEntry
+import com.daytoday.settings.GoalPeriod
 import com.daytoday.settings.GoalType
+import com.daytoday.settings.CUSTOM_TARGET_MAX
 import com.daytoday.settings.MAX_CUSTOM_GOAL_LENGTH
 import com.daytoday.settings.SettingsManager
 import com.daytoday.settings.generateGoalId
@@ -12,6 +14,10 @@ import com.daytoday.usecase.LocalDayStats
 import com.daytoday.usecase.LocalSummaryUseCases
 import com.daytoday.usecase.LocalWeekStats
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters
+import kotlin.math.floor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -45,7 +51,7 @@ class GoalsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = try {
                 settingsManager.seedGoalsIfAbsent()
-                val entries = settingsManager.goals.first()
+                val entries = applyWeeklyResets(settingsManager.goals.first())
                 val day = localSummaryUseCases.todayStats()
                 val week = localSummaryUseCases.weekStats()
                 UiState.Success(
@@ -81,39 +87,72 @@ class GoalsViewModel @Inject constructor(
         }
     }
 
-    fun addCustomGoal(text: String) {
-        val label = text.trim()
-        if (label.isEmpty() || label.length > MAX_CUSTOM_GOAL_LENGTH) return
+    fun addCustomGoal(label: String, target: Double, period: GoalPeriod) {
+        val trimmed = label.trim()
+        if (trimmed.isEmpty() || trimmed.length > MAX_CUSTOM_GOAL_LENGTH) return
         viewModelScope.launch {
             val entries = settingsManager.goals.first()
+            val safeTarget = target.coerceIn(1.0, CUSTOM_TARGET_MAX.toDouble())
             val entry = GoalEntry(
                 id = generateGoalId(GoalType.CUSTOM, entries.map { it.id }),
                 type = GoalType.CUSTOM,
-                target = 1.0,
-                label = label,
+                target = safeTarget,
+                label = trimmed,
+                period = period,
+                progress = 0.0,
+                lastResetWeekStart = if (period == GoalPeriod.WEEK) weekStart() else "",
             )
             settingsManager.setGoals(entries + entry)
             refresh()
         }
     }
 
-    fun updateCustomGoalLabel(id: String, text: String) {
-        val label = text.trim()
-        if (label.isEmpty() || label.length > MAX_CUSTOM_GOAL_LENGTH) return
+    fun updateCustomGoal(id: String, label: String, target: Double, period: GoalPeriod) {
+        val trimmed = label.trim()
+        if (trimmed.isEmpty() || trimmed.length > MAX_CUSTOM_GOAL_LENGTH) return
         viewModelScope.launch {
+            val anchor = weekStart()
             val entries = settingsManager.goals.first()
             settingsManager.setGoals(
-                entries.map { if (it.id == id) it.copy(label = label) else it }
+                entries.map { entry ->
+                    if (entry.id != id) {
+                        entry
+                    } else {
+                        weeklyReset(
+                            entry.copy(
+                                label = trimmed,
+                                target = target.coerceIn(1.0, CUSTOM_TARGET_MAX.toDouble()),
+                                period = period,
+                            ),
+                            anchor,
+                        )
+                    }
+                }
             )
             refresh()
         }
     }
 
-    fun toggleGoalCompleted(id: String) {
+    fun incrementCustomProgress(id: String) = changeCustomProgress(id, +1.0)
+
+    fun decrementCustomProgress(id: String) = changeCustomProgress(id, -1.0)
+
+    private fun changeCustomProgress(id: String, delta: Double) {
         viewModelScope.launch {
+            val anchor = weekStart()
             val entries = settingsManager.goals.first()
             settingsManager.setGoals(
-                entries.map { if (it.id == id) it.copy(completed = !it.completed) else it }
+                entries.map { entry ->
+                    if (entry.id == id && entry.type == GoalType.CUSTOM) {
+                        val reset = weeklyReset(entry, anchor)
+                        val upper = (reset.target * 2).coerceAtLeast(1.0)
+                        reset.copy(
+                            progress = floor((reset.progress + delta).coerceIn(0.0, upper))
+                        )
+                    } else {
+                        entry
+                    }
+                }
             )
             refresh()
         }
@@ -135,6 +174,36 @@ class GoalsViewModel @Inject constructor(
             settingsManager.setGoals(entries.filterNot { it.id == id })
             refresh()
         }
+    }
+
+    /** Sunday 00:00 anchor of the current week (week runs Sunday -> Saturday). */
+    private fun weekStart(): String =
+        LocalDate.now()
+            .with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+            .toString()
+
+    /**
+     * WEEK-period custom goals zero their counter when the stored anchor is a
+     * different Sunday than today's; an empty anchor (legacy entry) is only
+     * recorded, never zeroed. DAY-period goals never auto-reset.
+     */
+    private fun weeklyReset(entry: GoalEntry, anchor: String): GoalEntry {
+        if (entry.type != GoalType.CUSTOM || entry.period != GoalPeriod.WEEK) return entry
+        return when {
+            entry.lastResetWeekStart.isEmpty() -> entry.copy(lastResetWeekStart = anchor)
+            entry.lastResetWeekStart != anchor ->
+                entry.copy(progress = 0.0, lastResetWeekStart = anchor)
+            else -> entry
+        }
+    }
+
+    private suspend fun applyWeeklyResets(entries: List<GoalEntry>): List<GoalEntry> {
+        val anchor = weekStart()
+        val updated = entries.map { weeklyReset(it, anchor) }
+        if (updated != entries) {
+            settingsManager.setGoals(updated)
+        }
+        return updated
     }
 
     private fun currentValue(type: GoalType, day: LocalDayStats, week: LocalWeekStats): Double =

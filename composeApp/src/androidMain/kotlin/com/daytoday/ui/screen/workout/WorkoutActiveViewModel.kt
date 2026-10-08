@@ -2,7 +2,6 @@ package com.daytoday.ui.screen.workout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.daytoday.data.spotify.SpotifyLoginResult
 import com.daytoday.data.spotify.SpotifyPlayResult
 import com.daytoday.data.spotify.SpotifyRepository
 import com.daytoday.model.Exercise
@@ -426,23 +425,6 @@ class WorkoutActiveViewModel @Inject constructor(
                     _spotifyMessage.value = "Opening Spotify — tap play in the app"
                 }
                 is SpotifyPlayResult.ERROR -> {
-                    _spotifyMessage.value = result.message
-                }
-            }
-            scheduleSpotifyMessageClear()
-        }
-    }
-
-    fun connectSpotify() {
-        viewModelScope.launch {
-            when (val result = spotifyRepository.login(context)) {
-                SpotifyLoginResult.LOGGED_IN -> {
-                    _spotifyMessage.value = "Connected to Spotify"
-                }
-                SpotifyLoginResult.CANCELLED -> {
-                    _spotifyMessage.value = "Spotify login cancelled"
-                }
-                is SpotifyLoginResult.ERROR -> {
                     _spotifyMessage.value = result.message
                 }
             }

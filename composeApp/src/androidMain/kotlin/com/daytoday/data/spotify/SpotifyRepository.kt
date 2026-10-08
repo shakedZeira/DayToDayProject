@@ -9,9 +9,10 @@ import com.daytoday.BuildConfig
 import com.daytoday.settings.SettingsManager
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.launch
 
 sealed interface SpotifyLoginResult {
     data object LOGGED_IN : SpotifyLoginResult
@@ -35,7 +36,13 @@ sealed interface SpotifyPlayResult {
 interface SpotifyRepository {
     suspend fun isLoggedIn(): Boolean
 
-    suspend fun login(context: Context): SpotifyLoginResult
+    suspend fun beginLogin(context: Context): SpotifyLoginResult
+
+    suspend fun completeLogin(callbackUri: Uri): SpotifyLoginResult
+
+    fun handleLoginCallback(callbackUri: Uri)
+
+    suspend fun persistLoginResultMessage(result: SpotifyLoginResult)
 
     suspend fun logout()
 
@@ -53,6 +60,7 @@ class SpotifyRepositoryImpl @Inject constructor(
     private val authManager: SpotifyAuthManager,
     private val api: SpotifyApi,
     private val settingsManager: SettingsManager,
+    private val appScope: CoroutineScope,
 ) : SpotifyRepository {
 
     override suspend fun isLoggedIn(): Boolean {
@@ -61,13 +69,18 @@ class SpotifyRepositoryImpl @Inject constructor(
         return loggedIn && !accessToken.isNullOrBlank()
     }
 
-    override suspend fun login(context: Context): SpotifyLoginResult {
+    /**
+     * Persists a fresh PKCE verifier/state, builds the authorization URL and opens the
+     * Custom Tab. [SpotifyLoginResult.LOGGED_IN] here only means the browser launched;
+     * the token exchange happens later in SpotifyAuthActivity via [completeLogin].
+     */
+    override suspend fun beginLogin(context: Context): SpotifyLoginResult {
         if (BuildConfig.SPOTIFY_CLIENT_ID.isBlank()) {
             return SpotifyLoginResult.ERROR("Missing Spotify client id")
         }
-        val deferred = SpotifyAuthCallback.next()
         val verifier = authManager.generateCodeVerifier()
         val state = authManager.generateState()
+        settingsManager.setPendingLogin(verifier = verifier, state = state)
         val url = authManager.loginUrl(verifier, state)
 
         val launchResult = runCatching {
@@ -76,24 +89,30 @@ class SpotifyRepositoryImpl @Inject constructor(
             context.startActivity(intent.apply { data = Uri.parse(url) })
         }
         if (launchResult.isFailure) {
-            deferred.complete(null)
             return SpotifyLoginResult.ERROR(
                 launchResult.exceptionOrNull()?.message ?: "Could not open browser",
             )
         }
+        return SpotifyLoginResult.LOGGED_IN
+    }
 
-        val callbackUri = withTimeoutOrNull(LOGIN_TIMEOUT_MS) { deferred.await() }
-            ?: return SpotifyLoginResult.CANCELLED
-        val error = callbackUri.getQueryParameter("error")
-        val code = callbackUri.getQueryParameter("code")
-        if (error != null || code.isNullOrBlank()) return SpotifyLoginResult.CANCELLED
-        val returnedState = callbackUri.getQueryParameter("state")
-        if (returnedState != state) return SpotifyLoginResult.ERROR("State mismatch")
+    override suspend fun completeLogin(callbackUri: Uri): SpotifyLoginResult {
+        if (!settingsManager.hasPendingLogin()) return SpotifyLoginResult.CANCELLED
+        val error = authManager.completePendingLogin(callbackUri)
+        return if (error == null) SpotifyLoginResult.LOGGED_IN else SpotifyLoginResult.ERROR(error)
+    }
 
-        return if (authManager.exchangeCode(context, code, state, verifier)) {
-            SpotifyLoginResult.LOGGED_IN
-        } else {
-            SpotifyLoginResult.ERROR("Token exchange failed")
+    override fun handleLoginCallback(callbackUri: Uri) {
+        appScope.launch {
+            persistLoginResultMessage(completeLogin(callbackUri))
+        }
+    }
+
+    override suspend fun persistLoginResultMessage(result: SpotifyLoginResult) {
+        when (result) {
+            SpotifyLoginResult.LOGGED_IN -> settingsManager.clearSpotifyLoginMessage()
+            SpotifyLoginResult.CANCELLED -> settingsManager.setSpotifyLoginMessage("Spotify login cancelled")
+            is SpotifyLoginResult.ERROR -> settingsManager.setSpotifyLoginMessage(result.message)
         }
     }
 
@@ -184,6 +203,5 @@ class SpotifyRepositoryImpl @Inject constructor(
         private const val DEVICE_WAIT_ATTEMPTS = 10
         private const val DEVICE_WAIT_DELAY_MS = 1_500L
         private const val PLAYLISTS_LIMIT = 50
-        private const val LOGIN_TIMEOUT_MS = 60_000L
     }
 }

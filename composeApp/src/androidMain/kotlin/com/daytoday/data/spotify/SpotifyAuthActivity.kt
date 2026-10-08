@@ -1,29 +1,18 @@
 package com.daytoday.data.spotify
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import java.util.concurrent.atomic.AtomicReference
-import kotlinx.coroutines.CompletableDeferred
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
-object SpotifyAuthCallback {
-    private val current = AtomicReference(CompletableDeferred<Uri?>())
-
-    fun next(): CompletableDeferred<Uri?> {
-        val deferred = CompletableDeferred<Uri?>()
-        current.set(deferred)
-        return deferred
-    }
-
-    fun get(): CompletableDeferred<Uri?> = current.get()
-
-    fun complete(uri: Uri?) {
-        current.get().complete(uri)
-    }
-}
-
+@AndroidEntryPoint
 class SpotifyAuthActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var spotifyRepository: SpotifyRepository
+
+    private var handled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,9 +25,12 @@ class SpotifyAuthActivity : ComponentActivity() {
     }
 
     private fun handleCallback(intent: Intent) {
+        if (handled) return
+        handled = true
         val uri = intent.data
-        val rejected = uri == null || uri.getQueryParameter("error") != null
-        SpotifyAuthCallback.complete(if (rejected) null else uri)
+        if (uri != null) {
+            spotifyRepository.handleLoginCallback(uri)
+        }
         finish()
     }
 }

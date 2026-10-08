@@ -8,6 +8,13 @@ enum class StatsSource {
     NONE,
 }
 
+/** Time window a custom goal's target counts over. */
+@Serializable
+enum class GoalPeriod {
+    DAY,
+    WEEK,
+}
+
 @Serializable
 enum class GoalType(
     val id: String,
@@ -78,7 +85,7 @@ enum class GoalType(
         label = "Custom goal",
         unit = "",
         defaultValue = 1.0,
-        maxValue = 1,
+        maxValue = 99,
         source = StatsSource.NONE,
     );
 }
@@ -90,10 +97,18 @@ data class GoalEntry(
     val target: Double,
     val label: String = "",
     val completed: Boolean = false,
+    val period: GoalPeriod = GoalPeriod.WEEK,
+    val progress: Double = 0.0,
+    /** ISO-8601 local date (LocalDate.toString()) of the Sunday a WEEK counter was last zeroed on; "" = never reset. */
+    val lastResetWeekStart: String = "",
 )
 
 /** Maximum length of the free text typed into a [GoalType.CUSTOM] goal. */
 const val MAX_CUSTOM_GOAL_LENGTH = 80
+
+/** Valid target range (inclusive) for a [GoalType.CUSTOM] goal's quantity. */
+const val CUSTOM_TARGET_MIN = 1
+const val CUSTOM_TARGET_MAX = 99
 
 fun generateGoalId(type: GoalType, existingIds: Collection<String>): String {
     var id = "${type.id}_${System.currentTimeMillis()}"

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -98,6 +99,15 @@ class SettingsViewModel @Inject constructor(
                 .collect { minutes -> _reminderMinutes.value = minutes }
         }
 
+        viewModelScope.launch {
+            settingsManager.spotifyLoginMessage
+                .filterNotNull()
+                .collect { message ->
+                    _spotifyMessage.value = message
+                    settingsManager.clearSpotifyLoginMessage()
+                }
+        }
+
         _workoutReminders.value = getWorkoutRemindersPref()
         _nbaAlerts.value = getNbaAlertsPref()
     }
@@ -171,16 +181,9 @@ class SettingsViewModel @Inject constructor(
 
     fun loginSpotify() {
         viewModelScope.launch {
-            when (val result = spotifyRepository.login(context)) {
-                SpotifyLoginResult.LOGGED_IN -> {
-                    _spotifyMessage.value = "Connected to Spotify"
-                }
-                SpotifyLoginResult.CANCELLED -> {
-                    _spotifyMessage.value = "Spotify login cancelled"
-                }
-                is SpotifyLoginResult.ERROR -> {
-                    _spotifyMessage.value = result.message
-                }
+            val result = spotifyRepository.beginLogin(context)
+            if (result is SpotifyLoginResult.ERROR) {
+                _spotifyMessage.value = result.message
             }
         }
     }
@@ -188,6 +191,8 @@ class SettingsViewModel @Inject constructor(
     fun logoutSpotify() {
         viewModelScope.launch {
             spotifyRepository.logout()
+            settingsManager.clearPendingLogin()
+            settingsManager.clearSpotifyLoginMessage()
             _spotifyPlaylists.value = emptyList()
             _spotifyMessage.value = "Disconnected from Spotify"
         }

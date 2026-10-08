@@ -103,9 +103,14 @@ object SpotifyModule {
 
     @Provides
     @Singleton
+    fun provideSpotifyCoroutineScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Provides
+    @Singleton
     fun provideSpotifyRepository(
+        spotifyCoroutineScope: CoroutineScope,
         authManager: SpotifyAuthManager,
         api: SpotifyApi,
         settingsManager: SettingsManager,
-    ): SpotifyRepository = SpotifyRepositoryImpl(authManager, api, settingsManager)
+    ): SpotifyRepository = SpotifyRepositoryImpl(authManager, api, settingsManager, spotifyCoroutineScope)
 }

@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.daytoday.model.UserProfile
 import com.daytoday.model.WorkoutPlan
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -34,6 +35,9 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         private const val SPOTIFY_LOGGED_IN_KEY = "spotify_logged_in"
         private const val SPOTIFY_PLAYLIST_URI_KEY = "spotify_playlist_uri"
         private const val SPOTIFY_PLAYLIST_NAME_KEY = "spotify_playlist_name"
+        private const val SPOTIFY_PENDING_VERIFIER_KEY = "spotify_pending_verifier"
+        private const val SPOTIFY_PENDING_STATE_KEY = "spotify_pending_state"
+        private const val SPOTIFY_LOGIN_MESSAGE_KEY = "spotify_login_message"
         private const val SAVED_WORKOUT_PLANS_KEY = "saved_workout_plans"
 
         private const val CALORIES_GOAL_KEY = "goals_calories_goal"
@@ -67,6 +71,9 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     private val spotifyLoggedInKey = booleanPreferencesKey(SPOTIFY_LOGGED_IN_KEY)
     private val spotifyPlaylistUriKey = stringPreferencesKey(SPOTIFY_PLAYLIST_URI_KEY)
     private val spotifyPlaylistNameKey = stringPreferencesKey(SPOTIFY_PLAYLIST_NAME_KEY)
+    private val spotifyPendingVerifierKey = stringPreferencesKey(SPOTIFY_PENDING_VERIFIER_KEY)
+    private val spotifyPendingStateKey = stringPreferencesKey(SPOTIFY_PENDING_STATE_KEY)
+    private val spotifyLoginMessageKey = stringPreferencesKey(SPOTIFY_LOGIN_MESSAGE_KEY)
 
     private val caloriesGoalKey = intPreferencesKey(CALORIES_GOAL_KEY)
     private val weeklyWorkoutGoalKey = intPreferencesKey(WEEKLY_WORKOUT_GOAL_KEY)
@@ -126,6 +133,19 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     val spotifyPlaylistName: kotlinx.coroutines.flow.Flow<String?> = dataStore.data
         .map { it[spotifyPlaylistNameKey] }
+        .distinctUntilChanged()
+
+    val spotifyPendingVerifier: kotlinx.coroutines.flow.Flow<String> = dataStore.data
+        .map { it[spotifyPendingVerifierKey] ?: "" }
+        .distinctUntilChanged()
+
+    val spotifyPendingState: kotlinx.coroutines.flow.Flow<String> = dataStore.data
+        .map { it[spotifyPendingStateKey] ?: "" }
+        .distinctUntilChanged()
+
+    /** Last login outcome written by the OAuth callback; blank means "no message". */
+    val spotifyLoginMessage: kotlinx.coroutines.flow.Flow<String?> = dataStore.data
+        .map { prefs -> prefs[spotifyLoginMessageKey]?.takeIf { it.isNotBlank() } }
         .distinctUntilChanged()
 
     val savedWorkoutPlans: kotlinx.coroutines.flow.Flow<List<WorkoutPlan>> = dataStore.data
@@ -278,6 +298,30 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
             it[spotifyPlaylistUriKey] = uri
             it[spotifyPlaylistNameKey] = name
         }
+    }
+
+    suspend fun setPendingLogin(verifier: String, state: String) {
+        dataStore.edit {
+            it[spotifyPendingVerifierKey] = verifier
+            it[spotifyPendingStateKey] = state
+        }
+    }
+
+    suspend fun clearPendingLogin() {
+        dataStore.edit {
+            it[spotifyPendingVerifierKey] = ""
+            it[spotifyPendingStateKey] = ""
+        }
+    }
+
+    suspend fun hasPendingLogin(): Boolean = spotifyPendingVerifier.first().isNotBlank()
+
+    suspend fun setSpotifyLoginMessage(message: String?) {
+        dataStore.edit { it[spotifyLoginMessageKey] = message ?: "" }
+    }
+
+    suspend fun clearSpotifyLoginMessage() {
+        dataStore.edit { it[spotifyLoginMessageKey] = "" }
     }
 
     private fun Preferences.readGoals(): List<GoalEntry> {

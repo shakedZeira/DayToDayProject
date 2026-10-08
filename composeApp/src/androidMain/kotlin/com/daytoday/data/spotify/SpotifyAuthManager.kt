@@ -1,8 +1,8 @@
 package com.daytoday.data.spotify
 
-import android.content.Context
 import android.net.Uri
 import android.util.Base64
+import android.util.Log
 import com.daytoday.BuildConfig
 import com.daytoday.settings.SettingsManager
 import java.security.MessageDigest
@@ -39,8 +39,24 @@ class SpotifyAuthManager @Inject constructor(
             .build()
             .toString()
 
-    suspend fun exchangeCode(context: Context, code: String, state: String, verifier: String): Boolean =
-        runCatching {
+    /**
+     * Finishes a pending PKCE login from the Spotify redirect Uri. The verifier/state are read
+     * back from [settingsManager]; callers must confirm a login is pending first
+     * (see [SettingsManager.hasPendingLogin]), so a blank verifier means nothing was stored.
+     *
+     * Returns null on success, or a human-readable error message on any failure.
+     */
+    suspend fun completePendingLogin(callbackUri: Uri): String? {
+        val verifier = settingsManager.spotifyPendingVerifier.first()
+        val expectedState = settingsManager.spotifyPendingState.first()
+        if (verifier.isBlank()) return "No pending login"
+
+        callbackUri.getQueryParameter("error")?.let { return it }
+        val code = callbackUri.getQueryParameter("code")
+        if (code.isNullOrBlank()) return "No authorization code received"
+        if (callbackUri.getQueryParameter("state") != expectedState) return "State mismatch"
+
+        return try {
             val response = authClient.exchangeCode(
                 code = code,
                 redirectUri = BuildConfig.SPOTIFY_REDIRECT_URI,
@@ -53,7 +69,18 @@ class SpotifyAuthManager @Inject constructor(
                 expiresAtMs = System.currentTimeMillis() + response.expiresIn * MILLIS_PER_SECOND,
             )
             settingsManager.setSpotifyLoggedIn(true)
-        }.isSuccess
+            settingsManager.clearPendingLogin()
+            null
+        } catch (e: retrofit2.HttpException) {
+            Log.e(TAG, "Token exchange failure", e)
+            val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+            val detail = body?.take(ERROR_BODY_CHARS)?.takeIf { it.isNotBlank() }
+            listOfNotNull("Token exchange failed (HTTP ${e.code()})", detail).joinToString(": ")
+        } catch (e: Exception) {
+            Log.e(TAG, "Token exchange failure", e)
+            "Token exchange failed (${e::class.java.simpleName}${e.message?.let { ": $it" } ?: ""})"
+        }
+    }
 
     suspend fun ensureFreshToken(): Boolean {
         val expiresAtMs = settingsManager.spotifyTokenExpiresAtMs.first()
@@ -91,5 +118,6 @@ class SpotifyAuthManager @Inject constructor(
         const val REFRESH_AHEAD_MS = 5 * 60 * 1000L
         const val MILLIS_PER_SECOND = 1000L
         const val BASE64_FLAGS = Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
+        private const val ERROR_BODY_CHARS = 200
     }
 }
