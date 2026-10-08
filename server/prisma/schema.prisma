@@ -349,6 +349,32 @@ model PracticeLog {
   @@index([ownerId, lessonDate])
 }
 
+model ItalianLessonCompletion {
+  id          String   @id @default(cuid())
+  ownerId     String
+  lessonId    String
+  xpAwarded   Int      @default(0)
+  completedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([ownerId, lessonId])
+  @@index([ownerId])
+}
+
+model ItalianExerciseAttempt {
+  id         String   @id @default(cuid())
+  ownerId    String
+  lessonId   String
+  exerciseId String
+  isCorrect  Boolean
+  userAnswer String
+  xpAwarded  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([ownerId, createdAt])
+  @@index([ownerId, exerciseId])
+}
+
 model Setting {
   id        String   @id @default(cuid())
   ownerId   String
