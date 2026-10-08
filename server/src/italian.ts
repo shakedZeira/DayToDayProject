@@ -3,6 +3,7 @@ import { prisma } from "./db";
 import { requireAuth, type AuthedRequest } from "./session";
 import { getLLMProvider, extractJson, type LLMProvider } from "./providers/llm";
 import { checkAttempt, translateToItalian } from "./correction";
+import { emitGoalSignals } from "./goalsAuto";
 import type { ItalianLesson, ItalianVocabItem, ItalianPhrase } from "shared";
 
 export function dateKeyFor(d: Date): string {
@@ -117,19 +118,6 @@ async function generateAndStore(provider: LLMProvider, ownerId: string, dateKey:
   });
 }
 
-const LESSON_AUTO_SOURCES = ["italian_lesson", "italian_words"] as const;
-
-async function incrementWeeklyGoals(ownerId: string): Promise<void> {
-  const goals = await prisma.weeklyGoal.findMany({
-    where: { ownerId, autoSource: { in: [...LESSON_AUTO_SOURCES] } }
-  });
-  for (const goal of goals) {
-    await prisma.goalEvent.create({
-      data: { ownerId, goalId: goal.id, date: new Date(), count: 1, source: goal.autoSource! }
-    });
-  }
-}
-
 async function maybeCompleteLesson(
   ownerId: string,
   lessonId: string,
@@ -143,7 +131,7 @@ async function maybeCompleteLesson(
   const correctIndices = new Set(rows.map((r) => r.phraseIndex));
   if (correctIndices.size < phrases.length) return;
   await prisma.lesson.update({ where: { id: lessonId }, data: { completedAt: new Date() } });
-  await incrementWeeklyGoals(ownerId);
+  await emitGoalSignals(ownerId, { italian_lesson: 1, italian_words: 1 });
 }
 
 export function createItalianRouter(provider: LLMProvider = getLLMProvider()): Router {
