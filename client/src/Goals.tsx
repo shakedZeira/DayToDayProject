@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { listGoals, createGoal, deleteGoal, checkoffGoal, undoGoal, type WeeklyGoalInput } from "./goalsApi";
 import type { WeeklyGoalView } from "shared";
+import ItalianGoalCard from "./ItalianGoalCard";
 
 interface Props {
   token: string;
 }
 
 const CATEGORY_OPTIONS = ["health", "italian", "study", "other", "general"] as const;
-const AUTOSOURCE_OPTIONS = ["none", "workout", "italian_words", "italian_lesson", "study"] as const;
+const AUTOSOURCE_OPTIONS = ["none", "workout", "italian_words", "italian_lesson", "italian_xp", "study"] as const;
 
 function sameLocalDay(a: Date, b: Date): boolean {
   return (
@@ -102,6 +103,8 @@ export default function Goals({ token }: Props) {
 
   return (
     <div className="w-full max-w-2xl flex flex-col gap-4 border rounded bg-white p-4">
+      <ItalianGoalCard token={token} />
+
       <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
         Weekly Goals
       </h2>
