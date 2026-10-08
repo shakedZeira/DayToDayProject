@@ -1,5 +1,6 @@
 package com.daytoday.network
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -9,6 +10,7 @@ data class ItalianPairDto(val left: String, val right: String)
 
 @Serializable
 @JsonClassDiscriminator("kind")
+@OptIn(ExperimentalSerializationApi::class)
 sealed interface ItalianExerciseDto {
     val id: String
 
@@ -50,6 +52,7 @@ data class ItalianCourseDto(val language: String, val units: List<ItalianUnitDto
 
 @Serializable
 @JsonClassDiscriminator("kind")
+@OptIn(ExperimentalSerializationApi::class)
 sealed interface ItalianAnswerDto {
     val exerciseId: String
 
@@ -93,12 +96,24 @@ data class ItalianExerciseResultDto(val exerciseId: String, val isCorrect: Boole
 data class ItalianSubmitRequest(val answers: List<ItalianAnswerDto>)
 
 object ItalianGrading {
-    fun normalize(s: String): String =
-        s.lowercase()
+    private val precomposedAccents = mapOf(
+        "à" to "a", "á" to "a", "â" to "a", "ã" to "a", "ä" to "a", "å" to "a",
+        "è" to "e", "é" to "e", "ê" to "e", "ë" to "e",
+        "ì" to "i", "í" to "i", "î" to "i", "ï" to "i",
+        "ò" to "o", "ó" to "o", "ô" to "o", "õ" to "o", "ö" to "o",
+        "ù" to "u", "ú" to "u", "û" to "u", "ü" to "u",
+        "ç" to "c", "ñ" to "n", "ß" to "ss",
+    )
+
+    fun normalize(s: String): String {
+        var out = s.lowercase()
+        for ((from, to) in precomposedAccents) out = out.replace(from, to)
+        return out
             .replace(Regex("\\p{M}"), "")
             .replace(Regex("[.,!?;:\"'’]"), "")
             .replace(Regex("\\s+"), " ")
             .trim()
+    }
 
     fun grade(ex: ItalianExerciseDto, answer: ItalianAnswerDto): Boolean = when (ex) {
         is ItalianExerciseDto.Choice ->
