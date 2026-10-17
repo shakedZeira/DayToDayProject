@@ -7,6 +7,6 @@ import kotlinx.serialization.SerialName
 data class User(
     @SerialName("id") val id: String,
     @SerialName("email") val email: String,
-    @SerialName("name") val name: String,
-    @SerialName("createdAt") val createdAt: Long
+    @SerialName("name") val name: String = "",
+    @SerialName("createdAt") val createdAt: Long = 0L
 )

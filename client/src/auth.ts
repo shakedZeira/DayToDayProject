@@ -27,8 +27,17 @@ export const login = (email: string, password: string) =>
   post<AuthResponse>("/api/auth/login", { email, password });
 
 export function authedFetch(token: string, path: string, init: RequestInit = {}): Promise<Response> {
+  // The server computes "this week" against the *caller's* local Monday. It can
+  // only do that if it knows our UTC offset — otherwise a server running in UTC
+  // (Render/Docker/Vercel/Termux) drops checkoffs made in the first hours of our
+  // Monday. `getTimezoneOffset()` is minutes *west* of UTC, so negate it.
+  const tzOffsetMinutes = -new Date().getTimezoneOffset();
   return fetch(path, {
     ...init,
-    headers: { ...init.headers, Authorization: `Bearer ${token}` }
+    headers: {
+      ...init.headers,
+      Authorization: `Bearer ${token}`,
+      "x-tz-offset": String(tzOffsetMinutes),
+    }
   });
 }

@@ -14,11 +14,6 @@ export function gradeExercise(ex: ItalianExercise, answer: ItalianAnswer): boole
   switch (ex.kind) {
     case "choice":
       return answer.kind === "choice" && answer.choiceIndex === ex.answerIndex;
-    case "type":
-      return (
-        answer.kind === "type" &&
-        ex.accepted.some((a) => normalizeAnswer(a) === normalizeAnswer(answer.text))
-      );
     case "match": {
       if (answer.kind !== "match") return false;
       const key = (p: { left: string; right: string }) =>

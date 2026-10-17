@@ -26,14 +26,6 @@ sealed interface ItalianExerciseDto {
     ) : ItalianExerciseDto
 
     @Serializable
-    @SerialName("type")
-    data class Type(
-        override val id: String,
-        val prompt: String,
-        val accepted: List<String>,
-    ) : ItalianExerciseDto
-
-    @Serializable
     @SerialName("match")
     data class Match(
         override val id: String,
@@ -59,10 +51,6 @@ sealed interface ItalianAnswerDto {
     @Serializable
     @SerialName("choice")
     data class Choice(override val exerciseId: String, val choiceIndex: Int) : ItalianAnswerDto
-
-    @Serializable
-    @SerialName("type")
-    data class Type(override val exerciseId: String, val text: String) : ItalianAnswerDto
 
     @Serializable
     @SerialName("match")
@@ -95,6 +83,18 @@ data class ItalianExerciseResultDto(val exerciseId: String, val isCorrect: Boole
 @Serializable
 data class ItalianSubmitRequest(val answers: List<ItalianAnswerDto>)
 
+@Serializable
+data class ChatMessageDto(val role: String, val content: String)
+
+@Serializable
+data class ItalianChatRequest(val messages: List<ChatMessageDto>)
+
+@Serializable
+data class ItalianChatResponse(val reply: String, val correction: String = "", val translation: String = "")
+
+@Serializable
+data class ChatStreamLine(val delta: String? = null, val lang: String? = null, val done: Boolean = false)
+
 object ItalianGrading {
     private val precomposedAccents = mapOf(
         "à" to "a", "á" to "a", "â" to "a", "ã" to "a", "ä" to "a", "å" to "a",
@@ -118,8 +118,6 @@ object ItalianGrading {
     fun grade(ex: ItalianExerciseDto, answer: ItalianAnswerDto): Boolean = when (ex) {
         is ItalianExerciseDto.Choice ->
             answer is ItalianAnswerDto.Choice && answer.choiceIndex == ex.answerIndex
-        is ItalianExerciseDto.Type ->
-            answer is ItalianAnswerDto.Type && ex.accepted.any { normalize(it) == normalize(answer.text) }
         is ItalianExerciseDto.Match -> {
             if (answer !is ItalianAnswerDto.Match) false
             else {

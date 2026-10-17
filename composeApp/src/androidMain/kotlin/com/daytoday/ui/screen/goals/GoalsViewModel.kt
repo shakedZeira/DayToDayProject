@@ -180,10 +180,10 @@ class GoalsViewModel @Inject constructor(
         }
     }
 
-    /** Sunday 00:00 anchor of the current week (week runs Sunday -> Saturday). */
+    /** Monday 00:00 anchor of the current week (week runs Monday -> Sunday). */
     private fun weekStart(): String =
         LocalDate.now()
-            .with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+            .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
             .toString()
 
     /**

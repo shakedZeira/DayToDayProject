@@ -7,7 +7,9 @@ data class WorkoutPlan(
     val id: String,
     val name: String,
     val exercises: List<PlanExercise>,
-    val createdAt: Long = 0L
+    val createdAt: Long = 0L,
+    val warmupSeconds: Int = 0,
+    val amrapSeconds: Int = 0
 )
 
 @Serializable

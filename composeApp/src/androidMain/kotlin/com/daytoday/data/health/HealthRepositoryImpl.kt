@@ -124,6 +124,37 @@ class HealthRepositoryImpl @Inject constructor() : HealthRepository {
         }.onFailure { Log.e(TAG, "stepsInRange failed", it) }.getOrDefault(emptyMap())
     }
 
+    override suspend fun totalSteps(
+        context: Context,
+        from: LocalDate,
+        to: LocalDate,
+    ): Long {
+        if (to.isBefore(from)) return 0L
+        val permissionResult = getHealthPermissionState(context)
+        if (permissionResult.getOrNull() != HealthPermissionState.GRANTED) return 0L
+        return runCatching {
+            val client = HealthConnectClient.getOrCreate(context)
+            val zone = ZoneId.systemDefault()
+            val start = from.atStartOfDay(zone).toInstant()
+            // Cap the window at "now" when the range includes today or future
+            // days; aggregating past the current instant is meaningless.
+            val today = LocalDate.now(zone)
+            val end = if (to.isAfter(today)) {
+                Instant.now()
+            } else {
+                to.plusDays(1).atStartOfDay(zone).toInstant()
+            }
+            if (!end.isAfter(start)) return@runCatching 0L
+            val result = client.aggregate(
+                AggregateRequest(
+                    metrics = setOf(StepsRecord.COUNT_TOTAL),
+                    timeRangeFilter = TimeRangeFilter.between(start, end),
+                ),
+            )
+            result[StepsRecord.COUNT_TOTAL] ?: 0L
+        }.onFailure { Log.e(TAG, "totalSteps failed", it) }.getOrDefault(0L)
+    }
+
     private companion object {
         const val TAG = "DayToDayHC"
         const val PERMISSION_TIMEOUT_MS = 60_000L

@@ -489,11 +489,6 @@ private fun HomeContent(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             DayTodayButton(
-                text = "Merge PDFs",
-                onClick = { onNavigate(Screen.PdfMerge.route) },
-                modifier = Modifier.weight(1f)
-            )
-            DayTodayButton(
                 text = "Workout Progress",
                 onClick = { onNavigate(Screen.WorkoutProgress.route) },
                 buttonType = ButtonType.Filled,

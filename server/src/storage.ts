@@ -1,7 +1,12 @@
 import path from "node:path";
+import os from "node:os";
 import fs from "node:fs";
 
-const STORAGE_DIR = path.join(process.cwd(), "storage");
+const BASE_DIR = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+  ? os.tmpdir()
+  : process.cwd();
+
+const STORAGE_DIR = path.join(BASE_DIR, "storage");
 
 export function pdfStorageDir(): string {
   if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });

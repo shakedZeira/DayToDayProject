@@ -49,6 +49,7 @@ async function buildProgress(ownerId: string): Promise<ItalianPathProgress> {
   const reviewDue = wrongAttempts
     .filter((a) => !correctIds.has(a.exerciseId))
     .map((a) => ({ lessonId: EXERCISE_INDEX.get(a.exerciseId)?.lessonId ?? "", exerciseId: a.exerciseId }))
+    .filter((r) => r.lessonId !== "")
     .filter((r, i, arr) => arr.findIndex((x) => x.exerciseId === r.exerciseId) === i);
 
   const attemptAgg = await prisma.italianExerciseAttempt.aggregate({
@@ -100,7 +101,7 @@ italianPathRouter.post("/lesson/:lessonId/submit", async (req: AuthedRequest, re
     if (!a || typeof a.exerciseId !== "string" || !lessonExerciseIds.has(a.exerciseId)) {
       return res.status(400).json({ error: "unknown exercise" });
     }
-    if (a.kind !== "choice" && a.kind !== "type" && a.kind !== "match") {
+    if (a.kind !== "choice" && a.kind !== "match") {
       return res.status(400).json({ error: "invalid answer" });
     }
     answers.push(a as ItalianAnswer);

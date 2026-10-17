@@ -9,6 +9,7 @@
     "lint": "eslint src",
     "seed": "tsx src/seed.ts",
     "db:up": "docker compose up -d db",
+    "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "typecheck": "tsc --noEmit",

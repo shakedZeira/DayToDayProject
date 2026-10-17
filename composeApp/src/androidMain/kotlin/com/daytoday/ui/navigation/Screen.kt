@@ -35,10 +35,6 @@ sealed interface Screen {
         override val route: String = "WorkoutProgress"
     }
 
-    data object PdfMerge : Screen {
-        override val route: String = "PdfMerge"
-    }
-
     data object Settings : Screen {
         override val route: String = "Settings"
     }
@@ -49,5 +45,13 @@ sealed interface Screen {
 
     data object Italian : Screen {
         override val route: String = "Italian"
+    }
+
+    data object ItalianTutor : Screen {
+        override val route: String = "ItalianTutor"
+    }
+
+    data object ItalianVoice : Screen {
+        override val route: String = "ItalianVoice"
     }
 }

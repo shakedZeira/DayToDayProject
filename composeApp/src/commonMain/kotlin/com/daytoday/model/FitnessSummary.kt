@@ -24,8 +24,15 @@ data class WeeklyProgress(
     @SerialName("weekStart") val weekStart: Long,
     @SerialName("workouts") val workouts: Int,
     @SerialName("durationMinutes") val durationMinutes: Int,
+    /** Combined burn for the week: workout calories + calories burned while walking. */
     @SerialName("caloriesBurned") val caloriesBurned: Int,
-    @SerialName("volume") val volume: Double
+    @SerialName("volume") val volume: Double,
+    /**
+     * Portion of [caloriesBurned] that came from steps (Health Connect, on-device).
+     * Defaulted so older server payloads and cached Room rows (which predate the
+     * field) still decode; workout calories = caloriesBurned - stepCalories.
+     */
+    @SerialName("stepCalories") val stepCalories: Int = 0
 )
 
 @Serializable

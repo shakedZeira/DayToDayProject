@@ -31,14 +31,6 @@ const listenLesson: ItalianLessonDef = {
   ]
 };
 
-const typeLesson: ItalianLessonDef = {
-  id: "l3",
-  title: "Writing",
-  exercises: [
-    { id: "e3", kind: "type", prompt: "Write in Italian: thank you", accepted: ["grazie"] }
-  ]
-};
-
 const matchLesson: ItalianLessonDef = {
   id: "l4",
   title: "Pairs",
@@ -81,14 +73,6 @@ describe("ItalianLessonRunner initial render", () => {
     expect(html).toContain("Hello");
   });
 
-  it("renders a type exercise with an enabled input and a disabled Check", () => {
-    const html = render(typeLesson);
-    expect(html).toContain("Write in Italian: thank you");
-    expect(html).toContain('placeholder="Type in Italian…"');
-    expect(html).not.toMatch(/<input[^>]*disabled/);
-    expect(html).toMatch(/<button[^>]*\sdisabled=""[^>]*>Check<\/button>/);
-  });
-
   it("renders both match columns with a disabled Check", () => {
     const html = render(matchLesson);
     expect(html).toContain("Match the pairs");
@@ -109,7 +93,6 @@ describe("correctText", () => {
     choices: ["ciao", "salve"],
     answerIndex: 1
   };
-  const type: ItalianExercise = { id: "t", kind: "type", prompt: "p", accepted: ["grazie"] };
   const match: ItalianExercise = {
     id: "m",
     kind: "match",
@@ -118,10 +101,6 @@ describe("correctText", () => {
       { left: "grazie", right: "thank you" }
     ]
   };
-
-  it("shows the accepted text for type exercises", () => {
-    expect(correctText(type)).toBe("grazie");
-  });
 
   it("shows the correct choice for choice exercises", () => {
     expect(correctText(choice)).toBe("salve");
@@ -141,30 +120,23 @@ describe("buildAnswer", () => {
     choices: ["ciao"],
     answerIndex: 0
   };
-  const type: ItalianExercise = { id: "t1", kind: "type", prompt: "p", accepted: ["grazie"] };
   const match: ItalianExercise = { id: "m1", kind: "match", pairs: [{ left: "ciao", right: "hello" }] };
 
   it("builds a choice answer from the pick", () => {
     expect(
-      buildAnswer(choice, { choicePick: 0, typeText: "", matchPicks: [] })
+      buildAnswer(choice, { choicePick: 0, matchPicks: [] })
     ).toEqual({ exerciseId: "c1", kind: "choice", choiceIndex: 0 });
   });
 
   it("builds a choice answer with index -1 when nothing is picked", () => {
     expect(
-      buildAnswer(choice, { choicePick: null, typeText: "", matchPicks: [] })
+      buildAnswer(choice, { choicePick: null, matchPicks: [] })
     ).toEqual({ exerciseId: "c1", kind: "choice", choiceIndex: -1 });
-  });
-
-  it("builds a type answer from the typed text", () => {
-    expect(
-      buildAnswer(type, { choicePick: null, typeText: "Grazie", matchPicks: [] })
-    ).toEqual({ exerciseId: "t1", kind: "type", text: "Grazie" });
   });
 
   it("builds a match answer from the pairs", () => {
     expect(
-      buildAnswer(match, { choicePick: null, typeText: "", matchPicks: [{ left: "ciao", right: "hello" }] })
+      buildAnswer(match, { choicePick: null, matchPicks: [{ left: "ciao", right: "hello" }] })
     ).toEqual({ exerciseId: "m1", kind: "match", pairs: [{ left: "ciao", right: "hello" }] });
   });
 });

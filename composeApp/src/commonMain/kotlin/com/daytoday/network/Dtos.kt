@@ -9,7 +9,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
-internal const val BASE_URL: String = "https://api.daytoday.app/"
+internal const val BASE_URL: String = "http://127.0.0.1:4000/"
 
 internal val networkJson: Json = Json {
     ignoreUnknownKeys = true

@@ -34,6 +34,17 @@ enum class WorkoutScreenTab {
     PROGRESS
 }
 
+data class AmrapState(
+    val planName: String,
+    val warmupSeconds: Int,
+    val amrapSeconds: Int,
+    val exercises: List<PlanExercise>,
+    val startedAt: Long,
+    val warmupFinishedAt: Long?,
+    val roundsCompleted: Int,
+    val finished: Boolean
+)
+
 @HiltViewModel
 class WorkoutActiveViewModel @Inject constructor(
     private val workoutUseCases: WorkoutUseCases,
@@ -54,6 +65,9 @@ class WorkoutActiveViewModel @Inject constructor(
 
     private val _activePlanIndex = MutableStateFlow(0)
     val activePlanIndex: StateFlow<Int> = _activePlanIndex.asStateFlow()
+
+    private val _amrapActive = MutableStateFlow<AmrapState?>(null)
+    val amrapActive: StateFlow<AmrapState?> = _amrapActive.asStateFlow()
 
     private val _exercises = MutableStateFlow<UiState<List<Exercise>>>(UiState.Loading)
     val exercises: StateFlow<UiState<List<Exercise>>> = _exercises.asStateFlow()
@@ -202,6 +216,19 @@ class WorkoutActiveViewModel @Inject constructor(
 
     fun startPlan(plan: WorkoutPlan) {
         if (plan.exercises.isEmpty()) return
+        if (plan.warmupSeconds > 0 || plan.amrapSeconds > 0) {
+            _amrapActive.value = AmrapState(
+                planName = plan.name,
+                warmupSeconds = plan.warmupSeconds,
+                amrapSeconds = plan.amrapSeconds,
+                exercises = plan.exercises,
+                startedAt = System.currentTimeMillis(),
+                warmupFinishedAt = null,
+                roundsCompleted = 0,
+                finished = false
+            )
+            return
+        }
         _activePlanQueue.value = plan.exercises
         _activePlanIndex.value = 0
         startExerciseFromPlan(plan.exercises[0])
@@ -409,6 +436,12 @@ class WorkoutActiveViewModel @Inject constructor(
 
     fun playSpotifyMusic() {
         viewModelScope.launch {
+            val selecting = spotifyPlaylistName.value
+            _spotifyMessage.value = if (selecting.isNullOrBlank()) {
+                "Starting Spotify playback..."
+            } else {
+                "Starting $selecting on Spotify..."
+            }
             when (val result = spotifyRepository.playPlaylist(context)) {
                 SpotifyPlayResult.PLAYING -> {
                     val playlistName = spotifyPlaylistName.value
@@ -450,5 +483,61 @@ class WorkoutActiveViewModel @Inject constructor(
         _activeSession.value = null
         _activePlanQueue.value = emptyList()
         _activePlanIndex.value = 0
+    }
+
+    // ---------- AMRAP ----------
+
+    fun skipWarmup() {
+        val current = _amrapActive.value ?: return
+        if (current.warmupFinishedAt != null) return
+        _amrapActive.value = current.copy(warmupFinishedAt = System.currentTimeMillis())
+    }
+
+    fun amrapRoundComplete() {
+        val current = _amrapActive.value ?: return
+        if (current.finished) return
+        _amrapActive.value = current.copy(roundsCompleted = current.roundsCompleted + 1)
+    }
+
+    fun finishAmrap() {
+        val current = _amrapActive.value ?: return
+        if (current.finished) return
+        _amrapActive.value = current.copy(finished = true)
+        val now = System.currentTimeMillis()
+        val sessionId = "wks_" + UUID.randomUUID()
+        var setCounter = 0
+        val sets = current.exercises.flatMap { exercise ->
+            (1..current.roundsCompleted).map {
+                setCounter += 1
+                SetRecord(
+                    id = UUID.randomUUID().toString(),
+                    sessionId = sessionId,
+                    setNumber = setCounter,
+                    weight = 0.0,
+                    reps = exercise.targetReps,
+                    rpe = null,
+                    isCompleted = true,
+                    completedAt = now
+                )
+            }
+        }
+        val session = WorkoutSession(
+            id = sessionId,
+            exerciseId = current.exercises.firstOrNull()?.exerciseId ?: "",
+            exerciseName = current.planName,
+            startTime = current.startedAt,
+            endTime = now,
+            durationMinutes = maxOf(1, ((current.warmupSeconds + current.amrapSeconds) * 1000L) / 60000L).toInt(),
+            caloriesBurned = 0,
+            sets = sets,
+            isCompleted = true
+        )
+        val burned = calculateCalories(session)
+        saveCompletedSession(session.copy(caloriesBurned = burned))
+        _amrapActive.value = null
+    }
+
+    fun discardAmrap() {
+        _amrapActive.value = null
     }
 }

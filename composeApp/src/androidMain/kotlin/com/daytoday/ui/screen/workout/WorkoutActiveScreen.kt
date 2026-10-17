@@ -94,12 +94,15 @@ fun WorkoutActiveScreen(
     val spotifyLoggedIn by viewModel.spotifyLoggedIn.collectAsStateWithLifecycle()
     val spotifyMessage by viewModel.spotifyMessage.collectAsStateWithLifecycle()
     val spotifyPlaylistName by viewModel.spotifyPlaylistName.collectAsStateWithLifecycle()
+    val amrapActive by viewModel.amrapActive.collectAsStateWithLifecycle()
 
     var showExitDialog by remember { mutableStateOf(false) }
     var detailExercise by remember { mutableStateOf<Exercise?>(null) }
 
     fun handleBackNavigation() {
-        if (activeSession != null) {
+        if (amrapActive != null) {
+            viewModel.discardAmrap()
+        } else if (activeSession != null) {
             if (activeSession?.isCompleted == true) {
                 viewModel.exitActiveWorkout()
             } else {
@@ -172,6 +175,7 @@ fun WorkoutActiveScreen(
         topBar = {
             DayTodayTopAppBar(
                 title = when {
+                    amrapActive != null -> "AMRAP Workout"
                     activeSession != null -> "Workout Session"
                     currentTab == WorkoutScreenTab.BUILDER -> "Workout Builder"
                     currentTab == WorkoutScreenTab.SAVED_PLANS -> "Saved Routines"
@@ -197,7 +201,20 @@ fun WorkoutActiveScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            if (activeSession != null) {
+            if (amrapActive != null) {
+                AmrapWorkoutScreen(
+                    state = amrapActive!!,
+                    onRoundComplete = viewModel::amrapRoundComplete,
+                    onSkipWarmup = viewModel::skipWarmup,
+                    onFinish = viewModel::finishAmrap,
+                    onDiscard = viewModel::discardAmrap,
+                    onBackOrExit = viewModel::discardAmrap,
+                    spotifyLoggedIn = viewModel.spotifyLoggedIn.value,
+                    spotifyMessage = spotifyMessage,
+                    spotifyPlaylistName = spotifyPlaylistName,
+                    onPlaySpotify = viewModel::playSpotifyMusic
+                )
+            } else if (activeSession != null) {
                 ActiveWorkoutScreen(
                     session = activeSession!!,
                     planQueue = activePlanQueue,
@@ -1142,5 +1159,208 @@ private fun ActiveWorkoutScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+}
+
+// ==========================================
+// 5. AMRAP WORKOUT SCREEN
+// ==========================================
+
+@Composable
+private fun AmrapWorkoutScreen(
+    state: AmrapState,
+    onRoundComplete: () -> Unit,
+    onSkipWarmup: () -> Unit,
+    onFinish: () -> Unit,
+    onDiscard: () -> Unit,
+    onBackOrExit: () -> Unit,
+    spotifyLoggedIn: Boolean,
+    spotifyMessage: String?,
+    spotifyPlaylistName: String?,
+    onPlaySpotify: () -> Unit
+) {
+    var now by remember(state.startedAt) { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(state) {
+        while (!state.finished) {
+            now = System.currentTimeMillis()
+            delay(1000L)
+        }
+    }
+
+    val warmupFinishedAt = state.warmupFinishedAt
+    val elapsed = now - state.startedAt
+    val isWarmup = warmupFinishedAt == null
+    val warmupRemainingMillis = (state.warmupSeconds * 1000L - elapsed).coerceAtLeast(0L)
+    val amrapElapsedMillis = if (warmupFinishedAt != null) now - warmupFinishedAt else 0L
+    val amrapRemainingMillis = (state.amrapSeconds * 1000L - amrapElapsedMillis).coerceAtLeast(0L)
+
+    LaunchedEffect(isWarmup, warmupRemainingMillis, state.finished) {
+        if (isWarmup && !state.finished && warmupRemainingMillis <= 0L) {
+            onSkipWarmup()
+        }
+    }
+
+    LaunchedEffect(isWarmup, amrapRemainingMillis, state.finished) {
+        if (!isWarmup && !state.finished && amrapRemainingMillis <= 0L) {
+            onFinish()
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackOrExit) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Exit Workout")
+            }
+            Text(
+                state.planName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.width(48.dp))
+        }
+
+        DayTodayCard(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    if (isWarmup) "Warmup" else "AMRAP",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    formatDuration(if (isWarmup) warmupRemainingMillis else amrapRemainingMillis),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold
+                )
+                if (state.finished) {
+                    Text(
+                        "Workout saved",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        if (!isWarmup) {
+            DayTodayCard(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Rounds: ${state.roundsCompleted}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            "${state.exercises.size} exercises per round",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    state.exercises.forEach { exercise ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                exercise.exerciseName,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                " x ${exercise.targetReps}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (isWarmup) {
+            DayTodayButton(
+                onClick = onSkipWarmup,
+                text = "Skip Warmup",
+                buttonType = ButtonType.Tonal,
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            DayTodayButton(
+                onClick = onRoundComplete,
+                text = "ROUND COMPLETE",
+                buttonType = ButtonType.Filled,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        DayTodayButton(
+            onClick = onFinish,
+            text = "Finish Workout",
+            buttonType = ButtonType.Outlined,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (!state.finished) {
+            if (spotifyLoggedIn) {
+                DayTodayButton(
+                    onClick = onPlaySpotify,
+                    text = "Play Spotify Music",
+                    buttonType = ButtonType.Tonal,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            spotifyMessage?.let { message ->
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            spotifyPlaylistName?.let { playlistName ->
+                Text(
+                    "Playlist: $playlistName",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        DayTodayButton(
+            onClick = onDiscard,
+            text = "Discard",
+            buttonType = ButtonType.Text,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }

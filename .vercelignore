@@ -1,0 +1,11 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+.superpowers
+composeApp
+build_apk.txt
+build_check.txt
+testlog*.txt
+**/dist

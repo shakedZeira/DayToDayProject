@@ -2,7 +2,7 @@ import { beforeEach, test, expect } from "vitest";
 import request from "supertest";
 import { app } from "./index";
 import { prisma } from "./db";
-import { startOfWeek, computeThisWeekCount } from "./goals";
+import { startOfWeek, startOfWeekAtOffset, tzOffsetFromRequest, computeThisWeekCount } from "./goals";
 
 let token = "";
 
@@ -142,4 +142,94 @@ test("computeThisWeekCount counts only events after startOfWeek", () => {
   };
 
   expect(computeThisWeekCount(goal)).toBe(2);
+});
+
+// The regression: on a server whose process TZ is UTC (Render, Docker, Vercel,
+// Termux-on-phone), `startOfWeek` snapped to Monday 00:00 *UTC*. A user ahead
+// of UTC who checks off a goal in the first hours of their Monday produces an
+// event that is still *Sunday* in UTC, so `e.date >= weekStart` was false and
+// the goal read 0 all week despite the checkoff. These tests pin the offset-
+// aware path so the caller's wall-clock Monday is used instead.
+function goalWithEvent(date: Date, count = 1) {
+  return {
+    id: "g1",
+    title: "Goal",
+    targetCount: 5,
+    unit: null,
+    category: null,
+    autoSource: null,
+    events: [{ date, count }],
+  };
+}
+
+test("startOfWeekAtOffset returns an instant offset from UTC Monday by tzOffsetMinutes", () => {
+  // 2026-08-31 is a Monday. At UTC+3 the user's Monday 00:00 is 2026-08-30T21:00Z.
+  const utcMidnightMonday = Date.UTC(2026, 7, 31, 0, 0, 0);
+  const start = startOfWeekAtOffset(new Date(utcMidnightMonday + 5 * 3600_000), 180);
+  expect(start.toISOString()).toBe("2026-08-30T21:00:00.000Z");
+  // ...and is independent of the server's local timezone.
+  expect(start.getTime()).toBe(utcMidnightMonday - 180 * 60_000);
+
+  // Same instant of "now" yields the *previous* Monday for a UTC+3 caller when
+  // now is still Sunday in UTC but already Monday locally.
+  const sunday2330Utc = Date.UTC(2026, 7, 30, 23, 30, 0); // Sunday in UTC
+  expect(startOfWeekAtOffset(new Date(sunday2330Utc), 180).toISOString()).toBe(
+    "2026-08-30T21:00:00.000Z"
+  );
+
+  // A west-of-UTC caller's week starts *later* in UTC. At Monday 00:00 UTC the
+  // UTC-5 user's wall clock is still Sun 19:00, so the current week began at the
+  // prior Monday 05:00 UTC.
+  const startWest = startOfWeekAtOffset(new Date(utcMidnightMonday), -300);
+  expect(startWest.toISOString()).toBe("2026-08-24T05:00:00.000Z");
+  // One hour later (Monday 01:00 UTC = Sun 20:00 UTC-5) the boundary has still
+  // not advanced; it advances at 05:00 UTC, when the user's clock hits Monday.
+  expect(startOfWeekAtOffset(new Date(utcMidnightMonday + 3600_000), -300).toISOString()).toBe(
+    "2026-08-24T05:00:00.000Z"
+  );
+  expect(startOfWeekAtOffset(new Date(utcMidnightMonday + 5 * 3600_000), -300).toISOString()).toBe(
+    "2026-08-31T05:00:00.000Z"
+  );
+});
+
+test("computeThisWeekCount with a caller offset counts a Monday-early-morning checkoff", () => {
+  const utcOffsetMinutes = 180; // caller at UTC+3
+  const weekStart = startOfWeekAtOffset(new Date(), utcOffsetMinutes);
+  const justAfterMonday = new Date(weekStart.getTime() + 30 * 60_000); // +30 min into caller's Monday
+  const justBeforeMonday = new Date(weekStart.getTime() - 60_000); // 1 h before, caller's Sunday
+
+  // This event is genuinely within the caller's week...
+  expect(computeThisWeekCount(goalWithEvent(justAfterMonday), utcOffsetMinutes)).toBe(1);
+  // ...and an event just before the caller's Monday is excluded.
+  expect(computeThisWeekCount(goalWithEvent(justBeforeMonday), utcOffsetMinutes)).toBe(0);
+});
+
+test("tzOffsetFromRequest parses valid offsets and rejects malformed ones", () => {
+  expect(tzOffsetFromRequest({ headers: { "x-tz-offset": "180" } })).toBe(180);
+  expect(tzOffsetFromRequest({ headers: { "x-tz-offset": "-300" } })).toBe(-300);
+  expect(tzOffsetFromRequest({ headers: { "x-tz-offset": "0" } })).toBe(0);
+  expect(tzOffsetFromRequest({ headers: {} })).toBeUndefined();
+  expect(tzOffsetFromRequest({ headers: { "x-tz-offset": "abc" } })).toBeUndefined();
+  expect(tzOffsetFromRequest({ headers: { "x-tz-offset": "99999" } })).toBeUndefined();
+  expect(tzOffsetFromRequest({ headers: { "x-tz-offset": "18.5" } })).toBeUndefined();
+});
+
+test("GET /api/goals counts a checkoff at the caller's Monday boundary via x-tz-offset", async () => {
+  const create = await createGoal();
+  const id = create.body.id;
+
+  // Backdate an event to 30 minutes into the caller's current week.
+  const callerOffset = -new Date().getTimezoneOffset();
+  const weekStart = startOfWeekAtOffset(new Date(), callerOffset);
+  const inWeek = new Date(weekStart.getTime() + 30 * 60_000);
+  await prisma.goalEvent.create({
+    data: { ownerId: (await prisma.user.findFirst())!.id, goalId: id, date: inWeek, count: 1, source: "manual" },
+  });
+
+  const res = await request(app)
+    .get("/api/goals")
+    .set("Authorization", `Bearer ${token}`)
+    .set("x-tz-offset", String(callerOffset));
+  expect(res.status).toBe(200);
+  expect(res.body[0].thisWeekCount).toBe(1);
 });

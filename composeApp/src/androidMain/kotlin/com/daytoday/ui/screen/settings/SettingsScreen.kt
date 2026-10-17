@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SportsBasketball
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,6 +83,9 @@ import com.daytoday.ui.theme.DayTodayTextField
 import com.daytoday.ui.theme.DayTodayTopAppBar
 import com.daytoday.ui.theme.DayTodayButton
 import com.daytoday.ui.theme.ButtonType
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,9 +104,14 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val reminderMinutes by viewModel.reminderMinutes.collectAsStateWithLifecycle()
     val reminderHour = reminderMinutes / 60
     val reminderMinute = reminderMinutes % 60
+    val summaryDailyMinutes by viewModel.summaryDailyMinutes.collectAsStateWithLifecycle()
+    val summaryWeeklyMinutes by viewModel.summaryWeeklyMinutes.collectAsStateWithLifecycle()
+    val summaryWeeklyDay by viewModel.summaryWeeklyDay.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showPlaylistsDialog by remember { mutableStateOf(false) }
     var showReminderTimeDialog by remember { mutableStateOf(false) }
+    var showSummaryDailyDialog by remember { mutableStateOf(false) }
+    var showSummaryWeeklyDialog by remember { mutableStateOf(false) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -167,7 +176,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     onCheckedChange = viewModel::setPushEnabled
                 )
                 SettingsSwitch(
-                    title = "Workout Reminders",
+                    title = "Workout Alarm",
                     icon = Icons.Default.Schedule,
                     checked = workoutReminders,
                     onCheckedChange = { enabled ->
@@ -186,7 +195,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     }
                 )
                 SettingsRow(
-                    title = "Reminder time",
+                    title = "Alarm time",
                     icon = Icons.Default.AccessTime,
                     subtitle = String.format("%02d:%02d", reminderHour, reminderMinute),
                     onClick = { showReminderTimeDialog = true }
@@ -196,6 +205,23 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     icon = Icons.Default.SportsBasketball,
                     checked = nbaAlerts,
                     onCheckedChange = viewModel::setNbaAlerts
+                )
+                SettingsRow(
+                    title = "Daily Summary Time",
+                    icon = Icons.Default.AccessTime,
+                    subtitle = String.format("%02d:%02d", summaryDailyMinutes / 60, summaryDailyMinutes % 60),
+                    onClick = { showSummaryDailyDialog = true }
+                )
+                SettingsRow(
+                    title = "Weekly Summary Time",
+                    icon = Icons.Default.AccessTime,
+                    subtitle = String.format(
+                        "%s · %02d:%02d",
+                        summaryWeeklyDay.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                        summaryWeeklyMinutes / 60,
+                        summaryWeeklyMinutes % 60
+                    ),
+                    onClick = { showSummaryWeeklyDialog = true }
                 )
             }
 
@@ -224,6 +250,100 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     },
                     dismissButton = {
                         TextButton(onClick = { showReminderTimeDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
+            if (showSummaryDailyDialog) {
+                val timePickerState = rememberTimePickerState(
+                    initialHour = summaryDailyMinutes / 60,
+                    initialMinute = summaryDailyMinutes % 60,
+                    is24Hour = true
+                )
+                AlertDialog(
+                    onDismissRequest = { showSummaryDailyDialog = false },
+                    title = { Text("Daily summary time") },
+                    text = {
+                        TimePicker(state = timePickerState)
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.setSummaryDailyTime(
+                                timePickerState.hour,
+                                timePickerState.minute
+                            )
+                            showSummaryDailyDialog = false
+                        }) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showSummaryDailyDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
+            if (showSummaryWeeklyDialog) {
+                var selectedDay by remember { mutableStateOf(summaryWeeklyDay) }
+                val timePickerState = rememberTimePickerState(
+                    initialHour = summaryWeeklyMinutes / 60,
+                    initialMinute = summaryWeeklyMinutes % 60,
+                    is24Hour = true
+                )
+                AlertDialog(
+                    onDismissRequest = { showSummaryWeeklyDialog = false },
+                    title = { Text("Weekly summary time") },
+                    text = {
+                        Column {
+                            Text(
+                                text = "Day",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                DayOfWeek.values().forEach { day ->
+                                    FilterChip(
+                                        selected = day == selectedDay,
+                                        onClick = { selectedDay = day },
+                                        label = {
+                                            Text(
+                                                text = day.getDisplayName(
+                                                    TextStyle.SHORT,
+                                                    Locale.getDefault()
+                                                )
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            TimePicker(state = timePickerState)
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.setSummaryWeeklyDay(selectedDay)
+                            viewModel.setSummaryWeeklyTime(
+                                timePickerState.hour,
+                                timePickerState.minute
+                            )
+                            showSummaryWeeklyDialog = false
+                        }) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showSummaryWeeklyDialog = false }) {
                             Text("Cancel")
                         }
                     }

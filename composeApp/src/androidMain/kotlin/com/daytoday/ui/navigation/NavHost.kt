@@ -8,12 +8,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.daytoday.ui.screen.HomeScreen
 import com.daytoday.ui.screen.goals.GoalsScreen
+import com.daytoday.ui.screen.italian.ChatScreen
 import com.daytoday.ui.screen.italian.ItalianScreen
+import com.daytoday.ui.screen.italian.VoiceScreen
 import com.daytoday.ui.screen.nba.NbaGameDetailScreen
 import com.daytoday.ui.screen.nba.NbaInjuriesScreen
 import com.daytoday.ui.screen.nba.NbaNewsScreen
 import com.daytoday.ui.screen.nba.NbaScoreboardScreen
-import com.daytoday.ui.screen.pdf.PdfMergeScreen
 import com.daytoday.ui.screen.settings.SettingsScreen
 import com.daytoday.ui.screen.workout.WorkoutActiveScreen
 import com.daytoday.ui.screen.workout.WorkoutHistoryScreen
@@ -53,9 +54,6 @@ fun DayTodayNavHost(
         composable(Screen.WorkoutProgress.route) {
             WorkoutProgressScreen(navController = navController)
         }
-        composable(Screen.PdfMerge.route) {
-            PdfMergeScreen()
-        }
         composable(Screen.Settings.route) {
             SettingsScreen()
         }
@@ -63,7 +61,13 @@ fun DayTodayNavHost(
             GoalsScreen()
         }
         composable(Screen.Italian.route) {
-            ItalianScreen()
+            ItalianScreen(navController = navController)
+        }
+        composable(Screen.ItalianTutor.route) {
+            ChatScreen(onBack = { navController.navigateUp() })
+        }
+        composable(Screen.ItalianVoice.route) {
+            VoiceScreen(onBack = { navController.navigateUp() })
         }
     }
 }

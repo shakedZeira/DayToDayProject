@@ -6,7 +6,6 @@ const choice: ItalianExercise = {
   id: "e1", kind: "choice", direction: "en_to_it", prompt: "hello",
   choices: ["ciao", "grazie", "arrivederci", "scusi"], answerIndex: 0
 };
-const typeEx: ItalianExercise = { id: "e2", kind: "type", prompt: "t", accepted: ["Buongiorno", "buongiorno"] };
 const matchEx: ItalianExercise = {
   id: "e3", kind: "match",
   pairs: [{ left: "ciao", right: "hello" }, { left: "grazie", right: "thank you" }]
@@ -26,12 +25,6 @@ describe("gradeExercise", () => {
     const wrong: ItalianAnswer = { exerciseId: "e1", kind: "choice", choiceIndex: 2 };
     expect(gradeExercise(choice, right)).toBe(true);
     expect(gradeExercise(choice, wrong)).toBe(false);
-  });
-
-  it("grades type answers against any accepted variant", () => {
-    expect(gradeExercise(typeEx, { exerciseId: "e2", kind: "type", text: "buongiorno!!" })).toBe(true);
-    expect(gradeExercise(typeEx, { exerciseId: "e2", kind: "type", text: "buonasera" })).toBe(false);
-    expect(gradeExercise(typeEx, { exerciseId: "e2", kind: "choice", choiceIndex: 0 })).toBe(false);
   });
 
   it("grades match answers as set equality regardless of order", () => {

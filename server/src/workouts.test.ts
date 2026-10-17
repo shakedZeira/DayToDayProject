@@ -3,6 +3,12 @@ import request from "supertest";
 import { app } from "./index";
 import { prisma } from "./db";
 import { seedExercises } from "./exercises.seed";
+import { startOfWeek } from "./goals";
+
+function dateKey(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 let token = "";
 let userId = "";
@@ -212,4 +218,77 @@ test("POST /:id/exercises/:xeId/sets on another user's workout exercise returns 
     .set("Authorization", `Bearer ${token2}`)
     .send({ weightKg: 80, reps: 8 });
   expect(res.status).toBe(404);
+});
+
+test("GET /progress/weekly counts only workouts inside the week window", async () => {
+  const monday = startOfWeek(new Date());
+
+  const inWeek = new Date(monday);
+  inWeek.setDate(monday.getDate() + 2);
+  inWeek.setHours(19, 30, 0, 0);
+  const lastWeek = new Date(monday);
+  lastWeek.setDate(monday.getDate() - 3);
+  const nextWeek = new Date(monday);
+  nextWeek.setDate(monday.getDate() + 8);
+
+  await prisma.workout.create({ data: { ownerId: userId, title: "In week", date: inWeek } });
+  await prisma.workout.create({ data: { ownerId: userId, title: "Last week", date: lastWeek } });
+  await prisma.workout.create({ data: { ownerId: userId, title: "Next week", date: nextWeek } });
+
+  const res = await request(app)
+    .get("/api/workouts/progress/weekly")
+    .query({ weekStart: dateKey(monday) })
+    .set("Authorization", `Bearer ${token}`);
+  expect(res.status).toBe(200);
+  expect(res.body.weekStart).toBe(monday.getTime());
+  expect(res.body.workouts).toBe(1);
+  expect(res.body.durationMinutes).toBe(0);
+  expect(res.body.caloriesBurned).toBe(0);
+  expect(res.body.stepCalories).toBe(0); // steps are on-device only (Health Connect)
+  expect(typeof res.body.volume).toBe("number");
+});
+
+test("GET /progress/weekly sums set volume (weightKg * reps) for the week", async () => {
+  const monday = startOfWeek(new Date());
+  const w = await prisma.workout.create({
+    data: { ownerId: userId, title: "Volume day", date: monday },
+  });
+  await prisma.workoutSet.createMany({
+    data: [
+      { ownerId: userId, workoutId: w.id, exercise: "Bench Press", weightKg: 60, reps: 8 },
+      { ownerId: userId, workoutId: w.id, exercise: "Bench Press", weightKg: 62.5, reps: 6 },
+    ],
+  });
+
+  const res = await request(app)
+    .get("/api/workouts/progress/weekly")
+    .query({ weekStart: dateKey(monday) })
+    .set("Authorization", `Bearer ${token}`);
+  expect(res.status).toBe(200);
+  expect(res.body.workouts).toBe(1);
+  expect(res.body.volume).toBe(855); // 60*8 + 62.5*6
+});
+
+test("GET /progress/weekly defaults to the current week when weekStart is absent", async () => {
+  await prisma.workout.create({ data: { ownerId: userId, title: "Today", date: new Date() } });
+
+  const res = await request(app)
+    .get("/api/workouts/progress/weekly")
+    .set("Authorization", `Bearer ${token}`);
+  expect(res.status).toBe(200);
+  expect(res.body.workouts).toBe(1);
+  expect(res.body.weekStart).toBe(startOfWeek(new Date()).getTime());
+});
+
+test("GET /progress/weekly rejects a malformed weekStart", async () => {
+  const res = await request(app)
+    .get("/api/workouts/progress/weekly")
+    .query({ weekStart: "not-a-date" })
+    .set("Authorization", `Bearer ${token}`);
+  expect(res.status).toBe(400);
+});
+
+test("GET /progress/weekly returns 401 without a token", async () => {
+  const res = await request(app).get("/api/workouts/progress/weekly");
+  expect(res.status).toBe(401);
 });

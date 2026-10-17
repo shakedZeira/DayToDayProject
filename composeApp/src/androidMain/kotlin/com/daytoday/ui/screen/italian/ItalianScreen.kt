@@ -12,6 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -28,7 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import com.daytoday.network.ItalianLessonDto
+import com.daytoday.ui.navigation.Screen
 import com.daytoday.ui.screen.workout.UiState
 import com.daytoday.ui.theme.DayTodayButton
 import com.daytoday.ui.theme.DayTodayCard
@@ -37,10 +44,25 @@ import com.daytoday.ui.theme.ErrorState
 import com.daytoday.ui.theme.LoadingOverlay
 
 @Composable
-fun ItalianScreen(viewModel: ItalianViewModel = hiltViewModel()) {
+fun ItalianScreen(
+    navController: NavHostController,
+    viewModel: ItalianViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(
-        topBar = { DayTodayTopAppBar(title = "Italian") },
+        topBar = {
+            DayTodayTopAppBar(
+                title = "Italian",
+                actions = {
+                    IconButton(onClick = { navController.navigate(Screen.ItalianVoice.route) }) {
+                        Icon(Icons.Default.Mic, contentDescription = "Voce")
+                    }
+                    IconButton(onClick = { navController.navigate(Screen.ItalianTutor.route) }) {
+                        Icon(Icons.Default.Forum, contentDescription = "Tutor chat")
+                    }
+                },
+            )
+        },
     ) { padding ->
         Box(
             modifier = Modifier

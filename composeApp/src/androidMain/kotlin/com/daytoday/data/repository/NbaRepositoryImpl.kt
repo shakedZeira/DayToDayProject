@@ -19,6 +19,7 @@ import com.daytoday.model.Injury
 import com.daytoday.model.NbaGame
 import com.daytoday.model.NbaNews
 import com.daytoday.model.NbaTeam
+import com.daytoday.model.dedupeInjuries
 import com.daytoday.repository.NbaRepository
 import com.daytoday.repository.Result
 import com.daytoday.ui.screen.nba.matchesTeamFilter
@@ -458,11 +459,13 @@ class NbaRepositoryImpl @Inject constructor(
     // ---------- Injuries ----------
 
     override suspend fun getInjuries(teamId: String?): Result<List<Injury>> = withContext(Dispatchers.IO) {
-        val cached = if (teamId != null) {
+        // Deduplicate on read too: installs that cached duplicate rows before the
+        // insert-side fix (see fetchInjuriesFromApi) must render clean immediately.
+        val cached = (if (teamId != null) {
             injuryDao.getCachedInjuries(teamId).map { it.toModel() }
         } else {
             injuryDao.getCachedAllInjuries().map { it.toModel() }
-        }
+        }).dedupeInjuries()
         if (cached.isNotEmpty()) {
             Log.d(TAG, "Returning cached injuries for ${teamId ?: "all"} (${cached.size})")
             launchBackgroundInjuries(teamId)
@@ -479,9 +482,15 @@ class NbaRepositoryImpl @Inject constructor(
             Log.w(TAG, "ESPN injuries failed", e)
             return@withContext Result.failure("Injury reports unavailable", e)
         }
-        val injuries = espn.getOrThrow().map { it.toNbaInjury() }
+        val injuries = espn.getOrThrow().map { it.toNbaInjury() }.dedupeInjuries()
         val entities = injuries.map { com.daytoday.data.database.InjuryEntity.fromModel(it) }
-        injuryDao.insertAll(entities)
+        if (entities.isNotEmpty()) {
+            // ESPN returns a full-league snapshot, so replace the cache instead of
+            // appending: an insert-only cache keeps every superseded record id and
+            // makes the same player appear repeatedly in the Injuries list.
+            injuryDao.deleteAll()
+            injuryDao.insertAll(entities)
+        }
         Log.d(TAG, "Cached ${injuries.size} ESPN injury reports")
         val filtered = if (teamId != null) {
             injuries.filter { injury -> injury.matchesTeamFilter(teamId) }

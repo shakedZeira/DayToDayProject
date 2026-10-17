@@ -44,8 +44,12 @@ data class LocalWeekStats(
     val weekStart: Long = 0,
     val workouts: Int = 0,
     val durationMinutes: Int = 0,
+    /** Combined burn: [workoutCalories] + [stepCalories]. */
     val caloriesBurned: Int = 0,
     val volume: Double = 0.0,
+    val steps: Long = 0,
+    val stepCalories: Int = 0,
+    val workoutCalories: Int = 0,
 )
 
 @Singleton
@@ -88,6 +92,13 @@ class LocalSummaryUseCases @Inject constructor(
         )
     }
 
+    /**
+     * This week's stats (Monday 00:00 → now), combining both burn sources the
+     * user cares about: logged workout calories plus calories derived from
+     * Health Connect steps over the same window. Nothing here touches the
+     * server — the Prisma `Workout` model has no calories/duration columns, so
+     * the device is the authoritative source for "calories burned per week".
+     */
     suspend fun weekStats(): LocalWeekStats = withContext(Dispatchers.IO) {
         val zone = ZoneId.systemDefault()
         val today = LocalDate.now(zone)
@@ -95,15 +106,35 @@ class LocalSummaryUseCases @Inject constructor(
         val startMillis = weekStart.atStartOfDay(zone).toInstant().toEpochMilli()
         val endMillis = weekStart.plusWeeks(1).atStartOfDay(zone).toInstant().toEpochMilli()
 
+        val profile = runCatching { settingsManager.userProfile.first() }.getOrNull()
+        val weightKg = profile?.weightKg ?: CalorieCalculator.DEFAULT_WEIGHT_KG
+
         val sessions = workoutRepository.getSessions(SESSION_SCAN_LIMIT, 0).getOrElse(emptyList())
         val inWeek = sessions.filter { it.startTime >= startMillis && it.startTime < endMillis }
+
+        // Prefer the calories recomputed from completed sets (same math the daily
+        // view uses); fall back to the stored value for sessions saved before the
+        // calorie model existed or by a path that persisted 0.
+        val storedWorkoutCalories = inWeek.sumOf { it.caloriesBurned }
+        val derivedWorkoutCalories = CalorieCalculator
+            .workoutCalories(weightKg, inWeek.filter { it.isCompleted })
+            .roundToInt()
+        val workoutCalories = maxOf(storedWorkoutCalories, derivedWorkoutCalories)
+
+        val weekSteps = runCatching {
+            healthRepository.totalSteps(context, weekStart, today)
+        }.getOrDefault(0L)
+        val stepCalories = CalorieCalculator.stepsCalories(weekSteps, weightKg).roundToInt()
 
         LocalWeekStats(
             weekStart = startMillis,
             workouts = inWeek.size,
             durationMinutes = inWeek.sumOf { it.durationMinutes },
-            caloriesBurned = inWeek.sumOf { it.caloriesBurned },
+            caloriesBurned = workoutCalories + stepCalories,
             volume = inWeek.sumOf { session -> volumeOf(session) },
+            steps = weekSteps,
+            stepCalories = stepCalories,
+            workoutCalories = workoutCalories,
         )
     }
 

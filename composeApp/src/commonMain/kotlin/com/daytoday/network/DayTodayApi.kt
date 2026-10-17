@@ -6,8 +6,6 @@ import com.daytoday.model.Injury
 import com.daytoday.model.NbaGame
 import com.daytoday.model.NbaNews
 import com.daytoday.model.PersonalBests
-import com.daytoday.model.PdfMergeRequest
-import com.daytoday.model.PdfMergeResponse
 import com.daytoday.model.WeeklyProgress
 import com.daytoday.model.WorkoutSession
 
@@ -38,8 +36,6 @@ interface DayTodayApi {
 
     suspend fun getWeeklyProgress(weekStart: String): WeeklyProgress
 
-    suspend fun mergePdfs(request: PdfMergeRequest): PdfMergeResponse
-
     suspend fun login(request: LoginRequest): AuthResponse
 
     suspend fun register(request: RegisterRequest): AuthResponse
@@ -49,4 +45,12 @@ interface DayTodayApi {
     suspend fun getItalianProgress(authToken: String): ItalianPathProgressDto
 
     suspend fun submitItalianLesson(authToken: String, lessonId: String, answers: List<ItalianAnswerDto>): ItalianSubmitResultDto
+
+    suspend fun sendItalianChat(authToken: String, messages: List<ChatMessageDto>): ItalianChatResponse
+
+    suspend fun streamItalianChat(
+        authToken: String,
+        messages: List<ChatMessageDto>,
+        onDelta: (text: String, lang: String) -> Unit,
+    )
 }

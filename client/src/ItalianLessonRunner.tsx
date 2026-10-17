@@ -11,7 +11,6 @@ interface Props {
 
 interface Picks {
   choicePick: number | null;
-  typeText: string;
   matchPicks: { left: string; right: string }[];
 }
 
@@ -26,14 +25,12 @@ function shuffled<T>(items: T[]): T[] {
 }
 
 export function correctText(ex: ItalianExercise): string {
-  if (ex.kind === "type") return ex.accepted[0];
   if (ex.kind === "choice") return ex.choices[ex.answerIndex];
   return ex.pairs.map((p) => `${p.left} = ${p.right}`).join(", ");
 }
 
 export function buildAnswer(ex: ItalianExercise, picks: Picks): ItalianAnswer {
   if (ex.kind === "choice") return { exerciseId: ex.id, kind: "choice", choiceIndex: picks.choicePick ?? -1 };
-  if (ex.kind === "type") return { exerciseId: ex.id, kind: "type", text: picks.typeText };
   return { exerciseId: ex.id, kind: "match", pairs: picks.matchPicks };
 }
 
@@ -47,7 +44,6 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
   const [answers, setAnswers] = useState<ItalianAnswer[]>([]);
   const [feedback, setFeedback] = useState<{ correct: boolean } | null>(null);
   const [choicePick, setChoicePick] = useState<number | null>(null);
-  const [typeText, setTypeText] = useState("");
   const [matchPicks, setMatchPicks] = useState<{ left: string; right: string }[]>([]);
   const [pickLeft, setPickLeft] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -69,7 +65,7 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
   }
 
   function picks(): Picks {
-    return { choicePick, typeText, matchPicks };
+    return { choicePick, matchPicks };
   }
 
   function onCheck() {
@@ -85,7 +81,6 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
     setAnswers(next);
     setFeedback(null);
     setChoicePick(null);
-    setTypeText("");
     setMatchPicks([]);
     setPickLeft(null);
     setIdx((i) => i + 1);
@@ -146,16 +141,6 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
         </div>
       )}
 
-      {ex.kind === "type" && (
-        <input
-          className="border rounded px-3 py-2"
-          value={typeText}
-          disabled={!!feedback}
-          onChange={(e) => setTypeText(e.target.value)}
-          placeholder="Type in Italian…"
-        />
-      )}
-
       {ex.kind === "match" && (
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-2">
@@ -214,7 +199,6 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
             className="bg-emerald-600 text-white rounded px-6 py-2 disabled:opacity-40"
             disabled={
               (ex.kind === "choice" && choicePick === null) ||
-              (ex.kind === "type" && !typeText.trim()) ||
               (ex.kind === "match" && matchPicks.length !== ex.pairs.length)
             }
             onClick={onCheck}

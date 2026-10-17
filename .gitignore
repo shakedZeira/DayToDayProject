@@ -23,6 +23,11 @@ local.properties
 *.iml
 .idea/
 
+# Tooling output / scratch artifacts
+graphify-out/
+dtd-src.tar.gz
+build_apk.txt
+
 # Tooling scratch / recovered-source work areas
 .decomp/
 .freebuff/

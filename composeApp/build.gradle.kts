@@ -50,6 +50,7 @@ kotlin {
                 implementation("androidx.compose.ui:ui-tooling")
                 implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
                 implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+                implementation("androidx.lifecycle:lifecycle-process:2.8.7")
                 implementation("androidx.datastore:datastore-preferences:1.1.1")
                 implementation("androidx.datastore:datastore-preferences-rxjava3:1.1.1")
                 implementation("io.reactivex.rxjava3:rxjava:3.1.6")

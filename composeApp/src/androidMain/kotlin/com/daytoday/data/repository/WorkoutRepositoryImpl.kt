@@ -17,13 +17,16 @@ import com.daytoday.data.database.WeeklyProgressEntity
 import com.daytoday.model.DailyProgress
 import com.daytoday.model.Exercise
 import com.daytoday.model.PersonalBests
+import com.daytoday.model.PlanExercise
 import com.daytoday.model.WeeklyProgress
+import com.daytoday.model.WorkoutPlan
 import com.daytoday.model.WorkoutSession
 import com.daytoday.model.SetRecord
 import com.daytoday.network.DayTodayApi
 import com.daytoday.repository.WorkoutRepository
 import com.daytoday.repository.Result
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import androidx.room.withTransaction
 import javax.inject.Inject
@@ -41,11 +44,46 @@ class WorkoutRepositoryImpl @Inject constructor(
     private val dailyProgressDao: DailyProgressDao,
     private val personalBestsDao: PersonalBestsDao,
     private val weeklyProgressDao: WeeklyProgressDao,
-    private val api: DayTodayApi
+    private val api: DayTodayApi,
+    private val settingsManager: com.daytoday.settings.SettingsManager
 ) : WorkoutRepository {
 
     companion object {
         private const val TAG = "WorkoutRepository"
+
+        private fun sydneyWorkoutPlan() = WorkoutPlan(
+            id = "plan_sydney_workout",
+            name = "Sydney Workout",
+            exercises = listOf(
+                PlanExercise(
+                    exerciseId = "ex_pull_up",
+                    exerciseName = "Pull-Up",
+                    muscleGroup = "Back",
+                    targetSets = 1,
+                    targetReps = 5,
+                    targetWeightKg = 0.0,
+                ),
+                PlanExercise(
+                    exerciseId = "ex_push_up",
+                    exerciseName = "Push-Up",
+                    muscleGroup = "Chest",
+                    targetSets = 1,
+                    targetReps = 10,
+                    targetWeightKg = 0.0,
+                ),
+                PlanExercise(
+                    exerciseId = "ex_air_squat",
+                    exerciseName = "Air Squat",
+                    muscleGroup = "Legs",
+                    targetSets = 1,
+                    targetReps = 15,
+                    targetWeightKg = 0.0,
+                ),
+            ),
+            createdAt = System.currentTimeMillis(),
+            warmupSeconds = 180,
+            amrapSeconds = 1200,
+        )
     }
 
     override suspend fun getSessions(limit: Int, offset: Int): Result<List<WorkoutSession>> = withContext(Dispatchers.IO) {
@@ -138,6 +176,7 @@ class WorkoutRepositoryImpl @Inject constructor(
     override suspend fun getExercises(): Result<List<Exercise>> = withContext(Dispatchers.IO) {
         try {
             runCatching { ExerciseSeed.seedMissingExercises(exerciseDao) }
+            ensureDefaultWorkoutPlan()
             val cached = exerciseDao.getAllExercises().map { it.toModel() }
             Result.success(cached)
         } catch (e: Exception) {
@@ -183,6 +222,15 @@ class WorkoutRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "Network fetch weekly progress failed, returning cached data", e)
             cached?.let { Result.success(it) } ?: Result.failure(e.message ?: "Failed to fetch weekly progress", e)
+        }
+    }
+
+    private suspend fun ensureDefaultWorkoutPlan() {
+        runCatching {
+            val plans = settingsManager.savedWorkoutPlans.first()
+            if (plans.none { it.id == "plan_sydney_workout" }) {
+                settingsManager.saveWorkoutPlan(sydneyWorkoutPlan())
+            }
         }
     }
 

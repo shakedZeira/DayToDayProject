@@ -96,10 +96,20 @@ class WorkoutProgressViewModel @Inject constructor(
                 .toString()
             val result = workoutUseCases.getWeeklyProgress(weekStart)
             val remoteWeek = (result as? Result.Success)?.data
+            // The device is authoritative for calories (it alone can see Health
+            // Connect steps, and the server's Workout model has no calories
+            // column, so its caloriesBurned is always 0). Only fall back to the
+            // server when the local store has no signal at all, and then only
+            // for the fields the server actually knows (workouts/volume).
             val week = when {
-                localWeek.workouts > 0 -> localWeek
-                remoteWeek != null -> remoteWeek
-                else -> localWeek
+                remoteWeek == null -> localWeek
+                localWeek.workouts == 0 && localWeek.caloriesBurned == 0 -> remoteWeek
+                else -> localWeek.copy(
+                    workouts = localWeek.workouts.takeIf { it > 0 } ?: remoteWeek.workouts,
+                    durationMinutes = localWeek.durationMinutes.takeIf { it > 0 }
+                        ?: remoteWeek.durationMinutes,
+                    volume = localWeek.volume.takeIf { it > 0.0 } ?: remoteWeek.volume,
+                )
             }
             _weeklyProgress.value = UiState.Success(week)
         }
@@ -113,6 +123,7 @@ class WorkoutProgressViewModel @Inject constructor(
             durationMinutes = week.durationMinutes,
             caloriesBurned = week.caloriesBurned,
             volume = week.volume,
+            stepCalories = week.stepCalories,
         )
     }
 

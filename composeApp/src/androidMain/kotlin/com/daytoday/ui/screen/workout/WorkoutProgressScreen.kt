@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -155,6 +156,17 @@ fun WorkoutProgressScreenContent(
                                     ProgressStat("Duration", "${weekly.durationMinutes} min", Icons.Default.AccessTime)
                                     ProgressStat("Calories", weekly.caloriesBurned.toString(), Icons.Default.LocalFireDepartment)
                                     ProgressStat("Volume", "${formatNumber(weekly.volume)} kg", Icons.Default.TrendingUp)
+                                }
+                                if (weekly.caloriesBurned > 0) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "${formatNumber((weekly.caloriesBurned - weekly.stepCalories).toDouble())} workout + " +
+                                            "${formatNumber(weekly.stepCalories.toDouble())} kcal from steps",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center,
+                                    )
                                 }
                             }
                         }

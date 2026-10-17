@@ -23,12 +23,6 @@ describe("gradeExercise", () => {
     expect(gradeExercise(ex, { exerciseId: "e", kind: "choice", choiceIndex: 0 })).toBe(true);
     expect(gradeExercise(ex, { exerciseId: "e", kind: "choice", choiceIndex: 1 })).toBe(false);
   });
-
-  it("grades type answers ignoring case and accents", () => {
-    const ex = { id: "e", kind: "type" as const, prompt: "p", accepted: ["caffè"] };
-    expect(gradeExercise(ex, { exerciseId: "e", kind: "type", text: "  CAFFE! " })).toBe(true);
-    expect(gradeExercise(ex, { exerciseId: "e", kind: "type", text: "te" })).toBe(false);
-  });
 });
 
 describe("path logic", () => {

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "./db";
 import { requireAuth, type AuthedRequest } from "./session";
 import { updateProgression, computeAnalytics } from "./progression";
+import { startOfWeek } from "./goals";
 import type { ProgressiveSuggestion, WorkoutSetInput } from "shared";
 
 export const workoutsRouter = Router();
@@ -71,6 +72,68 @@ workoutsRouter.get("/", async (req: AuthedRequest, res) => {
 
 workoutsRouter.get("/analytics/summary", async (req: AuthedRequest, res) => {
   res.json(await computeAnalytics(req.userId!));
+});
+
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * GET /api/workouts/progress/weekly?weekStart=yyyy-MM-dd
+ *
+ * Serves the client's WeeklyProgress model:
+ * { weekStart: Long, workouts: Int, durationMinutes: Int, caloriesBurned: Int, volume: Double, stepCalories: Int }.
+ *
+ * `weekStart` is a plain local date (no time/zone). We treat it as a calendar
+ * date at server-local midnight and count workouts whose `Workout.date` falls
+ * in [weekStart, weekStart + 7d). Defaults to the current week's Monday when
+ * the param is absent.
+ *
+ * The Workout model has no duration or calories columns, and step data lives
+ * only in Health Connect on the user's device, so `durationMinutes`,
+ * `caloriesBurned` and `stepCalories` are always 0 here; volume is summed from
+ * WorkoutSet weightKg * reps. The Android client treats its on-device
+ * computation (workout calories + Health Connect step calories) as the
+ * authoritative source for calories and only uses this endpoint for
+ * workouts/duration/volume.
+ */
+workoutsRouter.get("/progress/weekly", async (req: AuthedRequest, res) => {
+  const raw = typeof req.query.weekStart === "string" ? req.query.weekStart.trim() : "";
+
+  let start: Date;
+  if (!raw) {
+    start = startOfWeek(new Date());
+  } else if (DATE_ONLY_RE.test(raw)) {
+    const [y, m, d] = raw.split("-").map(Number);
+    const parsed = new Date(y, m - 1, d);
+    // Reject non-existent calendar dates such as 2026-02-31.
+    if (parsed.getFullYear() !== y || parsed.getMonth() !== m - 1 || parsed.getDate() !== d) {
+      return res.status(400).json({ error: "invalid weekStart, expected yyyy-MM-dd" });
+    }
+    start = parsed;
+  } else {
+    return res.status(400).json({ error: "invalid weekStart, expected yyyy-MM-dd" });
+  }
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 7); // calendar-based, so DST shifts are handled
+
+  const workouts = await prisma.workout.findMany({
+    where: { ownerId: req.userId!, date: { gte: start, lt: end } },
+    select: { sets: { select: { weightKg: true, reps: true } } },
+  });
+
+  const volume = workouts.reduce(
+    (sum, w) => sum + w.sets.reduce((s, st) => s + st.weightKg * st.reps, 0),
+    0
+  );
+
+  res.json({
+    weekStart: start.getTime(),
+    workouts: workouts.length,
+    durationMinutes: 0, // not tracked server-side (no schema fields)
+    caloriesBurned: 0, // not tracked server-side (no schema fields); device is authoritative
+    volume: Number(volume.toFixed(1)),
+    stepCalories: 0, // steps live only in Health Connect on the user's device
+  });
 });
 
 workoutsRouter.post("/", async (req: AuthedRequest, res) => {

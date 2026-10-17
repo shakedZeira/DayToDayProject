@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.daytoday.model.UserProfile
 import com.daytoday.model.WorkoutPlan
+import java.time.DayOfWeek
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -54,6 +55,15 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         private const val DEFAULT_WORKOUT_REMINDER_MINUTES = 18 * 60
         private const val MIN_WORKOUT_REMINDER_MINUTES = 0
         private const val MAX_WORKOUT_REMINDER_MINUTES = 23 * 60 + 59
+
+        private const val SUMMARY_DAILY_MINUTES_KEY = "summary_daily_minutes"
+        private const val SUMMARY_WEEKLY_MINUTES_KEY = "summary_weekly_minutes"
+        private const val SUMMARY_WEEKLY_DAY_KEY = "summary_weekly_day"
+        private const val DEFAULT_SUMMARY_DAILY_MINUTES = 21 * 60
+        private const val DEFAULT_SUMMARY_WEEKLY_MINUTES = 20 * 60
+        private const val DEFAULT_SUMMARY_WEEKLY_DAY = 6 // java.time.DayOfWeek.SATURDAY.value
+        private const val MIN_SUMMARY_MINUTES = 0
+        private const val MAX_SUMMARY_MINUTES = 23 * 60 + 59
     }
 
     private val tokenKey = stringPreferencesKey(TOKEN_KEY)
@@ -79,6 +89,9 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     private val weeklyWorkoutGoalKey = intPreferencesKey(WEEKLY_WORKOUT_GOAL_KEY)
     private val goalsListKey = stringPreferencesKey(GOALS_LIST_KEY)
     private val workoutReminderMinutesKey = intPreferencesKey(WORKOUT_REMINDER_MINUTES_KEY)
+    private val summaryDailyMinutesKey = intPreferencesKey(SUMMARY_DAILY_MINUTES_KEY)
+    private val summaryWeeklyMinutesKey = intPreferencesKey(SUMMARY_WEEKLY_MINUTES_KEY)
+    private val summaryWeeklyDayKey = intPreferencesKey(SUMMARY_WEEKLY_DAY_KEY)
 
     private val defaultProfile = UserProfile()
 
@@ -170,6 +183,25 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         .map { it[workoutReminderMinutesKey] ?: DEFAULT_WORKOUT_REMINDER_MINUTES }
         .distinctUntilChanged()
 
+    /** Minutes since local midnight for the daily summary alert (default 21:00). */
+    val summaryDailyMinutes: kotlinx.coroutines.flow.Flow<Int> = dataStore.data
+        .map { it[summaryDailyMinutesKey] ?: DEFAULT_SUMMARY_DAILY_MINUTES }
+        .distinctUntilChanged()
+
+    /** Minutes since local midnight for the weekly summary alert (default 20:00). */
+    val summaryWeeklyMinutes: kotlinx.coroutines.flow.Flow<Int> = dataStore.data
+        .map { it[summaryWeeklyMinutesKey] ?: DEFAULT_SUMMARY_WEEKLY_MINUTES }
+        .distinctUntilChanged()
+
+    /** Day of week for the weekly summary alert (default Saturday). */
+    val summaryWeeklyDay: kotlinx.coroutines.flow.Flow<DayOfWeek> = dataStore.data
+        .map { prefs ->
+            DayOfWeek.of(
+                (prefs[summaryWeeklyDayKey] ?: DEFAULT_SUMMARY_WEEKLY_DAY).coerceIn(1, 7)
+            )
+        }
+        .distinctUntilChanged()
+
     /**
      * The user's goal list. When nothing has been stored yet (or the stored JSON is
      * unreadable) the list is derived from the legacy [caloriesGoal]/[weeklyWorkoutGoal]
@@ -192,6 +224,20 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     suspend fun setWorkoutReminderMinutes(minutes: Int) {
         val safe = minutes.coerceIn(MIN_WORKOUT_REMINDER_MINUTES, MAX_WORKOUT_REMINDER_MINUTES)
         dataStore.edit { it[workoutReminderMinutesKey] = safe }
+    }
+
+    suspend fun setSummaryDailyMinutes(minutes: Int) {
+        val safe = minutes.coerceIn(MIN_SUMMARY_MINUTES, MAX_SUMMARY_MINUTES)
+        dataStore.edit { it[summaryDailyMinutesKey] = safe }
+    }
+
+    suspend fun setSummaryWeeklyMinutes(minutes: Int) {
+        val safe = minutes.coerceIn(MIN_SUMMARY_MINUTES, MAX_SUMMARY_MINUTES)
+        dataStore.edit { it[summaryWeeklyMinutesKey] = safe }
+    }
+
+    suspend fun setSummaryWeeklyDay(day: DayOfWeek) {
+        dataStore.edit { it[summaryWeeklyDayKey] = day.value }
     }
 
     suspend fun setGoals(goals: List<GoalEntry>) {

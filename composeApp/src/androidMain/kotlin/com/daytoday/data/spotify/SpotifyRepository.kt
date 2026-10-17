@@ -179,11 +179,18 @@ class SpotifyRepositoryImpl @Inject constructor(
 
     private fun launchSpotify(context: Context, alreadyLaunched: Boolean, playlistUri: String) {
         if (alreadyLaunched || !containsSpotifyPackage(context)) return
-        runCatching {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(playlistUri)).apply {
+        val playlistId = playlistUri.substringAfterLast(":").takeIf { it.isNotBlank() }
+        val candidates = buildList {
+            add(Uri.parse(playlistUri))
+            playlistId?.let { add(Uri.parse("https://open.spotify.com/playlist/$it")) }
+        }
+        for (uri in candidates) {
+            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(intent)
+            if (context.packageManager.resolveActivity(intent, 0) == null) continue
+            runCatching { context.startActivity(intent) }
+            return
         }
     }
 
@@ -200,8 +207,8 @@ class SpotifyRepositoryImpl @Inject constructor(
 
     companion object {
         private const val SPOTIFY_PACKAGE = "com.spotify.music"
-        private const val DEVICE_WAIT_ATTEMPTS = 10
-        private const val DEVICE_WAIT_DELAY_MS = 1_500L
+        private const val DEVICE_WAIT_ATTEMPTS = 8
+        private const val DEVICE_WAIT_DELAY_MS = 600L
         private const val PLAYLISTS_LIMIT = 50
     }
 }

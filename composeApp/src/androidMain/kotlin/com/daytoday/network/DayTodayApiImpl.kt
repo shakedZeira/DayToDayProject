@@ -6,26 +6,36 @@ import com.daytoday.model.Injury
 import com.daytoday.model.NbaGame
 import com.daytoday.model.NbaNews
 import com.daytoday.model.PersonalBests
-import com.daytoday.model.PdfMergeRequest
-import com.daytoday.model.PdfMergeResponse
 import com.daytoday.model.WeeklyProgress
 import com.daytoday.model.WorkoutSession
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.timeout
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.isSuccess
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.readUTF8Line
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class DayTodayApiImpl : DayTodayApi {
 
@@ -35,6 +45,18 @@ class DayTodayApiImpl : DayTodayApi {
         }
         install(Logging) {
             level = LogLevel.ALL
+        }
+        install(HttpTimeout) {
+            connectTimeoutMillis = 5_000
+            requestTimeoutMillis = 60_000
+            socketTimeoutMillis = 60_000
+        }
+        HttpResponseValidator {
+            validateResponse { response ->
+                if (!response.status.isSuccess()) {
+                    throw ApiException(extractErrorMessage(response))
+                }
+            }
         }
         defaultRequest {
             header("Accept", "application/json")
@@ -65,10 +87,16 @@ class DayTodayApiImpl : DayTodayApi {
         client.get(absoluteUrl("api/workouts/sessions/$sessionId")).body()
 
     override suspend fun saveSession(session: WorkoutSession): WorkoutSession =
-        client.post(absoluteUrl("api/workouts/sessions")) { setBody(session) }.body()
+        client.post(absoluteUrl("api/workouts/sessions")) {
+            contentType(ContentType.Application.Json)
+            setBody(session)
+        }.body()
 
     override suspend fun saveSessions(sessions: List<WorkoutSession>): List<WorkoutSession> =
-        client.post(absoluteUrl("api/workouts/sessions/batch")) { setBody(sessions) }.body()
+        client.post(absoluteUrl("api/workouts/sessions/batch")) {
+            contentType(ContentType.Application.Json)
+            setBody(sessions)
+        }.body()
 
     override suspend fun deleteSession(sessionId: String): Unit {
         client.delete(absoluteUrl("api/workouts/sessions/$sessionId"))
@@ -86,14 +114,17 @@ class DayTodayApiImpl : DayTodayApi {
     override suspend fun getWeeklyProgress(weekStart: String): WeeklyProgress =
         client.get(absoluteUrl("api/workouts/progress/weekly")) { parameter("weekStart", weekStart) }.body()
 
-    override suspend fun mergePdfs(request: PdfMergeRequest): PdfMergeResponse =
-        client.post(absoluteUrl("api/pdfs/merge")) { setBody(request) }.body()
-
     override suspend fun login(request: LoginRequest): AuthResponse =
-        client.post(absoluteUrl("api/auth/login")) { setBody(request) }.body()
+        client.post(absoluteUrl("api/auth/login")) {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
 
     override suspend fun register(request: RegisterRequest): AuthResponse =
-        client.post(absoluteUrl("api/auth/register")) { setBody(request) }.body()
+        client.post(absoluteUrl("api/auth/register")) {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
 
     override suspend fun getItalianCourse(authToken: String): ItalianCourseDto =
         client.get(absoluteUrl("api/italian-path/course")) {
@@ -115,4 +146,57 @@ class DayTodayApiImpl : DayTodayApi {
             contentType(ContentType.Application.Json)
             setBody(ItalianSubmitRequest(answers))
         }.body()
+
+    override suspend fun sendItalianChat(
+        authToken: String,
+        messages: List<ChatMessageDto>,
+    ): ItalianChatResponse =
+        client.post(absoluteUrl("api/italian/chat")) {
+            header("Authorization", "Bearer $authToken")
+            contentType(ContentType.Application.Json)
+            setBody(ItalianChatRequest(messages))
+        }.body()
+
+    override suspend fun streamItalianChat(
+        authToken: String,
+        messages: List<ChatMessageDto>,
+        onDelta: (text: String, lang: String) -> Unit,
+    ) {
+        client.preparePost(absoluteUrl("api/italian/chat/stream")) {
+            header(HttpHeaders.Authorization, "Bearer $authToken")
+            contentType(ContentType.Application.Json)
+            setBody(ItalianChatRequest(messages))
+            timeout {
+                requestTimeoutMillis = 300_000L
+                socketTimeoutMillis = 300_000L
+            }
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                throw ApiException(extractErrorMessage(response))
+            }
+            val channel = response.bodyAsChannel()
+            while (true) {
+                val line = channel.readUTF8Line() ?: break
+                if (line.isBlank()) continue
+                val parsed = try {
+                    networkJson.decodeFromString(ChatStreamLine.serializer(), line)
+                } catch (t: Throwable) {
+                    null
+                } ?: continue
+                if (parsed.done) break
+                val delta = parsed.delta
+                if (delta != null) onDelta(delta, parsed.lang ?: "it")
+            }
+        }
+    }
+}
+
+class ApiException(message: String) : Exception(message)
+
+private suspend fun extractErrorMessage(response: HttpResponse): String {
+    val raw = runCatching { response.bodyAsText() }.getOrNull().orEmpty()
+    val fromJson = runCatching {
+        networkJson.parseToJsonElement(raw).jsonObject["error"]?.jsonPrimitive?.content
+    }.getOrNull()
+    return fromJson?.takeIf { it.isNotBlank() } ?: "Request failed (${response.status.value})"
 }

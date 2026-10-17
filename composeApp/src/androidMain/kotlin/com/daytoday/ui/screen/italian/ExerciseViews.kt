@@ -14,7 +14,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,7 +64,6 @@ fun ExerciseContent(
     val tts = rememberItalianTts()
     when (ex) {
         is ItalianExerciseDto.Choice -> ChoiceExercise(ex, answer, onAnswer, locked, tts)
-        is ItalianExerciseDto.Type -> TypeExercise(ex, answer, onAnswer, locked)
         is ItalianExerciseDto.Match -> MatchExercise(ex, answer, onAnswer, locked)
     }
 }
@@ -112,42 +110,6 @@ private fun ChoiceExercise(
             ) {
                 Text(text = choice, style = MaterialTheme.typography.bodyLarge)
             }
-        }
-    }
-}
-
-@Composable
-private fun TypeExercise(
-    ex: ItalianExerciseDto.Type,
-    answer: ItalianAnswerDto?,
-    onAnswer: (ItalianAnswerDto) -> Unit,
-    locked: Boolean,
-) {
-    var text by remember(ex.id) {
-        mutableStateOf((answer as? ItalianAnswerDto.Type)?.text.orEmpty())
-    }
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = ex.prompt,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            enabled = !locked,
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Button(
-            onClick = { onAnswer(ItalianAnswerDto.Type(ex.id, text)) },
-            enabled = !locked && text.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Check")
         }
     }
 }
@@ -234,7 +196,6 @@ private fun MatchExercise(
 
 private fun correctAnswerText(ex: ItalianExerciseDto): String = when (ex) {
     is ItalianExerciseDto.Choice -> ex.choices.getOrElse(ex.answerIndex) { "" }
-    is ItalianExerciseDto.Type -> ex.accepted.joinToString(" / ")
     is ItalianExerciseDto.Match -> ex.pairs.joinToString(", ") { "${it.left} = ${it.right}" }
 }
 

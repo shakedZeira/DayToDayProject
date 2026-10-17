@@ -1,62 +1,6 @@
 import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import { healthRouter } from "./health";
-import { authRouter } from "./auth";
-import { tasksRouter } from "./tasks";
-import { goalsRouter } from "./goals";
-import { pushRouter } from "./push";
-import { workoutsRouter } from "./workouts";
-import { foodsRouter } from "./foods";
-import { exercisesRouter } from "./exercises";
-import { nutritionRouter } from "./nutrition";
-import { nutritionPhotoRouter } from "./nutritionPhoto";
-import { profileRouter } from "./profile";
-import { routinesRouter } from "./routines";
-import { progressionRouter } from "./progression";
-import { pdfsRouter } from "./pdfs";
-import { highlightsRouter } from "./highlights";
-import { studyRouter } from "./study";
-import { italianRouter } from "./italian";
-import { italianPathRouter } from "./italianPath";
-import { digestRouter } from "./digest";
-import { settingsRouter } from "./settings";
-import { progressRouter } from "./progress";
+import { app } from "./app";
 import { startScheduler } from "./scheduler";
-import { prisma } from "./db";
-
-export const app = express();
-
-app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
-app.use(express.json());
-
-app.use("/api", healthRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/tasks", tasksRouter);
-app.use("/api/goals", goalsRouter);
-app.use("/api/push", pushRouter);
-app.use("/api/workouts", workoutsRouter);
-app.use("/api/foods", foodsRouter);
-app.use("/api/exercises", exercisesRouter);
-app.use("/api/routines", routinesRouter);
-app.use("/api/progression", progressionRouter);
-app.use("/api/nutrition", nutritionRouter);
-app.use("/api/nutrition", nutritionPhotoRouter);
-app.use("/api/profile", profileRouter);
-app.use("/api/pdfs", pdfsRouter);
-app.use("/api", highlightsRouter);
-app.use("/api", studyRouter);
-app.use("/api/italian", italianRouter);
-app.use("/api/italian-path", italianPathRouter);
-app.use("/api/digest", digestRouter);
-app.use("/api/settings", settingsRouter);
-app.use("/api/progress", progressRouter);
-
-// Verify the DB is reachable on boot.
-app.get("/api/ready", async (_req, res) => {
-  await prisma.$queryRaw`SELECT 1`;
-  res.json({ ready: true });
-});
 
 const port = Number(process.env.PORT) || 4000;
 
@@ -66,3 +10,5 @@ if (require.main === module) {
     console.log(`Server listening on http://localhost:${port}`);
   });
 }
+
+export { app };

@@ -4,7 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.daytoday.data.notification.WorkoutReminderReceiver
+import com.daytoday.data.notification.SummaryKind
+import com.daytoday.data.notification.SummaryScheduler
+import com.daytoday.data.notification.WorkoutAlarmReceiver
 import com.daytoday.data.spotify.SpotifyLoginResult
 import com.daytoday.data.spotify.SpotifyPlayResult
 import com.daytoday.data.spotify.SpotifyPlaylist
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import javax.inject.Inject
 
 @HiltViewModel
@@ -47,6 +50,15 @@ class SettingsViewModel @Inject constructor(
 
     private val _reminderMinutes = MutableStateFlow(18 * 60)
     val reminderMinutes: StateFlow<Int> = _reminderMinutes.asStateFlow()
+
+    private val _summaryDailyMinutes = MutableStateFlow(21 * 60)
+    val summaryDailyMinutes: StateFlow<Int> = _summaryDailyMinutes.asStateFlow()
+
+    private val _summaryWeeklyMinutes = MutableStateFlow(20 * 60)
+    val summaryWeeklyMinutes: StateFlow<Int> = _summaryWeeklyMinutes.asStateFlow()
+
+    private val _summaryWeeklyDay = MutableStateFlow(DayOfWeek.SATURDAY)
+    val summaryWeeklyDay: StateFlow<DayOfWeek> = _summaryWeeklyDay.asStateFlow()
 
     private val _nbaAlerts = MutableStateFlow(true)
     val nbaAlerts: StateFlow<Boolean> = _nbaAlerts.asStateFlow()
@@ -97,6 +109,24 @@ class SettingsViewModel @Inject constructor(
             settingsManager.workoutReminderMinutes
                 .distinctUntilChanged()
                 .collect { minutes -> _reminderMinutes.value = minutes }
+        }
+
+        viewModelScope.launch {
+            settingsManager.summaryDailyMinutes
+                .distinctUntilChanged()
+                .collect { minutes -> _summaryDailyMinutes.value = minutes }
+        }
+
+        viewModelScope.launch {
+            settingsManager.summaryWeeklyMinutes
+                .distinctUntilChanged()
+                .collect { minutes -> _summaryWeeklyMinutes.value = minutes }
+        }
+
+        viewModelScope.launch {
+            settingsManager.summaryWeeklyDay
+                .distinctUntilChanged()
+                .collect { day -> _summaryWeeklyDay.value = day }
         }
 
         viewModelScope.launch {
@@ -152,13 +182,13 @@ class SettingsViewModel @Inject constructor(
         _workoutReminders.value = enabled
         saveWorkoutRemindersPref(enabled)
         if (enabled) {
-            WorkoutReminderReceiver.schedule(
+            WorkoutAlarmReceiver.schedule(
                 context,
                 _reminderMinutes.value / 60,
                 _reminderMinutes.value % 60
             )
         } else {
-            WorkoutReminderReceiver.cancel(context)
+            WorkoutAlarmReceiver.cancel(context)
         }
     }
 
@@ -170,8 +200,35 @@ class SettingsViewModel @Inject constructor(
         }
         saveReminderTimePref(minutes)
         if (_workoutReminders.value) {
-            WorkoutReminderReceiver.schedule(context, hour, minute)
+            WorkoutAlarmReceiver.schedule(context, hour, minute)
         }
+    }
+
+    fun setSummaryDailyTime(hour: Int, minute: Int) {
+        _summaryDailyMinutes.value = hour * 60 + minute
+        viewModelScope.launch {
+            settingsManager.setSummaryDailyMinutes(_summaryDailyMinutes.value)
+        }
+        saveSummarySchedulePrefs()
+        SummaryScheduler.schedule(context, SummaryKind.DAILY)
+    }
+
+    fun setSummaryWeeklyTime(hour: Int, minute: Int) {
+        _summaryWeeklyMinutes.value = hour * 60 + minute
+        viewModelScope.launch {
+            settingsManager.setSummaryWeeklyMinutes(_summaryWeeklyMinutes.value)
+        }
+        saveSummarySchedulePrefs()
+        SummaryScheduler.schedule(context, SummaryKind.WEEKLY)
+    }
+
+    fun setSummaryWeeklyDay(day: DayOfWeek) {
+        _summaryWeeklyDay.value = day
+        viewModelScope.launch {
+            settingsManager.setSummaryWeeklyDay(day)
+        }
+        saveSummarySchedulePrefs()
+        SummaryScheduler.schedule(context, SummaryKind.WEEKLY)
     }
 
     fun setNbaAlerts(enabled: Boolean) {
@@ -231,6 +288,7 @@ class SettingsViewModel @Inject constructor(
 
     fun playSpotify() {
         viewModelScope.launch {
+            _spotifyMessage.value = "Starting Spotify playback..."
             when (val result = spotifyRepository.playPlaylist(context)) {
                 SpotifyPlayResult.PLAYING -> {
                     _spotifyMessage.value = "Playing on Spotify"
@@ -292,6 +350,19 @@ class SettingsViewModel @Inject constructor(
     private fun saveReminderTimePref(minutes: Int) {
         application.getSharedPreferences("settings", 0)
             .edit().putInt("workout_reminder_minutes", minutes).apply()
+    }
+
+    /**
+     * Mirror of the summary schedule in the same prefs file, so
+     * SummaryScheduler/SummaryBootReceiver can reschedule without Hilt or DataStore.
+     */
+    private fun saveSummarySchedulePrefs() {
+        application.getSharedPreferences(SummaryScheduler.PREFS_NAME, 0)
+            .edit()
+            .putInt(SummaryScheduler.KEY_SUMMARY_DAILY_MINUTES, _summaryDailyMinutes.value)
+            .putInt(SummaryScheduler.KEY_SUMMARY_WEEKLY_MINUTES, _summaryWeeklyMinutes.value)
+            .putInt(SummaryScheduler.KEY_SUMMARY_WEEKLY_DAY, _summaryWeeklyDay.value.value)
+            .apply()
     }
 
     private fun getNbaAlertsPref(): Boolean {

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- DEBUG-ONLY: lets adb fire a summary notification immediately so the
+             daily/weekly content can be verified without waiting for 21:00.
+             Never merged into release builds. -->
+        <receiver
+            android:name="com.daytoday.data.notification.SummaryDebugReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.daytoday.DEBUG_FIRE_SUMMARY" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

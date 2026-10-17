@@ -251,20 +251,13 @@ export interface ItalianChoiceExercise {
   speak?: string;
 }
 
-export interface ItalianTypeExercise {
-  id: string;
-  kind: "type";
-  prompt: string;
-  accepted: string[];
-}
-
 export interface ItalianMatchExercise {
   id: string;
   kind: "match";
   pairs: { left: string; right: string }[];
 }
 
-export type ItalianExercise = ItalianChoiceExercise | ItalianTypeExercise | ItalianMatchExercise;
+export type ItalianExercise = ItalianChoiceExercise | ItalianMatchExercise;
 
 export interface ItalianLessonDef {
   id: string;
@@ -285,7 +278,6 @@ export interface ItalianCourse {
 
 export type ItalianAnswer =
   | { exerciseId: string; kind: "choice"; choiceIndex: number }
-  | { exerciseId: string; kind: "type"; text: string }
   | { exerciseId: string; kind: "match"; pairs: { left: string; right: string }[] };
 
 export interface ItalianReviewDue {

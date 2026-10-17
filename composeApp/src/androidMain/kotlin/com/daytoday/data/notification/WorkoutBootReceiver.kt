@@ -18,7 +18,7 @@ class WorkoutBootReceiver : BroadcastReceiver() {
             return
         }
         val minutes = prefs.getInt(KEY_REMINDER_MINUTES, DEFAULT_REMINDER_MINUTES)
-        WorkoutReminderReceiver.schedule(context, minutes / 60, minutes % 60)
+        WorkoutAlarmReceiver.schedule(context, minutes / 60, minutes % 60)
     }
 
     companion object {
