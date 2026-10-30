@@ -11,6 +11,10 @@ interface HealthRepository {
 
     suspend fun requestStepsPermission(context: Context): Boolean
 
+    suspend fun hasBackgroundReadPermission(context: Context): Boolean
+
+    suspend fun requestBackgroundReadPermission(context: Context): Boolean
+
     suspend fun todaySteps(context: Context): DailySteps
 
     suspend fun stepsInRange(context: Context, from: LocalDate, to: LocalDate): Map<LocalDate, Long>
@@ -18,8 +22,9 @@ interface HealthRepository {
     /**
      * Total steps recorded in [from]..[to] (both inclusive), read with a single
      * Health Connect aggregate over the whole window. Used for the weekly total,
-     * where a per-day breakdown is not needed. Returns 0 when permission is
-     * missing or the read fails.
+     * where a per-day breakdown is not needed. The aggregate prefers Samsung
+     * Health's data origin so the total matches Samsung Health. Returns 0 when
+     * permission is missing or the read fails.
      */
     suspend fun totalSteps(context: Context, from: LocalDate, to: LocalDate): Long
 }

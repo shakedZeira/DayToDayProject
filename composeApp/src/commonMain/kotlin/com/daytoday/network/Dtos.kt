@@ -9,8 +9,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
-internal const val BASE_URL: String = "http://127.0.0.1:4000/"
-
 internal val networkJson: Json = Json {
     ignoreUnknownKeys = true
     isLenient = true
@@ -22,7 +20,7 @@ inline fun <reified T> typeInfo(): KSerializer<T> = serializer()
 
 internal fun absoluteUrl(endpoint: String): String =
     if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) endpoint
-    else BASE_URL.trimEnd('/') + "/" + endpoint.trimStart('/')
+    else ApiBaseUrl.current().trimEnd('/') + "/" + endpoint.trimStart('/')
 
 internal suspend fun <T> decodeResponse(response: HttpResponse, serializer: KSerializer<T>): T {
     if (serializer.descriptor.serialName == "kotlin.Unit") {

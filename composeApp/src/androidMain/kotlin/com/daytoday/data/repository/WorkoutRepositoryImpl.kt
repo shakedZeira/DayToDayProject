@@ -25,6 +25,7 @@ import com.daytoday.model.SetRecord
 import com.daytoday.network.DayTodayApi
 import com.daytoday.repository.WorkoutRepository
 import com.daytoday.repository.Result
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -98,6 +99,18 @@ class WorkoutRepositoryImpl @Inject constructor(
             if (cached.isNotEmpty()) Result.success(cached) else Result.failure(e.message ?: "Failed to fetch sessions", e)
         }
     }
+
+    override suspend fun getCachedSessions(limit: Int, offset: Int): Result<List<WorkoutSession>> =
+        withContext(Dispatchers.IO) {
+            try {
+                Result.success(sessionDao.getSessionsPaged(limit, offset).map { it.toModel() })
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Local session read failed", e)
+                Result.failure(e.message ?: "Failed to read cached sessions", e)
+            }
+        }
 
     override suspend fun getSession(sessionId: String): Result<WorkoutSession> = withContext(Dispatchers.IO) {
         val cachedEntity = sessionDao.getSessionById(sessionId)

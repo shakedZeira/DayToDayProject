@@ -46,6 +46,8 @@ fun BottomNavHost(navController: NavController) {
         items.forEach { item ->
             val route = item.screen.route
             val selected = currentRoute == route || (
+                item.screen == Screen.Home && currentRoute == Screen.StepsDetail.route
+            ) || (
                 item.screen == Screen.NbaScoreboard && (
                     currentRoute == Screen.NbaNews.route ||
                     currentRoute == Screen.NbaInjuries.route ||

@@ -84,6 +84,35 @@ The client's nginx config proxies `/api/` to the API service's internal hostname
 - Install from the address bar / Add to Home Screen. Icons: `client/public/pwa-192x192.png`, `pwa-512x512.png` (regenerate with `npm run icons --workspace client`).
 - iOS Safari: push notifications only work for installed home-screen PWAs and may stop after ~7 days of no use (spec §7). Background push on iOS is a known limitation, not a bug to fix.
 
+## Running the Android app against the server
+
+The Compose app (`composeApp/`) talks to the same Express API on port 4000. Start it first:
+
+```bash
+npm run dev --workspace server
+# or
+cd server && npm run dev
+```
+
+The app's **Settings → Server → API base URL** field controls where requests go. The
+default is detected at runtime:
+
+- **Android emulator:** `http://10.0.2.2:4000/` (`10.0.2.2` is the host machine as
+  seen from the emulator).
+- **Physical device:** `http://127.0.0.1:4000/`. If the phone runs the server itself
+  (Termux), this already works. To use the server on your PC, either:
+  - enter your PC's LAN IP in Settings, e.g. `http://192.168.1.20:4000/` (phone and
+    PC on the same Wi-Fi; allow port 4000 through the PC firewall), or
+  - connect the phone by USB and run
+    ```bash
+    adb reverse tcp:4000 tcp:4000
+    ```
+    then keep the default `http://127.0.0.1:4000/`.
+
+The URL must start with `http://` or `https://`; a trailing slash is optional and is
+added automatically. If the app cannot connect it shows the URL it tried and points
+back to this setting.
+
 ## Project Layout
 
 ```

@@ -54,4 +54,8 @@ sealed interface Screen {
     data object ItalianVoice : Screen {
         override val route: String = "ItalianVoice"
     }
+
+    data object StepsDetail : Screen {
+        override val route: String = "StepsDetail"
+    }
 }

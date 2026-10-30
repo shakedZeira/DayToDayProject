@@ -34,11 +34,13 @@ fun formatWeight(weight: Double, unit: String = "lbs"): String = "${formatNumber
 fun formatCalories(calories: Int): String =
     "${NumberFormat.getNumberInstance(Locale.getDefault()).format(calories)} cal"
 
-fun formatSteps(steps: Int): String = when {
-    steps >= 1_000_000 -> String.format(Locale.getDefault(), "%.1fM", steps / 1_000_000.0)
-    steps >= 1_000 -> String.format(Locale.getDefault(), "%.1fK", steps / 1_000.0)
-    else -> steps.toString()
-}
+/**
+ * Exact step count with locale grouping ("7,639"), matching the workout
+ * progress screen. Kept as a Long because Health Connect aggregates totals as
+ * Long; narrowing to Int would overflow on very large counts.
+ */
+fun formatSteps(steps: Long, locale: Locale = Locale.getDefault()): String =
+    String.format(locale, "%,d", steps)
 
 fun formatVolume(weight: Double, reps: Int): String = "${formatNumber(weight)} x $reps"
 
@@ -46,3 +48,7 @@ fun formatOneRM(weight: Double, reps: Int): String {
     val oneRM = weight * (1 + reps / 30.0)
     return formatNumber(oneRM)
 }
+
+/** Distance estimate with up to two decimals, e.g. "7.26 km". */
+fun formatDistanceKm(km: Double, locale: Locale = Locale.getDefault()): String =
+    String.format(locale, "%.2f km", if (km.isFinite()) km else 0.0)

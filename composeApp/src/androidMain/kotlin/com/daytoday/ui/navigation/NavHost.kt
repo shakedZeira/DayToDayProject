@@ -19,6 +19,7 @@ import com.daytoday.ui.screen.settings.SettingsScreen
 import com.daytoday.ui.screen.workout.WorkoutActiveScreen
 import com.daytoday.ui.screen.workout.WorkoutHistoryScreen
 import com.daytoday.ui.screen.workout.WorkoutProgressScreen
+import com.daytoday.ui.screen.steps.StepsDetailScreen
 
 @Composable
 fun DayTodayNavHost(
@@ -53,6 +54,9 @@ fun DayTodayNavHost(
         }
         composable(Screen.WorkoutProgress.route) {
             WorkoutProgressScreen(navController = navController)
+        }
+        composable(Screen.StepsDetail.route) {
+            StepsDetailScreen(navController = navController)
         }
         composable(Screen.Settings.route) {
             SettingsScreen()

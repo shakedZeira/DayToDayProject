@@ -10,6 +10,8 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.daytoday.model.UserProfile
 import com.daytoday.model.WorkoutPlan
+import com.daytoday.network.ServerUrlStore
+import com.daytoday.network.normalizeServerUrl
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -17,10 +19,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class SettingsManager(private val dataStore: DataStore<Preferences>) {
+class SettingsManager(
+    private val dataStore: DataStore<Preferences>,
+    private val serverUrls: ServerUrlStore,
+) {
 
     companion object {
         private const val TOKEN_KEY = "auth_token"
+        private const val SERVER_BASE_URL_KEY = "server_base_url"
         private const val THEME_KEY = "theme_preference"
         private const val NOTIFICATIONS_KEY = "notifications_enabled"
         private const val WEIGHT_KG_KEY = "user_profile_weight_kg"
@@ -67,6 +73,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     }
 
     private val tokenKey = stringPreferencesKey(TOKEN_KEY)
+    private val serverBaseUrlKey = stringPreferencesKey(SERVER_BASE_URL_KEY)
     private val themeKey = stringPreferencesKey(THEME_KEY)
     private val notificationsKey = booleanPreferencesKey(NOTIFICATIONS_KEY)
     private val weightKgKey = doublePreferencesKey(WEIGHT_KG_KEY)
@@ -104,6 +111,20 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     val authToken: kotlinx.coroutines.flow.Flow<String> = dataStore.data
         .map { it[tokenKey] ?: "" }
         .distinctUntilChanged()
+
+    /**
+     * Base URL used for every backend call. Defaults to the platform value until the
+     * user edits it in Settings (emulator: `http://10.0.2.2:4000/`, device: loopback).
+     */
+    val serverBaseUrl: kotlinx.coroutines.flow.Flow<String> = dataStore.data
+        .map { prefs ->
+            prefs[serverBaseUrlKey]
+                ?: serverUrls.persistedUrl()
+                ?: serverUrls.defaultUrl()
+        }
+        .distinctUntilChanged()
+
+    val defaultServerBaseUrl: String get() = serverUrls.defaultUrl()
 
     val theme: kotlinx.coroutines.flow.Flow<String> = dataStore.data
         .map { it[themeKey] ?: "system" }
@@ -281,6 +302,17 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     suspend fun saveAuthToken(token: String) {
         dataStore.edit { it[tokenKey] = token }
+    }
+
+    /**
+     * Persists and activates [raw] as the backend base URL.
+     * Returns the normalized URL, or null when [raw] is not a valid http(s) URL.
+     */
+    suspend fun setServerBaseUrl(raw: String): String? {
+        val normalized = normalizeServerUrl(raw) ?: return null
+        dataStore.edit { it[serverBaseUrlKey] = normalized }
+        serverUrls.save(normalized)
+        return normalized
     }
 
     suspend fun clearAuthToken() {

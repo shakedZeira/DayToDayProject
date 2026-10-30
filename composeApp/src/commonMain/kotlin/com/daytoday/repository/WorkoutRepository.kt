@@ -8,6 +8,13 @@ import com.daytoday.model.WorkoutSession
 
 interface WorkoutRepository {
     suspend fun getSessions(limit: Int, offset: Int): Result<List<WorkoutSession>>
+
+    /**
+     * Reads sessions from the on-device cache only, never touching the network.
+     * Used by the notification summary, which must work while offline.
+     */
+    suspend fun getCachedSessions(limit: Int, offset: Int): Result<List<WorkoutSession>>
+
     suspend fun getSession(sessionId: String): Result<WorkoutSession>
     suspend fun saveSession(session: WorkoutSession): Result<WorkoutSession>
     suspend fun saveSessions(sessions: List<WorkoutSession>): Result<List<WorkoutSession>>

@@ -1,7 +1,7 @@
 package com.daytoday.server
 
 import android.content.Context
-import com.daytoday.network.BASE_URL
+import com.daytoday.network.ApiBaseUrl
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.HttpURLConnection
 import java.net.URL
@@ -37,8 +37,11 @@ class LocalServerManager @Inject constructor(
         if (startJob?.isActive == true) return
         startJob = scope.launch {
             _status.value = ServerStatus.Starting
-            termux.start()
-            val deadline = System.currentTimeMillis() + 45_000
+            // The bundled Termux server only makes sense when the app is talking to
+            // this device. A LAN/remote URL must not spawn a local copy.
+            val deviceLocal = isDeviceLocalUrl()
+            if (deviceLocal) termux.start()
+            val deadline = System.currentTimeMillis() + if (deviceLocal) 45_000 else 15_000
             while (System.currentTimeMillis() < deadline) {
                 if (isHealthy()) {
                     _status.value = ServerStatus.Ready
@@ -59,8 +62,16 @@ class LocalServerManager @Inject constructor(
         }
     }
 
+    private fun isDeviceLocalUrl(): Boolean {
+        val url = ApiBaseUrl.current()
+        return url.startsWith("http://127.0.0.1") ||
+            url.startsWith("http://localhost") ||
+            url.startsWith("https://127.0.0.1") ||
+            url.startsWith("https://localhost")
+    }
+
     private fun isHealthy(): Boolean = try {
-        val conn = (URL(BASE_URL.trimEnd('/') + "/api/health").openConnection() as HttpURLConnection).apply {
+        val conn = (URL(ApiBaseUrl.current().trimEnd('/') + "/api/health").openConnection() as HttpURLConnection).apply {
             connectTimeout = 1500
             readTimeout = 1500
             requestMethod = "GET"

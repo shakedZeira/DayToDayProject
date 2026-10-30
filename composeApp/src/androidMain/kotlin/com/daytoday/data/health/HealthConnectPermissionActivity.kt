@@ -29,7 +29,13 @@ class HealthConnectPermissionActivity : ComponentActivity() {
     }
 
     private fun launchPermission() {
-        val permissions = setOf(HealthPermission.getReadPermission(StepsRecord::class))
+        // The background permission is what lets the summary BroadcastReceiver read
+        // steps when the app is not in the foreground; it is requested alongside the
+        // foreground read but is NOT required for the in-app `hasSteps` check.
+        val permissions = setOf(
+            HealthPermission.getReadPermission(StepsRecord::class),
+            HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND,
+        )
         runCatching { launcher.launch(permissions) }
             .onFailure {
                 Log.e(TAG, "launcher.launch failed", it)

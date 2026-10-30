@@ -15,7 +15,9 @@ class SummaryBootReceiver : BroadcastReceiver() {
             Intent.ACTION_TIMEZONE_CHANGED,
             -> {
                 SummaryNotifications.ensureChannel(context)
-                SummaryScheduler.scheduleAll(context)
+                // A reboot/update/clock change drops the previously armed alarms,
+                // so the persisted armed time must not suppress re-arming here.
+                SummaryScheduler.rescheduleAll(context)
             }
         }
     }

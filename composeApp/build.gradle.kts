@@ -148,6 +148,12 @@ android {
         }
     }
 
+    testOptions {
+        // LocalSummaryUseCases logs through android.util.Log; returning defaults
+        // keeps those calls inert in plain JVM unit tests.
+        unitTests.isReturnDefaultValues = true
+    }
+
     namespace = "com.daytoday"
 }
 

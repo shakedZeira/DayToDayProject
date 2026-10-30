@@ -107,7 +107,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val summaryDailyMinutes by viewModel.summaryDailyMinutes.collectAsStateWithLifecycle()
     val summaryWeeklyMinutes by viewModel.summaryWeeklyMinutes.collectAsStateWithLifecycle()
     val summaryWeeklyDay by viewModel.summaryWeeklyDay.collectAsStateWithLifecycle()
+    val serverBaseUrl by viewModel.serverBaseUrl.collectAsStateWithLifecycle()
+    val serverUrlError by viewModel.serverUrlError.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var serverUrlDraft by rememberSaveable(serverBaseUrl) { mutableStateOf(serverBaseUrl) }
     var showPlaylistsDialog by remember { mutableStateOf(false) }
     var showReminderTimeDialog by remember { mutableStateOf(false) }
     var showSummaryDailyDialog by remember { mutableStateOf(false) }
@@ -223,6 +226,32 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     ),
                     onClick = { showSummaryWeeklyDialog = true }
                 )
+            }
+
+            SettingsSection("Server") {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DayTodayTextField(
+                        value = serverUrlDraft,
+                        onValueChange = {
+                            serverUrlDraft = it
+                            viewModel.clearServerUrlError()
+                        },
+                        label = "API base URL",
+                        placeholder = "http://192.168.1.20:4000/",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        isError = serverUrlError != null,
+                        supportingText = serverUrlError
+                            ?: "10.0.2.2 on the emulator, or your computer's LAN IP on a phone."
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { viewModel.saveServerBaseUrl(serverUrlDraft) }) {
+                            Text("Save server URL")
+                        }
+                    }
+                }
             }
 
             if (showReminderTimeDialog) {

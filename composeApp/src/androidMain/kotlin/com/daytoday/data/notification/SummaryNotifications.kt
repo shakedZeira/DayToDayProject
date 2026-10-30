@@ -9,12 +9,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.daytoday.R
 import com.daytoday.settings.SettingsManager
 import com.daytoday.ui.screen.MainActivity
 import com.daytoday.usecase.LocalSummaryUseCases
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 /** Which summary window a notification covers. */
@@ -25,6 +27,10 @@ enum class SummaryKind { DAILY, WEEKLY }
  * notifications (alert times are configurable via [SummaryScheduler]; defaults
  * are 21:00 daily and Saturday 20:00). Content is composed from purely
  * on-device data by [SummaryContentBuilder].
+ *
+ * A skipped post always cancels the previous notification of that kind, so an
+ * old "0 steps" summary can never survive into the next day. Every skip and
+ * failure is logged so a missing notification is diagnosable from logcat.
  */
 object SummaryNotifications {
 
@@ -32,6 +38,7 @@ object SummaryNotifications {
     const val ID_DAILY = 4301
     const val ID_WEEKLY = 4302
 
+    private const val TAG = "SummaryNotifications"
     private const val PI_FLAG = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
     fun ensureChannel(context: Context) {
@@ -54,15 +61,26 @@ object SummaryNotifications {
         localSummaryUseCases: LocalSummaryUseCases,
         settingsManager: SettingsManager,
     ) {
-        val enabled = runCatching { settingsManager.notificationsEnabled.first() }
-            .getOrDefault(true)
-        if (!enabled) return
+        val enabled = try {
+            settingsManager.notificationsEnabled.first()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Reading notificationsEnabled failed; assuming enabled", e)
+            true
+        }
+        if (!enabled) {
+            Log.w(TAG, "$kind summary skipped: notifications disabled in-app; cancelling stale post")
+            cancel(context, kind)
+            return
+        }
         post(context, kind, localSummaryUseCases, settingsManager)
     }
 
     /**
-     * Builds and posts the summary notification. Silently skips when the OS has
-     * not granted POST_NOTIFICATIONS or notifications are disabled for the app.
+     * Builds and posts the summary notification. Skips (and cancels any stale
+     * post) when the OS has not granted POST_NOTIFICATIONS, notifications are
+     * disabled for the app, or the content cannot be built.
      */
     suspend fun post(
         context: Context,
@@ -70,12 +88,44 @@ object SummaryNotifications {
         localSummaryUseCases: LocalSummaryUseCases,
         settingsManager: SettingsManager,
     ) {
-        if (!canPost(context)) return
-        val content = runCatching {
-            SummaryContentBuilder.build(kind, localSummaryUseCases, settingsManager)
-        }.getOrNull() ?: return
-        runCatching {
+        if (!canPost(context)) {
+            Log.w(TAG, "$kind summary skipped: notifications disabled for the app; cancelling stale post")
+            cancel(context, kind)
+            return
+        }
+
+        val content = try {
+            SummaryContentBuilder.build(
+                kind = kind,
+                localSummaryUseCases = localSummaryUseCases,
+                settingsManager = settingsManager,
+                cache = SummaryStatsCache(context),
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Building $kind summary failed; cancelling stale post", e)
+            cancel(context, kind)
+            return
+        }
+
+        try {
             NotificationManagerCompat.from(context).notify(idFor(kind), build(context, kind, content))
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Posting $kind summary was rejected by the OS; cancelling stale post", e)
+            cancel(context, kind)
+        } catch (e: Exception) {
+            Log.w(TAG, "Posting $kind summary failed", e)
+            cancel(context, kind)
+        }
+    }
+
+    /** Removes the notification for [kind], if one is showing. */
+    fun cancel(context: Context, kind: SummaryKind) {
+        try {
+            NotificationManagerCompat.from(context).cancel(idFor(kind))
+        } catch (e: Exception) {
+            Log.w(TAG, "Cancelling $kind summary failed", e)
         }
     }
 

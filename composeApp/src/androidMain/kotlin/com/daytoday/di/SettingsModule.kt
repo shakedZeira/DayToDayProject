@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.daytoday.settings.SettingsManager
+import com.daytoday.network.ServerUrlProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,6 +27,9 @@ object SettingsModule {
 
     @Provides
     @Singleton
-    fun provideSettingsManager(dataStore: DataStore<Preferences>): SettingsManager =
-        SettingsManager(dataStore)
+    fun provideSettingsManager(
+        dataStore: DataStore<Preferences>,
+        serverUrlProvider: ServerUrlProvider,
+    ): SettingsManager =
+        SettingsManager(dataStore, serverUrlProvider)
 }

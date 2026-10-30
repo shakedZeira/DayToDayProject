@@ -29,6 +29,10 @@ class SummaryReceiver : BroadcastReceiver() {
             else -> SummaryKind.DAILY
         }
 
+        // The alarm has fired: clear the armed marker first, otherwise schedule()
+        // would treat the just-delivered trigger as an overdue alarm and schedule
+        // another catch-up two seconds from now.
+        SummaryScheduler.markFired(context, kind)
         // Re-arm first so the next occurrence exists even if posting fails.
         SummaryScheduler.schedule(context, kind)
 

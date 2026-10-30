@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- The backend is a plain-HTTP Express server. On a physical device it lives on
+         the developer's PC (LAN IP, e.g. 192.168.x.x) or behind `adb reverse`, so a
+         fixed domain allow-list cannot cover it. Keep cleartext enabled app-wide;
+         this app never talks to a remote HTTPS-less production host. -->
+    <base-config cleartextTrafficPermitted="true" />
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">127.0.0.1</domain>
         <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
     </domain-config>
 </network-security-config>

@@ -4,8 +4,10 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
+import android.util.Log
 import java.time.DayOfWeek
-import java.time.LocalDate
+import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
 
@@ -24,10 +26,18 @@ import java.time.temporal.TemporalAdjusters
  * re-arms on every process start — so the schedule survives reboots and
  * process death.
  *
+ * The armed trigger time is persisted per kind. When [schedule] is called on a
+ * process start and that time is still in the future, the existing alarm is kept
+ * untouched (no cancel/re-create churn). If it is already in the past, the alarm
+ * never fired — the process was killed or the device was off — so it is
+ * rescheduled a couple of seconds from now to catch up instead of skipping the
+ * whole day/week.
+ *
  * The alert times are read from the "settings" SharedPreferences file — the same
  * mirror the workout reminder uses so [SummaryBootReceiver] can reschedule
  * without Hilt or DataStore. The DataStore copy in SettingsManager is the
- * in-app source of truth; SettingsViewModel mirrors each edit here.
+ * in-app source of truth; SettingsViewModel mirrors each edit here after the
+ * DataStore write.
  */
 object SummaryScheduler {
 
@@ -42,9 +52,16 @@ object SummaryScheduler {
     const val KEY_SUMMARY_DAILY_MINUTES = "summary_daily_minutes"
     const val KEY_SUMMARY_WEEKLY_MINUTES = "summary_weekly_minutes"
     const val KEY_SUMMARY_WEEKLY_DAY = "summary_weekly_day"
+    const val KEY_SUMMARY_DAILY_ARMED_AT = "summary_daily_armed_at"
+    const val KEY_SUMMARY_WEEKLY_ARMED_AT = "summary_weekly_armed_at"
+
+    private const val TAG = "SummaryScheduler"
 
     private const val RC_DAILY = 4310
     private const val RC_WEEKLY = 4311
+
+    /** How soon an overdue (never delivered) alarm fires once detected. */
+    private const val CATCH_UP_DELAY_MS = 2_000L
 
     /** User-configurable alert times; defaults match the legacy fixed schedule. */
     data class ScheduleConfig(
@@ -60,32 +77,56 @@ object SummaryScheduler {
         schedule(context, SummaryKind.WEEKLY)
     }
 
+    /** Re-arms both kinds from scratch, discarding any persisted armed time. */
+    fun rescheduleAll(context: Context) {
+        reschedule(context, SummaryKind.DAILY)
+        reschedule(context, SummaryKind.WEEKLY)
+    }
+
+    /** Cancels both alarms and forgets their armed times. */
     fun cancelAll(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(pendingIntent(context, SummaryKind.DAILY))
         alarmManager.cancel(pendingIntent(context, SummaryKind.WEEKLY))
+        prefs(context).edit()
+            .remove(KEY_SUMMARY_DAILY_ARMED_AT)
+            .remove(KEY_SUMMARY_WEEKLY_ARMED_AT)
+            .apply()
     }
 
-    /** (Re-)arms the next occurrence of [kind], replacing any previous alarm. */
+    /**
+     * (Re-)arms the next occurrence of [kind] unless an alarm for it is already
+     * armed for the future. An armed time in the past means the alarm was missed,
+     * so a catch-up fire is scheduled shortly instead of waiting for tomorrow.
+     */
     fun schedule(context: Context, kind: SummaryKind) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pendingIntent = pendingIntent(context, kind)
-        alarmManager.cancel(pendingIntent)
+        val now = System.currentTimeMillis()
+        val prefs = prefs(context)
+        val armedKey = armedAtKeyFor(kind)
+        val storedArmedAt = prefs.getLong(armedKey, 0L)
+        if (storedArmedAt > now) {
+            Log.d(TAG, "$kind summary already armed for $storedArmedAt; keeping it")
+            return
+        }
 
-        val triggerAtMs = nextTriggerAt(kind, config(context))
-        val exact = runCatching {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMs,
-                pendingIntent
-            )
+        val triggerAtMs = if (storedArmedAt > 0L) {
+            Log.w(TAG, "$kind summary missed its $storedArmedAt trigger; firing catch-up")
+            now + CATCH_UP_DELAY_MS
+        } else {
+            nextTriggerAt(kind, config(context), now)
         }
-        if (exact.isFailure) {
-            // Exact alarms can be disallowed on Android 12+; fall back to an inexact one.
-            runCatching {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
-            }
-        }
+        arm(context, kind, triggerAtMs, prefs)
+    }
+
+    /** Cancels and re-creates the alarm for [kind], e.g. after a settings change. */
+    fun reschedule(context: Context, kind: SummaryKind) {
+        prefs(context).edit().remove(armedAtKeyFor(kind)).apply()
+        schedule(context, kind)
+    }
+
+    /** Clears the persisted armed time once the alarm has actually fired. */
+    fun markFired(context: Context, kind: SummaryKind) {
+        prefs(context).edit().remove(armedAtKeyFor(kind)).apply()
     }
 
     /**
@@ -93,20 +134,34 @@ object SummaryScheduler {
      * Missing or out-of-range values fall back to the legacy defaults.
      */
     fun config(context: Context): ScheduleConfig {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val dailyMinutes = prefs
-            .getInt(KEY_SUMMARY_DAILY_MINUTES, DAILY_HOUR * 60 + DAILY_MINUTE)
-            .coerceIn(0, 23 * 60 + 59)
-        val weeklyMinutes = prefs
-            .getInt(KEY_SUMMARY_WEEKLY_MINUTES, WEEKLY_HOUR * 60 + WEEKLY_MINUTE)
-            .coerceIn(0, 23 * 60 + 59)
-        val weeklyDay = prefs.getInt(KEY_SUMMARY_WEEKLY_DAY, WEEKLY_DAY.value)
+        val prefs = prefs(context)
+        return scheduleConfig(
+            dailyMinutes = prefs.getInt(
+                KEY_SUMMARY_DAILY_MINUTES,
+                DAILY_HOUR * 60 + DAILY_MINUTE,
+            ),
+            weeklyMinutes = prefs.getInt(
+                KEY_SUMMARY_WEEKLY_MINUTES,
+                WEEKLY_HOUR * 60 + WEEKLY_MINUTE,
+            ),
+            weeklyDay = prefs.getInt(KEY_SUMMARY_WEEKLY_DAY, WEEKLY_DAY.value),
+        )
+    }
+
+    /** Coerces raw preference values into a valid [ScheduleConfig]. */
+    internal fun scheduleConfig(
+        dailyMinutes: Int,
+        weeklyMinutes: Int,
+        weeklyDay: Int,
+    ): ScheduleConfig {
+        val daily = dailyMinutes.coerceIn(0, 23 * 60 + 59)
+        val weekly = weeklyMinutes.coerceIn(0, 23 * 60 + 59)
         return ScheduleConfig(
-            dailyHour = dailyMinutes / 60,
-            dailyMinute = dailyMinutes % 60,
+            dailyHour = daily / 60,
+            dailyMinute = daily % 60,
             weeklyDay = DayOfWeek.of(weeklyDay.coerceIn(1, 7)),
-            weeklyHour = weeklyMinutes / 60,
-            weeklyMinute = weeklyMinutes % 60,
+            weeklyHour = weekly / 60,
+            weeklyMinute = weekly % 60,
         )
     }
 
@@ -117,7 +172,9 @@ object SummaryScheduler {
         nowMillis: Long = System.currentTimeMillis(),
     ): Long {
         val zone = ZoneId.systemDefault()
-        val today = LocalDate.now(zone)
+        // Derive the date from nowMillis, not the wall clock, so the calculation
+        // is deterministic when the caller supplies a fixed instant.
+        val today = Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate()
         return when (kind) {
             SummaryKind.DAILY -> {
                 val todayTrigger = today
@@ -153,6 +210,46 @@ object SummaryScheduler {
                 }
             }
         }
+    }
+
+    private fun arm(
+        context: Context,
+        kind: SummaryKind,
+        triggerAtMs: Long,
+        prefs: SharedPreferences,
+    ) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val pendingIntent = pendingIntent(context, kind)
+        alarmManager.cancel(pendingIntent)
+
+        var scheduled = runCatching {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMs,
+                pendingIntent
+            )
+        }.onFailure { Log.w(TAG, "Exact $kind alarm rejected, falling back to inexact", it) }.isSuccess
+
+        if (!scheduled) {
+            // Exact alarms can be disallowed on Android 12+; fall back to an inexact one.
+            scheduled = runCatching {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
+            }.onFailure { Log.e(TAG, "Could not arm the $kind summary alarm", it) }.isSuccess
+        }
+
+        if (scheduled) {
+            prefs.edit().putLong(armedAtKeyFor(kind), triggerAtMs).apply()
+        } else {
+            Log.e(TAG, "$kind summary alarm was not armed; will retry on the next schedule call")
+        }
+    }
+
+    private fun prefs(context: Context): SharedPreferences =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    private fun armedAtKeyFor(kind: SummaryKind): String = when (kind) {
+        SummaryKind.DAILY -> KEY_SUMMARY_DAILY_ARMED_AT
+        SummaryKind.WEEKLY -> KEY_SUMMARY_WEEKLY_ARMED_AT
     }
 
     private fun pendingIntent(context: Context, kind: SummaryKind): PendingIntent {

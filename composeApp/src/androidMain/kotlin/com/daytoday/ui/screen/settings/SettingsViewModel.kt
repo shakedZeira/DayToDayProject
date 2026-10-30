@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.daytoday.data.notification.SummaryKind
+import com.daytoday.data.notification.SummaryNotifications
 import com.daytoday.data.notification.SummaryScheduler
 import com.daytoday.data.notification.WorkoutAlarmReceiver
 import com.daytoday.data.spotify.SpotifyLoginResult
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -71,6 +73,16 @@ class SettingsViewModel @Inject constructor(
 
     val spotifyPlaylistName: StateFlow<String?> = settingsManager.spotifyPlaylistName
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val serverBaseUrl: StateFlow<String> = settingsManager.serverBaseUrl
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            settingsManager.defaultServerBaseUrl
+        )
+
+    private val _serverUrlError = MutableStateFlow<String?>(null)
+    val serverUrlError: StateFlow<String?> = _serverUrlError.asStateFlow()
 
     private val _spotifyPlaylists = MutableStateFlow<List<SpotifyPlaylist>>(emptyList())
     val spotifyPlaylists: StateFlow<List<SpotifyPlaylist>> = _spotifyPlaylists.asStateFlow()
@@ -140,6 +152,9 @@ class SettingsViewModel @Inject constructor(
 
         _workoutReminders.value = getWorkoutRemindersPref()
         _nbaAlerts.value = getNbaAlertsPref()
+
+        // Heal a mirror left behind by an older build: DataStore is authoritative.
+        viewModelScope.launch { syncSummarySchedulePrefs() }
     }
 
     fun updateWeightKg(kg: Double) {
@@ -172,9 +187,33 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun saveServerBaseUrl(raw: String) {
+        viewModelScope.launch {
+            val saved = settingsManager.setServerBaseUrl(raw)
+            _serverUrlError.value = if (saved == null) {
+                "Enter a URL starting with http:// or https://"
+            } else {
+                null
+            }
+        }
+    }
+
+    fun clearServerUrlError() {
+        _serverUrlError.value = null
+    }
+
     fun setPushEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsManager.saveNotificationsEnabled(enabled)
+            if (enabled) {
+                SummaryScheduler.scheduleAll(context)
+            } else {
+                SummaryScheduler.cancelAll(context)
+                // Remove any visible summary immediately: a stale "0 steps" post
+                // must not survive after the user turns summaries off.
+                SummaryNotifications.cancel(context, SummaryKind.DAILY)
+                SummaryNotifications.cancel(context, SummaryKind.WEEKLY)
+            }
         }
     }
 
@@ -205,30 +244,32 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setSummaryDailyTime(hour: Int, minute: Int) {
-        _summaryDailyMinutes.value = hour * 60 + minute
+        val minutes = hour * 60 + minute
+        _summaryDailyMinutes.value = minutes
         viewModelScope.launch {
-            settingsManager.setSummaryDailyMinutes(_summaryDailyMinutes.value)
+            settingsManager.setSummaryDailyMinutes(minutes)
+            syncSummarySchedulePrefs()
+            SummaryScheduler.reschedule(context, SummaryKind.DAILY)
         }
-        saveSummarySchedulePrefs()
-        SummaryScheduler.schedule(context, SummaryKind.DAILY)
     }
 
     fun setSummaryWeeklyTime(hour: Int, minute: Int) {
-        _summaryWeeklyMinutes.value = hour * 60 + minute
+        val minutes = hour * 60 + minute
+        _summaryWeeklyMinutes.value = minutes
         viewModelScope.launch {
-            settingsManager.setSummaryWeeklyMinutes(_summaryWeeklyMinutes.value)
+            settingsManager.setSummaryWeeklyMinutes(minutes)
+            syncSummarySchedulePrefs()
+            SummaryScheduler.reschedule(context, SummaryKind.WEEKLY)
         }
-        saveSummarySchedulePrefs()
-        SummaryScheduler.schedule(context, SummaryKind.WEEKLY)
     }
 
     fun setSummaryWeeklyDay(day: DayOfWeek) {
         _summaryWeeklyDay.value = day
         viewModelScope.launch {
             settingsManager.setSummaryWeeklyDay(day)
+            syncSummarySchedulePrefs()
+            SummaryScheduler.reschedule(context, SummaryKind.WEEKLY)
         }
-        saveSummarySchedulePrefs()
-        SummaryScheduler.schedule(context, SummaryKind.WEEKLY)
     }
 
     fun setNbaAlerts(enabled: Boolean) {
@@ -355,13 +396,25 @@ class SettingsViewModel @Inject constructor(
     /**
      * Mirror of the summary schedule in the same prefs file, so
      * SummaryScheduler/SummaryBootReceiver can reschedule without Hilt or DataStore.
+     *
+     * Called only after the corresponding DataStore write has returned, and the
+     * values are read back from DataStore rather than from the ViewModel's state
+     * flows, so an uninitialized default can never overwrite a configured time.
      */
-    private fun saveSummarySchedulePrefs() {
+    private suspend fun syncSummarySchedulePrefs() {
+        val daily = settingsManager.summaryDailyMinutes.first()
+        val weekly = settingsManager.summaryWeeklyMinutes.first()
+        val weeklyDay = settingsManager.summaryWeeklyDay.first()
+
+        _summaryDailyMinutes.value = daily
+        _summaryWeeklyMinutes.value = weekly
+        _summaryWeeklyDay.value = weeklyDay
+
         application.getSharedPreferences(SummaryScheduler.PREFS_NAME, 0)
             .edit()
-            .putInt(SummaryScheduler.KEY_SUMMARY_DAILY_MINUTES, _summaryDailyMinutes.value)
-            .putInt(SummaryScheduler.KEY_SUMMARY_WEEKLY_MINUTES, _summaryWeeklyMinutes.value)
-            .putInt(SummaryScheduler.KEY_SUMMARY_WEEKLY_DAY, _summaryWeeklyDay.value.value)
+            .putInt(SummaryScheduler.KEY_SUMMARY_DAILY_MINUTES, daily)
+            .putInt(SummaryScheduler.KEY_SUMMARY_WEEKLY_MINUTES, weekly)
+            .putInt(SummaryScheduler.KEY_SUMMARY_WEEKLY_DAY, weeklyDay.value)
             .apply()
     }
 

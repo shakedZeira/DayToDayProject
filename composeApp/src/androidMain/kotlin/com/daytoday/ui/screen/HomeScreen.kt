@@ -141,6 +141,17 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun requestBackgroundPermission() {
+        viewModelScope.launch {
+            localSummaryUseCases.requestBackgroundReadPermission()
+        }
+    }
+
+    suspend fun needsBackgroundPermission(): Boolean {
+        if (!localSummaryUseCases.healthPermissionGranted.value) return false
+        return !localSummaryUseCases.hasBackgroundReadPermission()
+    }
+
     fun onPermissionResult(granted: Boolean) {
         viewModelScope.launch {
             localSummaryUseCases.setHealthPermissionGranted(granted)
@@ -198,7 +209,10 @@ fun HomeScreen(
 
     val healthConnectPermissions = remember {
         setOf(
-            HealthPermission.getReadPermission(StepsRecord::class)
+            HealthPermission.getReadPermission(StepsRecord::class),
+            // Lets the alarm-started summary receiver read steps while the app is
+            // in the background. Optional: `hasSteps` below still gates on READ_STEPS.
+            HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND,
         )
     }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -340,32 +354,40 @@ private fun HomeContent(
                 items(
                     listOf(
                         QuickStat(
-                            "Steps",
-                            formatSteps(stats.steps.toInt()),
-                            Icons.Default.DirectionsWalk,
-                            tertiaryStatColor
+                            title = "Steps",
+                            value = formatSteps(stats.steps),
+                            icon = Icons.Default.DirectionsWalk,
+                            color = tertiaryStatColor,
+                            hint = "Tap for history",
+                            onClick = { onNavigate(Screen.StepsDetail.route) },
                         ),
                         QuickStat(
-                            "Steps Calories",
-                            formatCalories(stats.stepsCalories),
-                            Icons.Default.LocalFireDepartment,
-                            secondaryStatColor
+                            title = "Steps Calories",
+                            value = formatCalories(stats.stepsCalories),
+                            icon = Icons.Default.LocalFireDepartment,
+                            color = secondaryStatColor,
                         ),
                         QuickStat(
-                            "Workout Calories",
-                            formatCalories(stats.workoutCalories),
-                            Icons.Default.FitnessCenter,
-                            primaryStatColor
+                            title = "Workout Calories",
+                            value = formatCalories(stats.workoutCalories),
+                            icon = Icons.Default.FitnessCenter,
+                            color = primaryStatColor,
                         ),
                         QuickStat(
-                            "Total Calories",
-                            formatCalories(stats.totalCalories),
-                            Icons.Default.LocalFireDepartment,
-                            calorieStatColor
+                            title = "Total Calories",
+                            value = formatCalories(stats.totalCalories),
+                            icon = Icons.Default.LocalFireDepartment,
+                            color = calorieStatColor,
                         )
                     )
                 ) { stat ->
-                    DayTodayCard(modifier = Modifier.fillMaxWidth()) { QuickStatCard(stat) }
+                    DayTodayCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (stat.onClick != null) Modifier.clickable { stat.onClick.invoke() } else Modifier
+                            ),
+                    ) { QuickStatCard(stat) }
                 }
             }
 
@@ -502,7 +524,9 @@ data class QuickStat(
     val title: String,
     val value: String,
     val icon: ImageVector,
-    val color: Color
+    val color: Color,
+    val hint: String? = null,
+    val onClick: (() -> Unit)? = null,
 )
 
 @Composable
@@ -532,6 +556,15 @@ fun QuickStatCard(stat: QuickStat) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+        stat.hint?.let {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = it,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 

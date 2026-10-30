@@ -28,6 +28,11 @@ object ApiClient {
         install(Logging) {
             level = LogLevel.ALL
         }
+        install(HttpTimeout) {
+            connectTimeoutMillis = 5_000
+            requestTimeoutMillis = 60_000
+            socketTimeoutMillis = 60_000
+        }
         defaultRequest {
             header("Accept", "application/json")
         }
