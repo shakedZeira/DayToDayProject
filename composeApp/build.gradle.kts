@@ -75,6 +75,9 @@ kotlin {
                 // 1.1.0 is the first stable release; requires compileSdk 36+ and AGP 8.9.1+.
                 implementation("androidx.health.connect:connect-client:1.1.0")
 
+                // QR code for the "Share the app" card in Settings
+                implementation("com.google.zxing:core:3.5.3")
+
                 // Spotify - PKCE auth + playback control
                 implementation("com.squareup.retrofit2:retrofit:2.11.0")
                 implementation("com.squareup.retrofit2:converter-moshi:2.11.0")

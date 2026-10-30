@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
@@ -567,6 +568,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     onClick = { viewModel.deleteAccount() },
                     isDestructive = true
                 )
+            }
+
+            SettingsSection("Share the app", icon = Icons.Default.QrCode2) {
+                ShareAppCard()
             }
 
             SettingsSection("About") {
