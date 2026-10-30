@@ -140,5 +140,5 @@ test("streak is 1 after activity today", async () => {
     .get("/api/italian-path/progress")
     .set("Authorization", `Bearer ${token}`);
   expect(res.body.streak).toBe(1);
-  expect(res.body.totalLessons).toBe(9);
+  expect(res.body.totalLessons).toBe(ITALIAN_COURSE.units.flatMap((u) => u.lessons).length);
 });
