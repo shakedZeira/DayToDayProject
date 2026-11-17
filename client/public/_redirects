@@ -1,4 +1,3 @@
-# Cloudflare Pages: proxy API calls to the Render API (keeps the app same-origin,
-# no CORS). Replace the host with your Render public URL. First match wins.
-/api/*  https://dtd-api-dsqk.onrender.com/api/:splat  200
-/*      /index.html                            200
+# SPA fallback. /api/* is proxied to the Render API by functions/api/[[path]].ts
+# (Pages _redirects cannot proxy to an external host).
+/*  /index.html  200
