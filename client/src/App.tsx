@@ -8,6 +8,7 @@ import HealthView from "./HealthView";
 import ItalianView from "./ItalianView";
 import CookingView from "./CookingView";
 import Nav from "./Nav";
+import WeeklyReview from "./WeeklyReview";
 import { getOutbox } from "./outboxRuntime";
 import OutboxStatus from "./OutboxStatus";
 import { fetchHealth } from "./api";
@@ -93,6 +94,7 @@ export default function App() {
             {view === "italian" && <ItalianView token={token} />}
             {view === "cooking" && <CookingView token={token} />}
             {view === "progress" && <ProgressView token={token} />}
+            {view === "review" && <WeeklyReview token={token} />}
             {view === "settings" && <SettingsView token={token} />}
           </main>
           <Nav view={view} onNavigate={setView} />

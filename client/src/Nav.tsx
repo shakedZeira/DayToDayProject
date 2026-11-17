@@ -32,7 +32,8 @@ const ITEMS: NavItem[] = [
 const MORE_ITEMS = [
   { key: "tasks", label: "Tasks" },
   { key: "nutrition", label: "Nutrition" },
-  { key: "progress", label: "Progress" }
+  { key: "progress", label: "Progress" },
+  { key: "review", label: "Weekly review" }
 ];
 
 interface Props {
