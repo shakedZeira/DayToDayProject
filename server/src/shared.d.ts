@@ -357,3 +357,34 @@ export interface RecipeView {
   favoriteCount: number;
   isFavorited: boolean;
 }
+
+export interface ShoppingItemView {
+  id: string;
+  name: string;
+  amount: number;
+  unit: string;
+  checked: boolean;
+  recipeId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PantryItemView {
+  id: string;
+  name: string;
+  amount: number | null;
+  unit: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MealPlanEntryView {
+  id: string;
+  date: string;
+  slot: RecipeMeal;
+  recipeId: string;
+  recipeTitle: string;
+  servings: number | null;
+  createdAt: string;
+  updatedAt: string;
+}

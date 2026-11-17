@@ -11,7 +11,7 @@ export async function buildExport(ownerId: string) {
   const [
     user, tasks, goals, goalEvents, workouts, mealLogs, dailyTarget, profile, routines,
     progressions, personalRecords, lessons, practiceLogs, italianCompletions, italianAttempts,
-    settings, recipes, recipeFavorites, customExercises
+    settings, recipes, recipeFavorites, customExercises, shoppingItems, pantryItems, mealPlan
   ] = await Promise.all([
     prisma.user.findUnique({ where: { id: ownerId }, select: { id: true, email: true, createdAt: true } }),
     prisma.task.findMany({ where }),
@@ -31,7 +31,10 @@ export async function buildExport(ownerId: string) {
     prisma.setting.findMany({ where }),
     prisma.recipe.findMany({ where }),
     prisma.recipeFavorite.findMany({ where }),
-    prisma.exercise.findMany({ where })
+    prisma.exercise.findMany({ where }),
+    prisma.shoppingItem.findMany({ where }),
+    prisma.pantryItem.findMany({ where }),
+    prisma.mealPlanEntry.findMany({ where })
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -50,6 +53,9 @@ export async function buildExport(ownerId: string) {
     italian: { lessons, practiceLogs, completions: italianCompletions, attempts: italianAttempts },
     recipes,
     recipeFavorites,
+    shoppingItems,
+    pantryItems,
+    mealPlan,
     settings: Object.fromEntries(settings.map((s) => [s.key, s.value]))
   };
 }
