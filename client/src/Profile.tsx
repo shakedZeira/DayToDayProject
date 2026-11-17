@@ -85,8 +85,8 @@ export default function Profile({ token }: Props) {
 
   return (
     <div className="w-full max-w-2xl flex flex-col gap-4">
-      <div className="flex flex-col gap-4 border rounded bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+      <div className="flex flex-col gap-4 md-card p-4">
+        <h2 className="md-title-medium text-md-onSurface">
           Profile
         </h2>
 
@@ -95,7 +95,7 @@ export default function Profile({ token }: Props) {
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-slate-500">Height (cm) *</label>
               <input
-                className="border rounded px-3 py-2"
+                className="border border-md-outline rounded-md3xs px-3 py-2"
                 type="number"
                 min={1}
                 step="any"
@@ -108,7 +108,7 @@ export default function Profile({ token }: Props) {
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-slate-500">Weight (kg) *</label>
               <input
-                className="border rounded px-3 py-2"
+                className="border border-md-outline rounded-md3xs px-3 py-2"
                 type="number"
                 min={1}
                 step="any"
@@ -124,7 +124,7 @@ export default function Profile({ token }: Props) {
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-slate-500">Age</label>
               <input
-                className="border rounded px-3 py-2"
+                className="border border-md-outline rounded-md3xs px-3 py-2"
                 type="number"
                 min={1}
                 placeholder="30"
@@ -135,7 +135,7 @@ export default function Profile({ token }: Props) {
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-slate-500">Sex</label>
               <select
-                className="border rounded px-3 py-2"
+                className="border border-md-outline rounded-md3xs px-3 py-2"
                 value={sex}
                 onChange={(e) => setSex(e.target.value)}
               >
@@ -148,7 +148,7 @@ export default function Profile({ token }: Props) {
           <div className="flex flex-col gap-1">
             <label className="text-xs text-slate-500">Activity Level</label>
             <select
-              className="border rounded px-3 py-2"
+              className="border border-md-outline rounded-md3xs px-3 py-2"
               value={activity}
               onChange={(e) => setActivity(e.target.value)}
             >
@@ -175,7 +175,7 @@ export default function Profile({ token }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="bg-indigo-600 text-white rounded py-2 font-medium disabled:opacity-50"
+            className="bg-indigo-600 text-white rounded-full py-2 font-medium disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save Profile"}
           </button>
@@ -189,26 +189,26 @@ export default function Profile({ token }: Props) {
       </div>
 
       {recommendation && (
-        <div className="flex flex-col gap-4 border rounded bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+        <div className="flex flex-col gap-4 md-card p-4">
+          <h2 className="md-title-medium text-md-onSurface">
             Calorie Recommendation
           </h2>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col">
-              <span className="text-xs uppercase tracking-wide text-slate-400">BMR (resting)</span>
+              <span className="text-xs text-slate-400">BMR (resting)</span>
               <span className="text-lg font-semibold text-slate-800">{recommendation.bmr} kcal</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs uppercase tracking-wide text-slate-400">TDEE (maintenance)</span>
+              <span className="text-xs text-slate-400">TDEE (maintenance)</span>
               <span className="text-lg font-semibold text-slate-800">{recommendation.tdee} kcal</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs uppercase tracking-wide text-slate-400">Weight Loss (−500)</span>
+              <span className="text-xs text-slate-400">Weight Loss (−500)</span>
               <span className="text-lg font-semibold text-slate-800">{recommendation.weightLoss} kcal</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs uppercase tracking-wide text-slate-400">Weight Gain (+300)</span>
+              <span className="text-xs text-slate-400">Weight Gain (+300)</span>
               <span className="text-lg font-semibold text-slate-800">{recommendation.weightGain} kcal</span>
             </div>
           </div>

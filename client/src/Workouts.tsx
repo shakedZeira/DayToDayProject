@@ -122,30 +122,27 @@ export default function Workouts({ token }: Props) {
 
   if (workouts.length === 0) {
     return (
-      <div className="w-full max-w-2xl flex flex-col gap-4 border rounded bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
-          History
-        </h2>
-        <p className="text-sm text-slate-400">
-          No workouts yet. Start one from the Plans tab to log your first session.
-        </p>
+      <div className="flex flex-col items-center gap-2 py-16 text-center">
+        <svg viewBox="0 0 24 24" className="w-16 h-16 fill-md-onSurfaceVariant" aria-hidden><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z" /></svg>
+        <h2 className="md-title-medium text-md-onSurface">No workouts yet</h2>
+        <p className="md-body-medium text-md-onSurfaceVariant">Start your first workout to see history here</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-4 border rounded bg-white p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+    <div className="w-full max-w-2xl flex flex-col gap-4 md-card p-4">
+      <h2 className="md-title-medium text-md-onSurface">
         History
       </h2>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <h3 className="text-xs font-semibold text-slate-500">
         Past Workouts
       </h3>
       <select
-        className="border rounded px-3 py-2"
+        className="border border-md-outline rounded-md3xs px-3 py-2"
         value={selectedId}
         onChange={(e) => setSelectedId(e.target.value)}
       >
@@ -160,14 +157,14 @@ export default function Workouts({ token }: Props) {
         <>
           <form onSubmit={onLogSet} className="flex gap-2">
             <input
-              className="border rounded px-3 py-2 flex-1"
+              className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
               placeholder="Exercise"
               value={exercise}
               onChange={(e) => setExercise(e.target.value)}
               required
             />
             <input
-              className="border rounded px-3 py-2 w-20"
+              className="border border-md-outline rounded-md3xs px-3 py-2 w-20"
               type="number"
               min={0}
               step="any"
@@ -177,7 +174,7 @@ export default function Workouts({ token }: Props) {
               required
             />
             <input
-              className="border rounded px-3 py-2 w-20"
+              className="border border-md-outline rounded-md3xs px-3 py-2 w-20"
               type="number"
               min={1}
               placeholder="reps"
@@ -185,7 +182,7 @@ export default function Workouts({ token }: Props) {
               onChange={(e) => setReps(e.target.value)}
               required
             />
-            <button className="bg-indigo-600 text-white rounded px-4 font-medium text-sm">
+            <button className="bg-indigo-600 text-white rounded-full px-4 font-medium text-sm">
               + Set
             </button>
           </form>
@@ -200,7 +197,7 @@ export default function Workouts({ token }: Props) {
                 return (
                   <li
                     key={s.id}
-                    className="flex items-center justify-between gap-2 border rounded px-3 py-2 bg-slate-50 text-sm text-slate-700"
+                    className="flex items-center justify-between gap-2 border border-md-outline rounded-md3xs px-3 py-2 bg-slate-50 text-sm text-slate-700"
                   >
                     <span>
                       {s.exercise}: {s.weightKg}kg × {s.reps} reps
@@ -221,7 +218,7 @@ export default function Workouts({ token }: Props) {
 
           {progressions.length > 0 && (
             <section className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+              <h3 className="md-title-medium text-md-onSurface">
                 Progression suggestions
               </h3>
               <ul className="flex flex-col gap-2">
@@ -230,7 +227,7 @@ export default function Workouts({ token }: Props) {
                   return (
                     <li
                       key={p.exercise}
-                      className="border rounded px-3 py-2 bg-slate-50 text-sm text-slate-700"
+                      className="border border-md-outline rounded-md3xs px-3 py-2 bg-slate-50 text-sm text-slate-700"
                     >
                       <span className="font-medium text-slate-800">{p.exercise}</span>:{" "}
                       {p.currentWeightKg}kg → {p.suggestedNextKg}kg{" "}
@@ -246,7 +243,7 @@ export default function Workouts({ token }: Props) {
 
           {chartPoints.length > 0 && (
             <section className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+              <h3 className="md-title-medium text-md-onSurface">
                 Progression
               </h3>
               <ProgressionChart points={chartPoints} />

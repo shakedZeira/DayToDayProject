@@ -12,18 +12,13 @@ import type { NutritionSummary as NutritionSummaryData } from "shared";
 
 interface Props {
   token: string;
+  /** Which section the bottom navigation selected. */
+  tab?: HealthTab;
 }
 
-type HealthTab = "nutrition" | "workouts" | "goals";
+export type HealthTab = "nutrition" | "workouts" | "goals";
 
-const TABS: { key: HealthTab; label: string }[] = [
-  { key: "nutrition", label: "Nutrition" },
-  { key: "workouts", label: "Workouts" },
-  { key: "goals", label: "Goals" },
-];
-
-export default function HealthView({ token }: Props) {
-  const [tab, setTab] = useState<HealthTab>("nutrition");
+export default function HealthView({ token, tab = "nutrition" }: Props) {
   const [summary, setSummary] = useState<NutritionSummaryData | null>(null);
   const [workoutSubTab, setWorkoutSubTab] = useState<"plans" | "history" | "progress">("plans");
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
@@ -50,23 +45,6 @@ export default function HealthView({ token }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-2xl font-bold text-slate-800">Health</h2>
-      <div className="flex gap-1 border-b border-slate-200 pb-px">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-3 py-2 text-sm font-medium rounded-t transition-colors ${
-              tab === t.key
-                ? "bg-indigo-600 text-white"
-                : "text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       {tab === "nutrition" && (
         <div className="flex flex-col gap-4">
           <Foods token={token} meals={summaryMeals} onChanged={refreshNutrition} />
@@ -77,7 +55,7 @@ export default function HealthView({ token }: Props) {
 
       {tab === "workouts" && (
         <div className="flex flex-col gap-3">
-          <div className="flex gap-1 border-b border-slate-200 pb-px">
+          <div className="flex border-b border-md-outlineVariant">
             {(["plans", "history", "progress"] as const).map((st) => (
               <button
                 key={st}
@@ -85,10 +63,10 @@ export default function HealthView({ token }: Props) {
                   setWorkoutSubTab(st);
                   if (st === "progress") setAnalyticsRefreshKey((k) => k + 1);
                 }}
-                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                className={`flex-1 px-3 h-12 text-sm font-medium border-b-2 transition-colors ${
                   workoutSubTab === st
-                    ? "bg-indigo-600 text-white"
-                    : "text-slate-500 hover:bg-slate-200"
+                    ? "border-md-primary text-md-primary"
+                    : "border-transparent text-md-onSurfaceVariant hover:bg-md-surfaceVariant"
                 }`}
               >
                 {st === "plans" ? "Plans" : st === "history" ? "History" : "Progress"}

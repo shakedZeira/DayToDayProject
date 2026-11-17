@@ -64,14 +64,19 @@ export default function App() {
   const signedIn = token && user;
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
-      <header className="w-full bg-white shadow-sm px-4 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-bold text-slate-800">Day To Day</h1>
+    <div className="min-h-screen bg-md-background flex flex-col">
+      <header className="w-full bg-md-surface h-16 px-4 flex items-center justify-between relative">
+        <h1 className="absolute inset-x-0 text-center text-xl font-medium text-md-onSurface pointer-events-none">DayToDay</h1>
+        <span />
         {signedIn && (
           <span className="flex items-center gap-3 text-sm">
             <span className="hidden sm:inline text-slate-500">{user.email}</span>
-            <span className="text-xs text-slate-400">Backend: {backend}</span>
-            <button className="text-red-600 underline" onClick={onLogout}>Log out</button>
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${backend === "connected" ? "bg-md-secondary" : "bg-md-error"}`}
+              title={`Backend: ${backend}`}
+              aria-label={`Backend: ${backend}`}
+            />
+            <button className="text-md-primary font-medium relative z-10" onClick={onLogout}>Log out</button>
           </span>
         )}
       </header>
@@ -80,9 +85,11 @@ export default function App() {
         <>
           <OutboxStatus />
           <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-4 pb-24 md:pb-6">
-            {view === "today" && <DigestView token={token} />}
+            {view === "today" && <DigestView token={token} onNavigate={setView} />}
             {view === "tasks" && <Tasks token={token} />}
-            {view === "health" && <HealthView token={token} />}
+            {view === "workouts" && <HealthView token={token} tab="workouts" />}
+            {view === "goals" && <HealthView token={token} tab="goals" />}
+            {view === "nutrition" && <HealthView token={token} tab="nutrition" />}
             {view === "italian" && <ItalianView token={token} />}
             {view === "cooking" && <CookingView token={token} />}
             {view === "progress" && <ProgressView token={token} />}

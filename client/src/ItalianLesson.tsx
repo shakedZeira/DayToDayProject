@@ -131,7 +131,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
         <h3 className="font-semibold text-slate-700 mb-2">Vocab</h3>
         <ul className="grid grid-cols-2 gap-2">
           {lesson.vocab.map((v) => (
-            <li key={v.italian} className="border rounded p-2 bg-white text-sm">
+            <li key={v.italian} className="border border-md-outline rounded-md3xs p-2 bg-white text-sm">
               <span className="text-slate-500">{v.english}</span>
               <span className="block font-medium text-slate-800">{v.italian}</span>
             </li>
@@ -145,7 +145,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
           {lesson.phrases.map((p, i) => (
             <li
               key={p.italian}
-              className={`border rounded p-3 flex items-center justify-between gap-3 cursor-pointer ${
+              className={`border border-md-outline rounded-md3xs p-3 flex items-center justify-between gap-3 cursor-pointer ${
                 i === activeIndex ? "border-indigo-400 bg-indigo-50" : "bg-white"
               }`}
               onClick={() => {
@@ -161,7 +161,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
       </div>
 
       {phrase && (
-        <div className="border rounded bg-white p-4 flex flex-col gap-3">
+        <div className="md-card p-4 flex flex-col gap-3">
           <h3 className="font-semibold text-slate-700">Practice — speak Italian</h3>
           <p className="text-slate-600">
             Say: <span className="font-medium text-slate-800">{phrase.english}</span>
@@ -191,13 +191,13 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
               </p>
               <div className="flex gap-2">
                 <button
-                  className="border border-slate-300 rounded px-3 py-1"
+                  className="border border-md-outline rounded px-3 py-1"
                   onClick={() => setPractice({ status: "idle" })}
                 >
                   Try again
                 </button>
                 <button
-                  className="border border-slate-300 rounded px-3 py-1"
+                  className="border border-md-outline rounded px-3 py-1"
                   onClick={() => {
                     setActiveIndex((prev) => (prev + 1) % lesson.phrases.length);
                     setPractice({ status: "idle" });
@@ -213,7 +213,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
             <div className="flex flex-col gap-2">
               <div className="flex gap-2 items-center">
                 <button
-                  className="bg-indigo-600 text-white rounded px-4 py-1"
+                  className="bg-indigo-600 text-white rounded-full px-4 py-1"
                   onClick={startRecite}
                   disabled={!speechSupported}
                 >
@@ -225,7 +225,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
               </div>
               <div className="flex gap-2">
                 <input
-                  className="border rounded px-3 py-1 flex-1"
+                  className="border border-md-outline rounded-md3xs px-3 py-1 flex-1"
                   placeholder="…or type the Italian here"
                   value={attemptText}
                   onChange={(e) => setAttemptText(e.target.value)}
@@ -237,7 +237,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
                   }}
                 />
                 <button
-                  className="border border-slate-300 rounded px-3 py-1"
+                  className="border border-md-outline rounded px-3 py-1"
                   onClick={() => {
                     submitAttempt(normalizeTranscript(attemptText));
                     setAttemptText("");
@@ -257,18 +257,18 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
         </div>
       )}
 
-      <div className="border rounded bg-white p-4 flex flex-col gap-3">
+      <div className="md-card p-4 flex flex-col gap-3">
         <h3 className="font-semibold text-slate-700">Tutor — speak English, learn Italian</h3>
         <div className="flex gap-2">
           <button
-            className="bg-indigo-600 text-white rounded px-4 py-1"
+            className="bg-indigo-600 text-white rounded-full px-4 py-1"
             onClick={startTutor}
             disabled={!speechSupported || tutorListening}
           >
             {tutorListening ? "Listening…" : "Speak English"}
           </button>
           <input
-            className="border rounded px-3 py-1 flex-1 text-sm"
+            className="border border-md-outline rounded-md3xs px-3 py-1 flex-1 text-sm"
             placeholder="…or type an English phrase"
             value={tutorInput}
             onChange={(e) => setTutorInput(e.target.value)}

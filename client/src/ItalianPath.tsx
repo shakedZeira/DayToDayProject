@@ -32,9 +32,9 @@ export default function ItalianPath({ token }: Props) {
 
   if (error) {
     return (
-      <div className="border rounded-lg p-6 bg-red-50 text-red-700 flex justify-between items-center">
+      <div className="border rounded-md3m p-6 bg-red-50 text-red-700 flex justify-between items-center">
         <span>{error}</span>
-        <button className="border rounded px-3 py-1" onClick={() => void refresh()}>
+        <button className="border border-md-outline rounded-md3xs px-3 py-1" onClick={() => void refresh()}>
           Retry
         </button>
       </div>
@@ -66,7 +66,7 @@ export default function ItalianPath({ token }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="border rounded-lg bg-white p-4 flex flex-wrap gap-6 text-sm">
+      <div className="md-card p-4 flex flex-wrap gap-6 text-sm">
         <span>
           <b>{progress.xp}</b> XP
         </span>
@@ -84,7 +84,7 @@ export default function ItalianPath({ token }: Props) {
       </div>
 
       {result && (
-        <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+        <div className="rounded-md3m bg-[#58CC02]/10 border border-[#58CC02]/30 px-4 py-3 text-sm text-[#58A700]">
           {result.lessonCompleted ? "Lesson complete! " : ""}
           +{result.xpGained} XP{result.lessonCompleted ? " 🎉" : ""}
         </div>
@@ -92,7 +92,7 @@ export default function ItalianPath({ token }: Props) {
 
       {nextId && (
         <button
-          className="bg-emerald-600 text-white rounded-lg px-6 py-3 font-medium self-start"
+          className="bg-[#58CC02] text-white rounded-md3m px-6 py-3 font-medium self-start"
           onClick={() => {
             setResult(null);
             setActiveLessonId(nextId);
@@ -107,7 +107,7 @@ export default function ItalianPath({ token }: Props) {
         return (
           <div key={unit.id} className="flex flex-col gap-3">
             <div className="flex justify-between items-baseline border-b pb-1">
-              <h3 className="font-semibold">{unit.title}</h3>
+              <h3 className="font-bold text-[#58A700]"><span className="block text-xs">UNIT {course.units.indexOf(unit) + 1}</span>{unit.title}</h3>
               <span className="text-xs text-gray-500">
                 {unitDone}/{unit.lessons.length}
               </span>
@@ -124,14 +124,14 @@ export default function ItalianPath({ token }: Props) {
                       setResult(null);
                       setActiveLessonId(l.id);
                     }}
-                    className={`rounded-full w-36 h-36 flex flex-col items-center justify-center gap-1 border-4 text-sm ${
+                    className={`rounded-full w-28 h-28 flex flex-col items-center justify-center gap-1 border-4 text-sm ${
                       status === "completed"
-                        ? "border-yellow-400 bg-yellow-50"
+                        ? "border-[#FFC800] bg-[#FFC800]/10"
                         : status === "unlocked" && isTest
-                          ? "border-amber-500 bg-amber-50"
+                          ? "border-[#FF9600] bg-[#FF9600]/10"
                           : status === "unlocked"
-                            ? "border-emerald-500 bg-emerald-50"
-                            : "border-gray-300 bg-gray-50 text-gray-400"
+                            ? "border-[#58CC02] bg-[#58CC02]/10"
+                            : "border-[#4B4B55]/40 bg-gray-100 text-gray-400"
                     }`}
                   >
                     <span className="text-2xl">

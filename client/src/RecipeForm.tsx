@@ -27,11 +27,11 @@ function NumField({
 }) {
   return (
     <div dir="rtl">
-      <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+      <label className="block text-xs font-semibold text-slate-400 mb-1">
         {label}
       </label>
       <input
-        className="border rounded px-3 py-2 w-full"
+        className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
         type="number"
         min="0"
         step="any"
@@ -210,7 +210,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
   ];
 
   return (
-    <div className="border border-slate-200 rounded-xl bg-white p-4 max-w-xl" dir="rtl">
+    <div className="border border-slate-200 md-card p-4 max-w-xl" dir="rtl">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-slate-800">{isEdit ? "עריכת מתכון" : "מתכון חדש"}</h2>
         <button
@@ -225,11 +225,11 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-400 mb-1">
             כותרת
           </label>
           <input
-            className="border rounded px-3 py-2 w-full"
+            className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
             value={form.title}
             onChange={(e) => setField("title", e.target.value)}
             placeholder="למשל: פנקייק חלבון"
@@ -239,11 +239,11 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+            <label className="block text-xs font-semibold text-slate-400 mb-1">
               ארוחה
             </label>
             <select
-              className="border rounded px-3 py-2 w-full"
+              className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
               value={form.meal}
               onChange={(e) => setField("meal", e.target.value as RecipeMeal)}
             >
@@ -255,11 +255,11 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+            <label className="block text-xs font-semibold text-slate-400 mb-1">
               רמה
             </label>
             <select
-              className="border rounded px-3 py-2 w-full"
+              className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
               value={form.difficulty}
               onChange={(e) => setField("difficulty", e.target.value as RecipeDifficulty)}
             >
@@ -286,11 +286,11 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-400 mb-1">
             תיאור
           </label>
           <textarea
-            className="border rounded px-3 py-2 w-full"
+            className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
             value={form.description}
             onChange={(e) => setField("description", e.target.value)}
             rows={2}
@@ -301,7 +301,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         {/* Ingredients */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <label className="text-xs font-semibold text-slate-400">
               רכיבים
             </label>
             <button
@@ -315,13 +315,13 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
           {ingredients.map((ing, idx) => (
             <div key={idx} className="flex gap-2 items-end">
               <input
-                className="border rounded px-2 py-2 flex-1"
+                className="border border-md-outline rounded-md3xs px-2 py-2 flex-1"
                 value={ing.name}
                 onChange={(e) => updateIngredient(idx, "name", e.target.value)}
                 placeholder="שם"
               />
               <input
-                className="border rounded px-2 py-2 w-16"
+                className="border border-md-outline rounded-md3xs px-2 py-2 w-16"
                 type="number"
                 min="0"
                 step="any"
@@ -332,7 +332,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
                 }}
               />
               <input
-                className="border rounded px-2 py-2 w-20"
+                className="border border-md-outline rounded-md3xs px-2 py-2 w-20"
                 value={ing.unit}
                 onChange={(e) => updateIngredient(idx, "unit", e.target.value)}
                 placeholder="יחידה"
@@ -353,7 +353,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         {/* Instructions */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <label className="text-xs font-semibold text-slate-400">
               הוראות הכנה
             </label>
             <button
@@ -370,14 +370,14 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
                 {inst.step}
               </span>
               <textarea
-                className="border rounded px-2 py-2 flex-1"
+                className="border border-md-outline rounded-md3xs px-2 py-2 flex-1"
                 value={inst.text}
                 onChange={(e) => updateInstruction(idx, "text", e.target.value)}
                 rows={2}
                 placeholder="הוראות לשלב…"
               />
               <input
-                className="border rounded px-2 py-2 w-20 ml-1"
+                className="border border-md-outline rounded-md3xs px-2 py-2 w-20 ml-1"
                 type="number"
                 min="0"
                 step="1"
@@ -403,7 +403,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
 
         {/* Photo */}
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-400 mb-1">
             תמונה
           </label>
           <div className="flex flex-col gap-2">
@@ -431,11 +431,11 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-400 mb-1">
             מקור (אופציונלי)
           </label>
           <input
-            className="border rounded px-3 py-2 w-full"
+            className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
             value={form.source}
             onChange={(e) => setField("source", e.target.value)}
             placeholder="כתובת אתר או ספר בישול"
@@ -443,11 +443,11 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-400 mb-1">
             תגיות (מופרדות בפסיקים, אופציונלי)
           </label>
           <input
-            className="border rounded px-3 py-2 w-full"
+            className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
             value={form.tags}
             onChange={(e) => setField("tags", e.target.value)}
             placeholder="למשל: צמחוני, עתיר חלבון"
@@ -457,7 +457,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         <div className="flex gap-2 pt-4">
           <button
             type="submit"
-            className="flex-1 bg-indigo-600 text-white font-medium py-2.5 rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+            className="flex-1 bg-indigo-600 text-white font-medium py-2.5 rounded-full hover:bg-indigo-700 disabled:opacity-60"
           >
             {isEdit ? "עדכון מתכון" : "יצירת מתכון"}
           </button>
