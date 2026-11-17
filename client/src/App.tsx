@@ -8,6 +8,7 @@ import HealthView from "./HealthView";
 import ItalianView from "./ItalianView";
 import CookingView from "./CookingView";
 import Nav from "./Nav";
+import { getOutbox } from "./outboxRuntime";
 import OutboxStatus from "./OutboxStatus";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
@@ -53,6 +54,7 @@ export default function App() {
   }
 
   function onLogout() {
+    void getOutbox().clear();
     clearStored(TOKEN_KEY);
     clearStored(USER_KEY);
     setToken(null);

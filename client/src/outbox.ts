@@ -120,6 +120,8 @@ export interface Outbox {
   flush(): Promise<void>;
   refresh(): Promise<void>;
   dismissNotes(): void;
+  /** Drop every queued item (used on logout so writes never replay under another account). */
+  clear(): Promise<void>;
   getState(): OutboxState;
   subscribe(fn: (s: OutboxState) => void): () => void;
 }
@@ -204,6 +206,10 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     },
     refresh,
     dismissNotes: () => set({ notes: [] }),
+    async clear() {
+      for (const queued of await deps.store.all()) await deps.store.remove(queued.id);
+      await refresh();
+    },
     getState: () => state,
     subscribe(fn) {
       listeners.add(fn);

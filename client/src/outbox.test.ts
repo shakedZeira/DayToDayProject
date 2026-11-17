@@ -52,6 +52,20 @@ function setup(fetchFn: (p: string, i: RequestInit) => Promise<Response>, token:
   return { store, outbox };
 }
 
+describe("outbox clear", () => {
+  it("drops every queued item so nothing replays after logout", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(ok());
+    const { store, outbox } = setup(fetchFn);
+    await outbox.enqueue(item("/api/tasks"));
+    await outbox.enqueue(item("/api/tasks"));
+    await outbox.clear();
+    expect(await store.all()).toEqual([]);
+    expect(outbox.getState().pending).toBe(0);
+    await outbox.flush();
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
 describe("outbox replay", () => {
   it("replays in order, adds auth at replay time, and empties the queue", async () => {
     const calls: Array<[string, RequestInit]> = [];
