@@ -35,3 +35,9 @@ window_dump.xml
 window_dump2.xml
 *.bak
 *.bak2
+
+# Logs and scratch
+*.log
+*.xml.bak
+spotify.properties
+/m[[]*

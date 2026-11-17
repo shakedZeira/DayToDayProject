@@ -1,42 +1,39 @@
+# Render free web service for the DayToDay API (server-only Docker image).
+#
+# Topology:
+#   Neon (Postgres)  <-  Render (this API)  <-  Cloudflare Pages (static client,
+#   proxies /api/* here via client/public/_redirects)
+#
+# Do NOT use Render's free Postgres (it expires after 30 days). Use Neon.
+# Set DATABASE_URL (Neon pooled URL, with ?sslmode=require) in the Render
+# dashboard after the first sync. Render's free tier sleeps after ~15 min idle;
+# ping https://<your-app>.onrender.com/api/health every 10 min from cron-job.org.
 services:
   - type: web
-    name: api
+    name: dtd-api
     runtime: docker
-    dockerfilePath: server/Dockerfile
+    plan: free
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: dtd-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET
         generateValue: true
-      # CORS: the client nginx same-origins /api to http://api:4000, so the browser
-      # never makes cross-origin calls and CORS isn't exercised. CLIENT_URL is left
-      # unset so the server falls back to "*". (If you ever call the API directly,
-      # set CLIENT_URL to your deployed client URL in the api Environment tab.)
+      # Your Cloudflare Pages URL (CORS is not exercised through the proxy, but set it anyway).
+      - key: CLIENT_URL
+        value: https://dtd.pages.dev
+      - key: LLM_PROVIDER
+        value: http
       - key: LLM_HTTP_URL
-        value: "https://api.groq.com/openai/v1/chat/completions"
+        value: https://api.groq.com/openai/v1/chat/completions
       - key: LLM_MODEL
-        value: "llama-3.1-8b-instant"
+        value: llama-3.1-8b-instant
       - key: LLM_HTTP_KEY
         sync: false
       - key: VISION_PROVIDER
-        value: "stub"
-      - key: PORT
-        value: 4000
-    healthCheckPath: /api/health
-    autoDeploy: true
-  - type: web
-    name: client
-    runtime: docker
-    dockerfilePath: client/Dockerfile
-    autoDeploy: true
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: api
-          property: host
-databases:
-  - name: dtd-db
-    plan: free
+        value: stub

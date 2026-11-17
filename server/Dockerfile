@@ -20,5 +20,11 @@ WORKDIR /app/server
 RUN npx prisma generate
 RUN npm run build
 
+# Runtime only (after the build, which needs devDependencies).
+ENV NODE_ENV=production
+ENV PORT=4000
+# Listen on all interfaces inside the container (index.ts defaults to 127.0.0.1).
+# Render injects its own PORT at runtime, which overrides the default above.
+ENV HOST=0.0.0.0
 EXPOSE 4000
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/index.js"]

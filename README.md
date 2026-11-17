@@ -63,19 +63,20 @@ npm test --workspace server
 
 The `vitest.globalSetup.ts` sets `DATABASE_URL` to `dtd_test` and runs `prisma db push` to ensure schema parity. The `vitest.config.ts` `test.env` also points to `dtd_test` as a belt-and-suspenders measure.
 
-## Deploy (Render / Railway)
+## Deploy (free: Neon + Render + Cloudflare Pages)
 
-Deploy two services — the API (`server/`, port 4000) and the static PWA (`client/`) — with the client nginx `try_files` fallback to `index.html` for offline/PWA routing.
+Architecture: **Neon** (Postgres) <- **Render** (Express API, `server/Dockerfile`, `render.yaml`) <- **Cloudflare Pages** (static PWA). Pages proxies `/api/*` to Render via `client/public/_redirects`, so the browser stays same-origin (no CORS, no client changes). No credit card is needed for any of the three. Do not use Render's own free Postgres (it expires after 30 days).
 
-A `render.yaml` Blueprint deploys three resources:
+1. **Database (Neon).** Create a free project at neon.tech and copy the *pooled* connection string (keep `?sslmode=require`).
+2. **API (Render).** In the Render dashboard choose New -> Blueprint, pick this GitHub repo; it reads `render.yaml` and creates the free `dtd-api` web service. When prompted, set `DATABASE_URL` (the Neon URL) and optionally `LLM_HTTP_KEY` (Groq key). `JWT_SECRET` is generated for you (the server refuses to start in production without it). The container runs `prisma migrate deploy` and the seed on every start and listens on Render's `PORT`. Note your URL: `https://dtd-api.onrender.com` (or whatever Render assigns).
+3. **Client (Cloudflare Pages).** Connect the repo, build command `npm ci && npm run build --workspace client`, output directory `client/dist`. Edit `client/public/_redirects` and replace `YOUR-APP.onrender.com` with your Render host, then redeploy. Update `CLIENT_URL` in the Render env to your Pages URL.
+4. **First account.** Open the Pages URL and register. In production only the first account can be created; afterwards registration is closed (set `ALLOW_REGISTRATION=true` to reopen it temporarily).
+5. **Keep-alive.** Render's free tier sleeps after ~15 minutes idle, and a cold start takes about 50 seconds. Create a free job at cron-job.org that GETs `https://<your-app>.onrender.com/api/health` every 10 minutes; this also keeps `node-cron` reminders and web-push firing. (Render free allows ~750 instance-hours/month, enough for one always-on service.)
+6. **Android app.** In Settings -> Server enter your Render URL (`https://<your-app>.onrender.com/`).
 
-| Resource | Type | Details |
-|----------|------|---------|
-| **api** | Web Service | `server/Dockerfile`, runs `prisma migrate deploy` + seed on start |
-| **client** | Web Service | `client/Dockerfile` (nginx static PWA) |
-| **dtd-db** | PostgreSQL | Render-managed Postgres; `DATABASE_URL` wired to the API service |
+Note: recipe photos are stored in Postgres (3 MB cap each), so they survive redeploys.
 
-The client's nginx config proxies `/api/` to the API service's internal hostname.
+CI (`.github/workflows/ci.yml`) runs typecheck, server/client tests (with a Postgres service) and the client build on every push.
 
 ## PWA & offline notes
 
