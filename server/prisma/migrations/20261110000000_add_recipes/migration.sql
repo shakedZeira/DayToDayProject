@@ -21,12 +21,18 @@ CREATE TABLE "Recipe" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
+    CONSTRAINT "Recipe_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateTable
 CREATE TABLE "RecipeFavorite" (
     "id" TEXT NOT NULL,
     "ownerId" TEXT NOT NULL,
     "recipeId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RecipeFavorite_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateIndex
 CREATE INDEX "Recipe_meal_idx" ON "Recipe"("meal");
