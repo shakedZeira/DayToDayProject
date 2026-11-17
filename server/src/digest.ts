@@ -4,6 +4,7 @@ import { prisma } from "./db";
 import { requireAuth, type AuthedRequest } from "./session";
 import { dueOn } from "./tasks";
 import { currentStreak } from "./streak";
+import { italianActiveDays, RECURRING } from "./aggregates";
 
 export interface TaskRow {
   id: string;
@@ -78,26 +79,32 @@ digestRouter.get("/today", async (req: AuthedRequest, res) => {
   const weekAgo = new Date(now.getTime() - 7 * 86_400_000);
   const ownerId = req.userId!;
 
-  const [ownedTasks, workoutsThisWeek, lastWorkout, lessonToday, practiceLogs, completedLessons] =
+  const { start, end } = dayRange(now);
+
+  // Candidate tasks are narrowed in the DB: recurring ones (any status) or pending one-offs due today.
+  // dueOn() then only has to resolve the weekly day-of-week rule in JS.
+  const [candidateTasks, workoutsThisWeek, lastWorkout, lessonToday, activeDays, totalLessons] =
     await Promise.all([
-      prisma.task.findMany({ where: { ownerId } }),
+      prisma.task.findMany({
+        where: {
+          ownerId,
+          OR: [
+            RECURRING,
+            { AND: [{ status: { not: "DONE" } }, { dueAt: { gte: start, lt: end } }, { OR: [{ recurrence: null }, { recurrence: "none" }] }] }
+          ]
+        }
+      }),
       prisma.workout.count({ where: { ownerId, date: { gte: weekAgo } } }),
       prisma.workout.findFirst({ where: { ownerId }, orderBy: { date: "desc" }, select: { date: true } }),
       prisma.lesson.findFirst({ where: { ownerId, date: todayKey(now) }, select: { title: true } }),
-      prisma.practiceLog.findMany({ where: { ownerId }, select: { createdAt: true } }),
-      prisma.lesson.findMany({ where: { ownerId, completedAt: { not: null } }, select: { completedAt: true } })
+      italianActiveDays(ownerId),
+      prisma.lesson.count({ where: { ownerId, completedAt: { not: null } } })
     ]);
 
-  const tasksToday = ownedTasks.filter(
-    (t) => (t.status !== "DONE" || (t.recurrence !== "none" && t.recurrence != null)) && dueOn(t, now)
-  );
+  const tasksToday = candidateTasks.filter((t) => dueOn(t, now));
   const lastWorkoutDaysAgo = lastWorkout
     ? Math.max(0, Math.floor((now.getTime() - lastWorkout.date.getTime()) / 86_400_000))
     : null;
-  const activeDays = [
-    ...practiceLogs.map((l) => l.createdAt),
-    ...completedLessons.map((l) => l.completedAt as Date)
-  ];
 
   res.json(
     buildDigest({
@@ -107,7 +114,7 @@ digestRouter.get("/today", async (req: AuthedRequest, res) => {
       lastWorkoutDaysAgo,
       lessonTitle: lessonToday?.title ?? null,
       activeDays,
-      totalLessons: completedLessons.length
+      totalLessons
     })
   );
 });
