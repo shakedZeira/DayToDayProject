@@ -170,6 +170,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
     testImplementation("io.mockk:mockk:1.13.13")
     testImplementation("org.robolectric:robolectric:4.11")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("io.ktor:ktor-client-mock:2.3.8")
     
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.5.1")

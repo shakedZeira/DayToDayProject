@@ -10,6 +10,7 @@ import com.daytoday.model.WeeklyProgress
 import com.daytoday.model.WorkoutSession
 import com.daytoday.network.RecipeView
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.HttpResponseValidator
@@ -38,31 +39,39 @@ import io.ktor.utils.io.readUTF8Line
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-class DayTodayApiImpl : DayTodayApi {
-
-    private val client = HttpClient(Android) {
-        install(ContentNegotiation) {
-            json(networkJson)
-        }
-        install(Logging) {
-            level = LogLevel.ALL
-        }
-        install(HttpTimeout) {
-            connectTimeoutMillis = 5_000
-            requestTimeoutMillis = 60_000
-            socketTimeoutMillis = 60_000
-        }
-        HttpResponseValidator {
-            validateResponse { response ->
-                if (!response.status.isSuccess()) {
-                    throw ApiException(extractErrorMessage(response))
-                }
+/**
+ * Applies the shared plugin set (JSON, logging, timeouts, error mapping) so the
+ * production Android client and the MockEngine client used in unit tests behave alike.
+ */
+internal fun HttpClientConfig<*>.configureApiClient() {
+    install(ContentNegotiation) {
+        json(networkJson)
+    }
+    install(Logging) {
+        level = LogLevel.ALL
+    }
+    install(HttpTimeout) {
+        connectTimeoutMillis = 5_000
+        requestTimeoutMillis = 60_000
+        socketTimeoutMillis = 60_000
+    }
+    HttpResponseValidator {
+        validateResponse { response ->
+            if (!response.status.isSuccess()) {
+                throw ApiException(extractErrorMessage(response), response.status.value)
             }
         }
-        defaultRequest {
-            header("Accept", "application/json")
-        }
     }
+    defaultRequest {
+        header("Accept", "application/json")
+    }
+}
+
+internal fun buildApiClient(): HttpClient = HttpClient(Android) { configureApiClient() }
+
+class DayTodayApiImpl internal constructor(private val client: HttpClient) : DayTodayApi {
+
+    constructor() : this(buildApiClient())
 
     override suspend fun getScoreboard(date: String): List<NbaGame> =
         client.get(absoluteUrl("api/nba/scoreboard")) { parameter("date", date) }.body()
@@ -173,7 +182,7 @@ class DayTodayApiImpl : DayTodayApi {
             }
         }.execute { response ->
             if (!response.status.isSuccess()) {
-                throw ApiException(extractErrorMessage(response))
+                throw ApiException(extractErrorMessage(response), response.status.value)
             }
             val channel = response.bodyAsChannel()
             while (true) {
@@ -209,7 +218,8 @@ class DayTodayApiImpl : DayTodayApi {
         }.body<FavoriteToggleResponse>().favorited
 }
 
-class ApiException(message: String) : Exception(message)
+/** Non-2xx reply from the backend; [status] is the HTTP code (0 when unknown). */
+class ApiException(message: String, val status: Int = 0) : Exception(message)
 
 private suspend fun extractErrorMessage(response: HttpResponse): String {
     val raw = runCatching { response.bodyAsText() }.getOrNull().orEmpty()
