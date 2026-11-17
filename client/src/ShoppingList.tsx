@@ -1,5 +1,13 @@
-import { useMemo, useState } from "react";
-import type { RecipeView } from "shared";
+import { useCallback, useEffect, useState } from "react";
+import type { RecipeView, ShoppingItemView } from "shared";
+import {
+  addRecipeToShoppingList,
+  addShoppingItem,
+  clearCheckedShoppingItems,
+  deleteShoppingItem,
+  fetchShoppingList,
+  updateShoppingItem,
+} from "./shoppingApi";
 
 interface Props {
   token: string;
@@ -7,64 +15,69 @@ interface Props {
   onClose: () => void;
 }
 
-type IngKey = string;
-
-function keyOf(name: string, unit: string): IngKey {
-  return `${name.trim().toLowerCase()}|${unit.trim()}`;
-}
-
 export default function ShoppingList({ token, recipes, onClose }: Props) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [purchased, setPurchased] = useState<Set<IngKey>>(new Set());
+  const [items, setItems] = useState<ShoppingItemView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [recipeId, setRecipeId] = useState("");
+  const [servings, setServings] = useState("");
+  const [skipPantry, setSkipPantry] = useState(true);
+  const [newName, setNewName] = useState("");
 
-  const toggleRecipe = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    setSelected((prev) => {
-      if (prev.size === recipes.length) return new Set();
-      return new Set(recipes.map((r) => r.id));
-    });
-  };
-
-  const togglePurchased = (key: IngKey) => {
-    setPurchased((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const resetPurchased = () => setPurchased(new Set());
-
-  const aggregated = useMemo(() => {
-    const map = new Map<IngKey, { name: string; unit: string; amount: number; recipeIds: string[] }>();
-    for (const id of selected) {
-      const recipe = recipes.find((r) => r.id === id);
-      if (!recipe) continue;
-      for (const ing of recipe.ingredients) {
-        const key = keyOf(ing.name, ing.unit);
-        const existing = map.get(key);
-        if (existing) {
-          existing.amount += ing.amount;
-          existing.recipeIds.push(id);
-        } else {
-          map.set(key, { name: ing.name, unit: ing.unit, amount: ing.amount, recipeIds: [id] });
-        }
-      }
+  const run = useCallback(async (fn: () => Promise<unknown>) => {
+    setError(null);
+    try {
+      await fn();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "request failed");
     }
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [recipes, selected]);
+  }, []);
 
-  const isSelected = (id: string) => selected.has(id);
-  const isPurchased = (key: IngKey) => purchased.has(key);
+  const reload = useCallback(
+    () => run(async () => setItems(await fetchShoppingList(token))),
+    [run, token]
+  );
+
+  useEffect(() => {
+    reload().finally(() => setLoading(false));
+  }, [reload]);
+
+  const toggle = (item: ShoppingItemView) =>
+    run(async () => {
+      const updated = await updateShoppingItem(token, item.id, { checked: !item.checked });
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+    });
+
+  const remove = (item: ShoppingItemView) =>
+    run(async () => {
+      await deleteShoppingItem(token, item.id);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+    });
+
+  const clearChecked = () =>
+    run(async () => {
+      await clearCheckedShoppingItems(token);
+      setItems((prev) => prev.filter((i) => !i.checked));
+    });
+
+  const addRecipe = () =>
+    run(async () => {
+      if (!recipeId) return;
+      const n = servings ? Number(servings) : undefined;
+      setItems(await addRecipeToShoppingList(token, recipeId, { servings: n, skipPantry }));
+      setRecipeId("");
+      setServings("");
+    });
+
+  const addManual = () =>
+    run(async () => {
+      if (!newName.trim()) return;
+      await addShoppingItem(token, { name: newName.trim() });
+      setNewName("");
+      await reload();
+    });
+
+  const checkedCount = items.filter((i) => i.checked).length;
 
   return (
     <div className="border border-slate-200 rounded-xl bg-white p-4 max-w-2xl" dir="rtl">
@@ -75,109 +88,106 @@ export default function ShoppingList({ token, recipes, onClose }: Props) {
         </button>
       </div>
 
-      {/* Recipe selection */}
+      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+
+      {/* Add a recipe's ingredients */}
       <section className="mb-4 border border-slate-200 rounded-lg p-3">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">בחירת מתכונים</label>
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={toggleSelectAll}
-              className="text-xs text-slate-600 hover:text-slate-900 font-medium underline px-2"
-            >
-              {selected.size === recipes.length && recipes.length > 0 ? "ניקוי הכל" : "בחירת הכל"}
-            </button>
-            <button
-              type="button"
-              onClick={resetPurchased}
-              className="text-xs text-slate-600 hover:text-slate-900 font-medium underline px-2"
-            >
-              איפוס רכישות
-            </button>
-          </div>
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">הוספת מתכון לרשימה</label>
+        <div className="flex gap-2 mt-2">
+          <select
+            value={recipeId}
+            onChange={(e) => setRecipeId(e.target.value)}
+            className="flex-1 min-w-0 border border-slate-300 rounded px-2 py-1 text-sm"
+            aria-label="מתכון"
+          >
+            <option value="">בחירת מתכון</option>
+            {recipes.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.title}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={servings}
+            onChange={(e) => setServings(e.target.value)}
+            placeholder="מנות"
+            aria-label="מספר מנות"
+            className="w-20 border border-slate-300 rounded px-2 py-1 text-sm"
+          />
+          <button
+            type="button"
+            onClick={addRecipe}
+            disabled={!recipeId}
+            className="px-3 py-1 text-sm rounded bg-indigo-600 text-white disabled:opacity-40"
+          >
+            הוספה
+          </button>
         </div>
-        <div className="flex flex-col gap-1">
-          {recipes.length === 0 ? (
-            <span className="text-xs text-slate-400">אין מתכונים זמינים.</span>
-          ) : (
-            recipes.map((recipe) => (
-              <label
-                key={recipe.id}
-                className="flex items-center gap-2 cursor-pointer select-none"
-                onClick={(e) => {
-                  if ((e.target as HTMLElement).closest("input")) return;
-                  toggleRecipe(recipe.id);
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={isSelected(recipe.id)}
-                  onChange={(e) => toggleRecipe(recipe.id)}
-                  className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <span className="flex-1 min-w-0 text-sm text-slate-700 truncate">{recipe.title}</span>
-                <span className="text-xs text-slate-400 capitalize">{recipe.meal}</span>
-              </label>
-            ))
-          )}
-        </div>
-        <p className="mt-1 text-xs text-slate-500">
-          נבחרו {selected.size} מתכון{selected.size !== 1 ? "ים" : ""}
-        </p>
+        <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+          <input type="checkbox" checked={skipPantry} onChange={(e) => setSkipPantry(e.target.checked)} />
+          דלג על מה שיש במזווה
+        </label>
       </section>
 
-      {/* Aggregated shopping list */}
+      {/* Persistent list */}
       <section className="border border-slate-200 rounded-lg">
         <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-          <h3 className="font-semibold text-slate-800 text-sm">
-            רכיבים לקנייה ({aggregated.length})
-          </h3>
-          {aggregated.length > 0 && purchased.size > 0 && (
-            <span className="text-xs text-green-600 font-medium">{purchased.size} נקנה</span>
+          <h3 className="font-semibold text-slate-800 text-sm">פריטים ({items.length})</h3>
+          {checkedCount > 0 && (
+            <button type="button" onClick={clearChecked} className="text-xs text-slate-600 hover:text-slate-900 underline">
+              ניקוי {checkedCount} שנקנו
+            </button>
           )}
         </div>
+        <div className="flex gap-2 px-3 py-2 border-b border-slate-100">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addManual()}
+            placeholder="הוספת פריט"
+            aria-label="פריט חדש"
+            className="flex-1 min-w-0 border border-slate-300 rounded px-2 py-1 text-sm"
+          />
+          <button type="button" onClick={addManual} className="px-3 py-1 text-sm rounded border border-slate-300">
+            +
+          </button>
+        </div>
         <div className="divide-y divide-slate-100">
-          {aggregated.length === 0 ? (
-            <div className="px-3 py-6 text-center text-slate-400 text-sm" dir="rtl">
-              בחר מתכונים למעלה כדי לבנות את רשימת הקניות שלך.
-            </div>
+          {loading ? (
+            <div className="px-3 py-6 text-center text-slate-400 text-sm">טוען...</div>
+          ) : items.length === 0 ? (
+            <div className="px-3 py-6 text-center text-slate-400 text-sm">הרשימה ריקה. הוסף מתכון או פריט.</div>
           ) : (
-            aggregated.map((item) => {
-              const key = keyOf(item.name, item.unit);
-              const done = isPurchased(key);
-              return (
-                <label
-                  key={key}
-                  className={`px-3 py-2 flex items-center gap-2 cursor-pointer select-none ${
-                    done ? "bg-green-50" : ""
-                  }`}
-                  onClick={(e) => {
-                    if ((e.target as HTMLElement).closest("input")) return;
-                    togglePurchased(key);
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={done}
-                    onChange={() => togglePurchased(key)}
-                    className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <span
-                      className={`block text-sm ${done ? "line-through text-slate-400" : "text-slate-700"}`}
-                    >
-                      {item.name}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      {item.amount} {item.unit}
-                    </span>
-                  </div>
-                  <span className="text-xs text-slate-400 italic">
-                    {item.recipeIds.length} מתכון{item.recipeIds.length !== 1 ? "ים" : ""}
+            items.map((item) => (
+              <div key={item.id} className={`px-3 py-2 flex items-center gap-2 ${item.checked ? "bg-green-50" : ""}`}>
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  onChange={() => toggle(item)}
+                  aria-label={item.name}
+                  className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                />
+                <div className="flex-1 min-w-0">
+                  <span className={`block text-sm ${item.checked ? "line-through text-slate-400" : "text-slate-700"}`}>
+                    {item.name}
                   </span>
-                </label>
-              );
-            })
+                  <span className="text-xs text-slate-500">
+                    {item.amount} {item.unit}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => remove(item)}
+                  aria-label="מחיקה"
+                  className="text-slate-400 hover:text-red-600 text-sm px-1"
+                >
+                  ✕
+                </button>
+              </div>
+            ))
           )}
         </div>
       </section>
