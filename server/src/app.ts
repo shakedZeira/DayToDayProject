@@ -22,9 +22,11 @@ import { settingsRouter } from "./settings";
 import { progressRouter } from "./progress";
 import { exportRouter } from "./exportData";
 import { prisma } from "./db";
+import { requestLogger, errorHandler } from "./observability";
 
 export const app = express();
 
+app.use(requestLogger);
 app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
 app.use(express.json());
 
@@ -55,3 +57,5 @@ app.get("/api/ready", async (_req, res) => {
   await prisma.$queryRaw`SELECT 1`;
   res.json({ ready: true });
 });
+
+app.use(errorHandler); // keep last
