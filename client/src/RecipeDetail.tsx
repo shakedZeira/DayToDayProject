@@ -68,7 +68,7 @@ export default function RecipeDetail({
         </button>
       </div>
 
-      <div className="aspect-video w-full rounded-lg overflow-hidden bg-slate-100 relative mb-2">
+      <div className="aspect-video w-full rounded-md3m overflow-hidden bg-slate-100 relative mb-2">
         {recipe.imageUrl ? (
           <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover" />
         ) : (
@@ -76,7 +76,7 @@ export default function RecipeDetail({
             אין תמונה
           </div>
         )}
-        <span className="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-medium px-2 py-0.5 rounded capitalize">
+        <span className="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-medium px-2 py-0.5 rounded-full capitalize">
           {recipe.meal}
         </span>
         <span className="absolute top-2 left-2 bg-white/90 text-slate-600 text-xs font-medium px-2 py-0.5 rounded backdrop-blur">
@@ -89,30 +89,30 @@ export default function RecipeDetail({
       )}
 
       {/* Macros */}
-      <div className="grid grid-cols-4 gap-2 border border-slate-200 rounded-lg p-2 mb-2">
+      <div className="grid grid-cols-4 gap-2 border border-slate-200 rounded-md3m p-2 mb-2">
         <div className="flex flex-col items-center">
-          <span className="text-xs uppercase tracking-wide text-slate-400">קלוריות</span>
+          <span className="text-xs text-slate-400">קלוריות</span>
           <span className="font-semibold text-slate-800">{Math.round(recipe.calories)} קלוריות</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-xs uppercase tracking-wide text-slate-400">חלבון</span>
+          <span className="text-xs text-slate-400">חלבון</span>
           <span className="font-semibold text-slate-800">{macrosLabel(recipe.proteinG, "ג׳")}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-xs uppercase tracking-wide text-slate-400">פחמימות</span>
+          <span className="text-xs text-slate-400">פחמימות</span>
           <span className="font-semibold text-slate-800">{macrosLabel(recipe.carbsG, "ג׳")}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-xs uppercase tracking-wide text-slate-400">שומן</span>
+          <span className="text-xs text-slate-400">שומן</span>
           <span className="font-semibold text-slate-800">{macrosLabel(recipe.fatG, "ג׳")}</span>
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">מנות</span>
+          <span className="text-xs font-semibold text-slate-400">מנות</span>
           <span className="text-sm text-slate-600">{recipe.servings}</span>
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 ml-2">·</span>
+          <span className="text-xs font-semibold text-slate-400 ml-2">·</span>
           <span className="text-sm text-slate-600">
             הכנה {recipe.prepTimeMin} דק׳ · בישול {recipe.cookTimeMin} דק׳
           </span>
@@ -120,7 +120,7 @@ export default function RecipeDetail({
       </div>
 
       {/* Ingredients checklist */}
-      <section className="border border-slate-200 rounded-lg bg-white">
+      <section className="border border-slate-200 rounded-md3m bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
           <h3 className="font-semibold text-slate-800 text-sm">רכיבים ({recipe.ingredients.length})</h3>
         </div>
@@ -132,7 +132,7 @@ export default function RecipeDetail({
               <li key={`${ing.name}-${ing.unit}`} className="px-3 py-2 flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  className="w-4 h-4 rounded border-md-outline text-indigo-600 focus:ring-indigo-500"
                 />
                 <span className="flex-1 min-w-0 text-slate-700">{ing.name}</span>
                 <span className="text-slate-500">{ing.amount} {ing.unit}</span>
@@ -143,12 +143,12 @@ export default function RecipeDetail({
       </section>
 
       {/* Instructions */}
-      <section className="border border-slate-200 rounded-lg bg-white">
+      <section className="border border-slate-200 rounded-md3m bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
           <h3 className="font-semibold text-slate-800 text-sm">הוראות הכנה ({recipe.instructions.length})</h3>
           <button
             onClick={() => setCooking(true)}
-            className="bg-indigo-600 text-white text-xs font-medium px-2.5 py-1 rounded hover:bg-indigo-700"
+            className="bg-indigo-600 text-white text-xs font-medium px-2.5 py-1 rounded-full hover:bg-indigo-700"
           >
             התחל לבשל
           </button>
@@ -181,19 +181,19 @@ export default function RecipeDetail({
         <button
           onClick={handleLogAsMeal}
           disabled={logging === recipe.id}
-          className="flex-1 bg-indigo-600 text-white font-medium py-2.5 rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+          className="flex-1 bg-indigo-600 text-white font-medium py-2.5 rounded-full hover:bg-indigo-700 disabled:opacity-60"
         >
           {logging === recipe.id ? "נרשם…" : "רישום כארוחה (מנה אחת)"}
         </button>
         <button
           onClick={() => onEdit(recipe)}
-          className="bg-white border border-slate-200 text-slate-700 font-medium py-2.5 rounded-lg px-4 hover:bg-slate-50"
+          className="bg-white border border-slate-200 text-slate-700 font-medium py-2.5 rounded-md3m px-4 hover:bg-slate-50"
         >
           עריכה
         </button>
         <button
           onClick={() => onDelete(recipe.id)}
-          className="text-red-600 font-medium py-2.5 rounded-lg px-4 hover:bg-red-50"
+          className="text-red-600 font-medium py-2.5 rounded-md3m px-4 hover:bg-red-50"
         >
           מחיקה
         </button>

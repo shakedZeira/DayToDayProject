@@ -51,19 +51,19 @@ export default function Foods({ token, meals, onChanged }: Props) {
   }
 
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-4 border rounded bg-white p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+    <div className="w-full max-w-2xl flex flex-col gap-4 md-card p-4">
+      <h2 className="md-title-medium text-md-onSurface">
         Nutrition
       </h2>
 
       <form onSubmit={onSearch} className="flex gap-2">
         <input
-          className="border rounded px-3 py-2 flex-1"
+          className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
           placeholder="Search foods — e.g. chicken / עוף"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button className="bg-indigo-600 text-white rounded px-4 font-medium">
+        <button className="bg-indigo-600 text-white rounded-full px-4 font-medium">
           Search
         </button>
       </form>
@@ -71,7 +71,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
       <div className="flex gap-2 items-center">
         <label className="text-sm text-slate-600">Grams</label>
         <input
-          className="border rounded px-3 py-2 w-24"
+          className="border border-md-outline rounded-md3xs px-3 py-2 w-24"
           type="number"
           min={1}
           step="any"
@@ -87,7 +87,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
           {results.map((food) => (
             <li
               key={food.id}
-              className="border rounded px-3 py-2 bg-slate-50 flex items-center gap-2"
+              className="border border-md-outline rounded-md3xs px-3 py-2 bg-slate-50 flex items-center gap-2"
             >
               <span className="flex-1 min-w-0">
                 <span className="block text-slate-800 font-medium truncate">
@@ -100,7 +100,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
               </span>
               <button
                 onClick={() => onLog(food)}
-                className="bg-indigo-600 text-white rounded px-3 py-1 text-sm font-medium flex-shrink-0"
+                className="bg-indigo-600 text-white rounded-full px-3 py-1 text-sm font-medium flex-shrink-0"
               >
                 Log {grams}g
               </button>
@@ -110,7 +110,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
       )}
 
       <section className="flex flex-col gap-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+        <h3 className="md-title-medium text-md-onSurface">
           Today's meals
         </h3>
         {meals.length === 0 ? (
@@ -120,7 +120,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
             {meals.map((meal) => (
               <li
                 key={meal.id}
-                className="border rounded px-3 py-2 bg-slate-50 flex items-center gap-2"
+                className="border border-md-outline rounded-md3xs px-3 py-2 bg-slate-50 flex items-center gap-2"
               >
                 <span className="flex-1 min-w-0 truncate text-sm text-slate-700">
                   {meal.name ?? meal.foodId}: {meal.grams}g

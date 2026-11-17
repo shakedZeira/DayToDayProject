@@ -230,7 +230,7 @@ export default function Plans({ token }: { token: string }) {
       {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
 
       {inEditor ? (
-        <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="space-y-3 rounded-md3m border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-700">
               {isEditing ? "Edit workout" : "New workout"}
@@ -247,14 +247,14 @@ export default function Plans({ token }: { token: string }) {
             placeholder="Workout name"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md3xs border border-md-outline border-md-outline px-3 py-2 text-sm"
           />
           <input
             type="text"
             placeholder="Description (optional)"
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md3xs border border-md-outline border-md-outline px-3 py-2 text-sm"
           />
 
           {form.exercises.length > 0 && (
@@ -270,7 +270,7 @@ export default function Plans({ token }: { token: string }) {
                     type="number"
                     value={re.targetSets}
                     onChange={(e) => updateExerciseField(idx, "targetSets", parseInt(e.target.value) || 1)}
-                    className="w-12 rounded border border-slate-300 px-1 py-0.5 text-center text-xs"
+                    className="w-12 rounded-md3xs border border-md-outline border-md-outline px-1 py-0.5 text-center text-xs"
                     min={1}
                     title="Sets"
                   />
@@ -279,7 +279,7 @@ export default function Plans({ token }: { token: string }) {
                     type="number"
                     value={re.targetReps}
                     onChange={(e) => updateExerciseField(idx, "targetReps", parseInt(e.target.value) || 1)}
-                    className="w-12 rounded border border-slate-300 px-1 py-0.5 text-center text-xs"
+                    className="w-12 rounded-md3xs border border-md-outline border-md-outline px-1 py-0.5 text-center text-xs"
                     min={1}
                     title="Reps"
                   />
@@ -301,17 +301,17 @@ export default function Plans({ token }: { token: string }) {
           )}
 
           {searchOpen ? (
-            <div className="space-y-2 rounded border border-slate-200 bg-slate-50 p-3">
+            <div className="space-y-2 rounded-md3xs border border-md-outline border-slate-200 bg-slate-50 p-3">
               <input
                 type="text"
                 placeholder="Search exercises..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                className="w-full rounded-md3xs border border-md-outline border-md-outline px-2 py-1.5 text-sm"
                 autoFocus
               />
               {searchResults.length > 0 && (
-                <div className="max-h-48 overflow-y-auto rounded border border-slate-200 bg-white">
+                <div className="max-h-48 overflow-y-auto rounded-md3xs border border-md-outline border-slate-200 bg-white">
                   {searchResults.map((ex) => (
                     <button
                       key={ex.id}
@@ -334,7 +334,7 @@ export default function Plans({ token }: { token: string }) {
           ) : (
             <button
               onClick={() => setSearchOpen(true)}
-              className="w-full rounded border-2 border-dashed border-slate-300 py-2 text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600"
+              className="w-full rounded border-2 border-dashed border-md-outline py-2 text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600"
             >
               + Add Exercise
             </button>
@@ -349,7 +349,7 @@ export default function Plans({ token }: { token: string }) {
           </button>
         </div>
       ) : routines.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
+        <div className="rounded-md3m border border-dashed border-md-outline bg-white p-8 text-center">
           <p className="text-sm text-slate-500">No workouts yet — create your first workout plan</p>
           <button
             onClick={startNew}
@@ -366,7 +366,7 @@ export default function Plans({ token }: { token: string }) {
             return (
               <div
                 key={r.id}
-                className="rounded-lg border border-slate-200 bg-white p-4 flex items-center justify-between gap-3"
+                className="rounded-md3m border border-slate-200 bg-white p-4 flex items-center justify-between gap-3"
               >
                 <div className="min-w-0">
                   <div className="font-semibold text-slate-800">{r.name}</div>

@@ -60,7 +60,7 @@ export default function RecipeList({
         <div
           key={recipe.id}
           onClick={() => onSelect(recipe)}
-          className="border border-slate-200 rounded-lg bg-white p-3 hover:shadow-md cursor-pointer transition-all"
+          className="border border-slate-200 rounded-md3m bg-white p-3 hover:shadow-md cursor-pointer transition-all"
         >
           <div className="flex flex-col gap-2">
             <div className="aspect-video w-full rounded overflow-hidden bg-slate-100 relative">
@@ -72,7 +72,7 @@ export default function RecipeList({
                 </div>
               )}
               <span
-                className="absolute top-1 right-1 bg-indigo-600 text-white text-[10px] font-medium px-2 py-0.5 rounded capitalize"
+                className="absolute top-1 right-1 bg-indigo-600 text-white text-[10px] font-medium px-2 py-0.5 rounded-full capitalize"
               >
                 {recipe.meal}
               </span>
@@ -114,7 +114,7 @@ export default function RecipeList({
               <div className="flex gap-1">
                 <button
                   onClick={(e) => onLogAsMeal(recipe)}
-                  className="bg-indigo-600 text-white text-xs rounded px-2.5 py-1 font-medium hover:bg-indigo-700 disabled:opacity-50"
+                  className="bg-indigo-600 text-white text-xs rounded-full px-2.5 py-1 font-medium hover:bg-indigo-700 disabled:opacity-50"
                   disabled={deleting === recipe.id}
                 >
                   רישום כארוחה

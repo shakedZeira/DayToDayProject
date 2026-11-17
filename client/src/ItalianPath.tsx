@@ -32,9 +32,9 @@ export default function ItalianPath({ token }: Props) {
 
   if (error) {
     return (
-      <div className="border rounded-lg p-6 bg-red-50 text-red-700 flex justify-between items-center">
+      <div className="border rounded-md3m p-6 bg-red-50 text-red-700 flex justify-between items-center">
         <span>{error}</span>
-        <button className="border rounded px-3 py-1" onClick={() => void refresh()}>
+        <button className="border border-md-outline rounded-md3xs px-3 py-1" onClick={() => void refresh()}>
           Retry
         </button>
       </div>
@@ -66,7 +66,7 @@ export default function ItalianPath({ token }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="border rounded-lg bg-white p-4 flex flex-wrap gap-6 text-sm">
+      <div className="md-card p-4 flex flex-wrap gap-6 text-sm">
         <span>
           <b>{progress.xp}</b> XP
         </span>
@@ -84,7 +84,7 @@ export default function ItalianPath({ token }: Props) {
       </div>
 
       {result && (
-        <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+        <div className="rounded-md3m bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
           {result.lessonCompleted ? "Lesson complete! " : ""}
           +{result.xpGained} XP{result.lessonCompleted ? " 🎉" : ""}
         </div>
@@ -92,7 +92,7 @@ export default function ItalianPath({ token }: Props) {
 
       {nextId && (
         <button
-          className="bg-emerald-600 text-white rounded-lg px-6 py-3 font-medium self-start"
+          className="bg-emerald-600 text-white rounded-md3m px-6 py-3 font-medium self-start"
           onClick={() => {
             setResult(null);
             setActiveLessonId(nextId);

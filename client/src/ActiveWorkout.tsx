@@ -373,7 +373,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
         </h2>
         <button
           onClick={handleFinish}
-          className="bg-indigo-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-indigo-700"
+          className="bg-indigo-600 text-white rounded-full px-4 py-2 text-sm font-medium hover:bg-indigo-700"
         >
           Finish Workout
         </button>
@@ -387,13 +387,13 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
           step={15}
           value={restDuration}
           onChange={(e) => updateRestDuration(Number(e.target.value))}
-          className="w-16 border rounded px-2 py-1 text-center"
+          className="w-16 border border-md-outline rounded-md3xs px-2 py-1 text-center"
         />
         <span>s</span>
       </div>
 
       {exercises.map((ex, exIdx) => (
-        <div key={ex.xeId} className="border rounded bg-white p-3 flex flex-col gap-2">
+        <div key={ex.xeId} className="md-card p-3 flex flex-col gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-slate-800">{ex.exerciseName}</span>
             {muscleGroupBadge(ex.muscleGroup)}
@@ -436,7 +436,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
                     placeholder={ex.prevWeight != null ? String(ex.prevWeight) : "kg"}
                     value={s.weightKg || ""}
                     onChange={(e) => updateSetField(exIdx, sIdx, "weightKg", e.target.value)}
-                    className="w-20 border rounded px-2 py-1.5 text-sm"
+                    className="w-20 border border-md-outline rounded-md3xs px-2 py-1.5 text-sm"
                   />
                   <input
                     type="number"
@@ -444,19 +444,19 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
                     placeholder={ex.prevReps != null ? String(ex.prevReps) : "reps"}
                     value={s.reps || ""}
                     onChange={(e) => updateSetField(exIdx, sIdx, "reps", e.target.value)}
-                    className="w-16 border rounded px-2 py-1.5 text-sm"
+                    className="w-16 border border-md-outline rounded-md3xs px-2 py-1.5 text-sm"
                   />
                   <select
                     value={s.setType}
                     onChange={(e) => updateSetType(exIdx, sIdx, e.target.value)}
-                    className="border rounded px-1 py-1.5 text-xs"
+                    className="border border-md-outline rounded-md3xs px-1 py-1.5 text-xs"
                   >
                     <option value="working">Working</option>
                     <option value="warmup">Warm-up</option>
                   </select>
                   <button
                     onClick={() => logSet(exIdx, sIdx)}
-                    className="bg-indigo-600 text-white rounded px-3 py-1.5 text-sm font-medium hover:bg-indigo-700"
+                    className="bg-indigo-600 text-white rounded-full px-3 py-1.5 text-sm font-medium hover:bg-indigo-700"
                   >
                     ✓
                   </button>
@@ -491,17 +491,17 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
       )}
 
       {addingEx ? (
-        <div className="border rounded bg-white p-3 flex flex-col gap-2">
+        <div className="md-card p-3 flex flex-col gap-2">
           <input
             type="text"
             placeholder="Search exercises…"
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            className="border rounded px-3 py-2 text-sm"
+            className="border border-md-outline rounded-md3xs px-3 py-2 text-sm"
             autoFocus
           />
           {searchResults.length > 0 && (
-            <div className="max-h-40 overflow-y-auto border rounded">
+            <div className="max-h-40 overflow-y-auto border border-md-outline rounded-md3xs">
               {searchResults.map((ex) => (
                 <button
                   key={ex.id}
@@ -520,12 +520,12 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
               placeholder="Or type exercise name…"
               value={freeTextName}
               onChange={(e) => setFreeTextName(e.target.value)}
-              className="border rounded px-3 py-2 flex-1 text-sm"
+              className="border border-md-outline rounded-md3xs px-3 py-2 flex-1 text-sm"
             />
             <button
               onClick={addExerciseFreeText}
               disabled={!freeTextName.trim()}
-              className="bg-indigo-600 text-white rounded px-3 py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+              className="bg-indigo-600 text-white rounded-full px-3 py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
             >
               Add
             </button>
@@ -545,7 +545,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
       ) : (
         <button
           onClick={() => setAddingEx(true)}
-          className="border-2 border-dashed border-slate-300 rounded p-3 text-center text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600"
+          className="border-2 border-dashed border-md-outline rounded p-3 text-center text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600"
         >
           + Add Exercise
         </button>
@@ -553,7 +553,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
 
       {finishing && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex flex-col gap-4 max-w-sm w-full">
+          <div className="bg-white rounded-md3m p-6 flex flex-col gap-4 max-w-sm w-full">
             <h3 className="text-lg font-bold text-slate-800">Finish workout?</h3>
             <p className="text-sm text-slate-600">
               {exercises.length} exercise{exercises.length !== 1 ? "s" : ""},{" "}
@@ -568,7 +568,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
               </button>
               <button
                 onClick={confirmFinish}
-                className="bg-indigo-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-indigo-700"
+                className="bg-indigo-600 text-white rounded-full px-4 py-2 text-sm font-medium hover:bg-indigo-700"
               >
                 Finish
               </button>

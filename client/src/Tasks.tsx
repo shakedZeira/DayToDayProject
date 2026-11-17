@@ -114,35 +114,35 @@ export default function Tasks({ token }: Props) {
 
   return (
     <div className="w-full max-w-2xl flex flex-col gap-4">
-      <form onSubmit={onAdd} className="flex flex-col gap-2 border rounded bg-white p-4">
+      <form onSubmit={onAdd} className="flex flex-col gap-2 md-card p-4">
         <input
-          className="border rounded px-3 py-2"
+          className="border border-md-outline rounded-md3xs px-3 py-2"
           placeholder="Task title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
         />
         <input
-          className="border rounded px-3 py-2"
+          className="border border-md-outline rounded-md3xs px-3 py-2"
           placeholder="Notes (optional)"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
         <div className="flex gap-2">
           <input
-            className="border rounded px-3 py-2 flex-1"
+            className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
             placeholder="Category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           />
           <input
-            className="border rounded px-3 py-2 flex-1"
+            className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
             type="datetime-local"
             value={dueAt}
             onChange={(e) => setDueAt(e.target.value)}
           />
           <select
-            className="border rounded px-3 py-2"
+            className="border border-md-outline rounded-md3xs px-3 py-2"
             value={recurrence}
             onChange={(e) => setRecurrence(e.target.value)}
           >
@@ -153,7 +153,7 @@ export default function Tasks({ token }: Props) {
             ))}
           </select>
         </div>
-        <button className="bg-indigo-600 text-white rounded py-2 font-medium">
+        <button className="bg-indigo-600 text-white rounded-full py-2 font-medium">
           Add Task
         </button>
       </form>
@@ -162,7 +162,7 @@ export default function Tasks({ token }: Props) {
 
       {today.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+          <h2 className="md-title-medium text-md-onSurface">
             Due today
           </h2>
           <ul className="flex flex-col gap-2">
@@ -196,7 +196,7 @@ export default function Tasks({ token }: Props) {
           {tasks.map((t) => (
             <li
               key={t.id}
-              className={`border rounded p-3 bg-white flex items-center gap-3 ${
+              className={`border border-md-outline rounded-md3xs p-3 bg-white flex items-center gap-3 ${
                 t.status === "DONE" ? "opacity-50" : ""
               }`}
             >
@@ -205,7 +205,7 @@ export default function Tasks({ token }: Props) {
                 className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
                   t.status === "DONE"
                     ? "bg-indigo-600 border-indigo-600 text-white"
-                    : "border-slate-300"
+                    : "border-md-outline"
                 }`}
                 title={t.status === "DONE" ? "Mark pending" : "Mark done"}
               >

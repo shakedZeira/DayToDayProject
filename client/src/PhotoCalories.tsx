@@ -27,8 +27,8 @@ export default function PhotoCalories({ token }: Props) {
   }
 
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-4 border rounded bg-white p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+    <div className="w-full max-w-2xl flex flex-col gap-4 md-card p-4">
+      <h2 className="md-title-medium text-md-onSurface">
         Photo Calories
       </h2>
       <div className="flex gap-2 items-center">
@@ -41,7 +41,7 @@ export default function PhotoCalories({ token }: Props) {
         <button
           onClick={onAnalyze}
           disabled={busy || !file}
-          className="bg-indigo-600 text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-indigo-600 text-white rounded-full px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {busy ? "Analyzing…" : "Analyze"}
         </button>

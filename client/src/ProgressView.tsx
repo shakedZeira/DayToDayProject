@@ -8,8 +8,8 @@ interface Props {
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-1">
-      <span className="text-xs uppercase tracking-wide text-slate-400">{label}</span>
+    <div className="bg-white md-card p-4 flex flex-col gap-1">
+      <span className="text-xs text-slate-400">{label}</span>
       <span className="text-2xl font-bold text-slate-800">{value}</span>
       {sub && <span className="text-xs text-slate-500">{sub}</span>}
     </div>
@@ -30,8 +30,8 @@ function last7Labels(now: Date): string[] {
 export function ActivityChart({ days, labels }: { days: number[]; labels: string[] }) {
   const max = Math.max(1, ...days);
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-2">Tasks completed</h3>
+    <div className="bg-white md-card p-4">
+      <h3 className="md-title-medium text-md-onSurface mb-2">Tasks completed</h3>
       <svg viewBox="0 0 140 40" className="w-full" role="img" aria-label="Tasks completed in the last 7 days">
         {days.map((v, i) => {
           const h = (v / max) * 34;

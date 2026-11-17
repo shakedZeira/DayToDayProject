@@ -102,24 +102,24 @@ export default function Goals({ token }: Props) {
   }
 
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-4 border rounded bg-white p-4">
+    <div className="w-full max-w-2xl flex flex-col gap-4 md-card p-4">
       <ItalianGoalCard token={token} />
 
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+      <h2 className="md-title-medium text-md-onSurface">
         Weekly Goals
       </h2>
 
       <form onSubmit={onAdd} className="flex flex-col gap-2">
         <div className="flex gap-2">
           <input
-            className="border rounded px-3 py-2 flex-1"
+            className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
             placeholder="Goal title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
           />
           <input
-            className="border rounded px-3 py-2 w-20"
+            className="border border-md-outline rounded-md3xs px-3 py-2 w-20"
             type="number"
             min={1}
             placeholder="Target"
@@ -128,7 +128,7 @@ export default function Goals({ token }: Props) {
             required
           />
           <input
-            className="border rounded px-3 py-2"
+            className="border border-md-outline rounded-md3xs px-3 py-2"
             placeholder="Unit (optional)"
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
@@ -136,7 +136,7 @@ export default function Goals({ token }: Props) {
         </div>
         <div className="flex gap-2">
           <select
-            className="border rounded px-3 py-2"
+            className="border border-md-outline rounded-md3xs px-3 py-2"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
@@ -147,7 +147,7 @@ export default function Goals({ token }: Props) {
             ))}
           </select>
           <select
-            className="border rounded px-3 py-2"
+            className="border border-md-outline rounded-md3xs px-3 py-2"
             value={autoSource}
             onChange={(e) => setAutoSource(e.target.value)}
           >
@@ -158,7 +158,7 @@ export default function Goals({ token }: Props) {
             ))}
           </select>
         </div>
-        <button className="bg-indigo-600 text-white rounded py-2 font-medium">
+        <button className="bg-indigo-600 text-white rounded-full py-2 font-medium">
           Add Goal
         </button>
       </form>
@@ -173,7 +173,7 @@ export default function Goals({ token }: Props) {
             const pct = g.targetCount > 0 ? Math.min(100, (g.thisWeekCount / g.targetCount) * 100) : 0;
             const done = g.thisWeekCount >= g.targetCount;
             return (
-              <li key={g.id} className="border rounded p-3 bg-slate-50 flex flex-col gap-2">
+              <li key={g.id} className="border border-md-outline rounded-md3xs p-3 bg-slate-50 flex flex-col gap-2">
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-slate-800 font-medium truncate">{g.title}</p>

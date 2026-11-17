@@ -213,7 +213,7 @@ export default function CookingView({ token }: Props) {
           </button>
           <button
             onClick={() => openForm()}
-            className="bg-indigo-600 text-white text-sm font-medium rounded px-3 py-1.5 hover:bg-indigo-700"
+            className="bg-indigo-600 text-white text-sm font-medium rounded-full px-3 py-1.5 hover:bg-indigo-700"
           >
             הוספת מתכון
           </button>
@@ -276,7 +276,7 @@ export default function CookingView({ token }: Props) {
 
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-10 flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg ${
+          className={`fixed bottom-6 right-6 z-10 flex items-center gap-2 px-3 py-2 rounded-md3m shadow-lg ${
             toast.type === "success" ? "bg-green-900 text-white" : "bg-red-900 text-white"
           }`}
         >

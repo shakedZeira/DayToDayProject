@@ -55,7 +55,7 @@ export default function HealthView({ token, tab = "nutrition" }: Props) {
 
       {tab === "workouts" && (
         <div className="flex flex-col gap-3">
-          <div className="flex gap-1 border-b border-slate-200 pb-px">
+          <div className="flex border-b border-md-outlineVariant">
             {(["plans", "history", "progress"] as const).map((st) => (
               <button
                 key={st}
@@ -63,10 +63,10 @@ export default function HealthView({ token, tab = "nutrition" }: Props) {
                   setWorkoutSubTab(st);
                   if (st === "progress") setAnalyticsRefreshKey((k) => k + 1);
                 }}
-                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                className={`flex-1 px-3 h-12 text-sm font-medium border-b-2 transition-colors ${
                   workoutSubTab === st
-                    ? "bg-indigo-600 text-white"
-                    : "text-slate-500 hover:bg-slate-200"
+                    ? "border-md-primary text-md-primary"
+                    : "border-transparent text-md-onSurfaceVariant hover:bg-md-surfaceVariant"
                 }`}
               >
                 {st === "plans" ? "Plans" : st === "history" ? "History" : "Progress"}

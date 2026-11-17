@@ -56,7 +56,7 @@ function VolumeBars({
   const max = Math.max(...data.map((d) => d.kg));
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-indigo-600">{title}</h3>
+      <h3 className="md-title-medium text-md-onSurface">{title}</h3>
       <ul className="flex flex-col gap-1.5">
         {data.map((d) => (
           <BarRow key={d.date ?? d.muscle} label={label(d)} value={d.kg} max={max} />
@@ -130,8 +130,8 @@ export default function Analytics({ token, refreshKey }: Props) {
   }
 
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-4 border rounded bg-white p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+    <div className="w-full max-w-2xl flex flex-col gap-4 md-card p-4">
+      <h2 className="md-title-medium text-md-onSurface">
         Progress &amp; Analytics
       </h2>
 
@@ -149,7 +149,7 @@ export default function Analytics({ token, refreshKey }: Props) {
       )}
 
       <section className="flex flex-col gap-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+        <h3 className="md-title-medium text-md-onSurface">
           Progress targets
         </h3>
         {progressions.length === 0 ? (
@@ -161,7 +161,7 @@ export default function Analytics({ token, refreshKey }: Props) {
             {progressions.map((p) => (
               <li
                 key={p.exerciseName}
-                className="border rounded px-3 py-2 bg-slate-50 text-sm text-slate-700 flex flex-col gap-2"
+                className="border border-md-outline rounded-md3xs px-3 py-2 bg-slate-50 text-sm text-slate-700 flex flex-col gap-2"
               >
                 {editing !== p.exerciseName ? (
                   <div className="flex items-center justify-between gap-2">
@@ -189,7 +189,7 @@ export default function Analytics({ token, refreshKey }: Props) {
                     <div className="flex gap-2 items-center">
                       <span className="text-slate-600">{p.exerciseName}</span>
                       <input
-                        className="border rounded px-2 py-1 w-14"
+                        className="border border-md-outline rounded-md3xs px-2 py-1 w-14"
                         type="number"
                         min={1}
                         value={draft.targetSets}
@@ -197,7 +197,7 @@ export default function Analytics({ token, refreshKey }: Props) {
                       />
                       <span className="text-slate-400">×</span>
                       <input
-                        className="border rounded px-2 py-1 w-14"
+                        className="border border-md-outline rounded-md3xs px-2 py-1 w-14"
                         type="number"
                         min={1}
                         value={draft.targetReps}
@@ -205,7 +205,7 @@ export default function Analytics({ token, refreshKey }: Props) {
                       />
                       <span className="text-slate-400">kg</span>
                       <input
-                        className="border rounded px-2 py-1 w-16"
+                        className="border border-md-outline rounded-md3xs px-2 py-1 w-16"
                         type="number"
                         min={0}
                         step="any"
@@ -217,7 +217,7 @@ export default function Analytics({ token, refreshKey }: Props) {
                     <div className="flex gap-2">
                       <button
                         onClick={() => saveEdit(p.exerciseName)}
-                        className="bg-indigo-600 text-white rounded px-3 py-1 text-xs font-medium hover:bg-indigo-700"
+                        className="bg-indigo-600 text-white rounded-full px-3 py-1 text-xs font-medium hover:bg-indigo-700"
                       >
                         Save
                       </button>
@@ -238,14 +238,14 @@ export default function Analytics({ token, refreshKey }: Props) {
 
       {summary && summary.prs.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+          <h3 className="md-title-medium text-md-onSurface">
             Recent PRs
           </h3>
           <ul className="flex flex-col gap-1">
             {summary.prs.map((pr) => (
               <li
                 key={`${pr.exerciseName}-${pr.repRange}`}
-                className="border rounded px-3 py-2 bg-slate-50 text-sm text-slate-700"
+                className="border border-md-outline rounded-md3xs px-3 py-2 bg-slate-50 text-sm text-slate-700"
               >
                 {pr.exerciseName} — {pr.repRange}×{pr.weight}kg{" "}
                 <span className="text-slate-400">(e1rm ~{Math.round(pr.e1rm)}kg)</span>{" "}

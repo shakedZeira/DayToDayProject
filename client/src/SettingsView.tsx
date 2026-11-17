@@ -68,7 +68,7 @@ export default function SettingsView({ token }: Props) {
         Daily calorie target (kcal)
         <input
           type="number"
-          className="border rounded px-3 py-2"
+          className="border border-md-outline rounded-md3xs px-3 py-2"
           value={calorieTarget}
           onChange={(e) => setCalorieTarget(e.target.value)}
           onBlur={(e) => saveCalories(e.target.value)}
@@ -77,7 +77,7 @@ export default function SettingsView({ token }: Props) {
       <label className="flex flex-col gap-1 text-sm">
         Workout days (comma-separated, e.g. Mon,Wed,Fri)
         <input
-          className="border rounded px-3 py-2"
+          className="border border-md-outline rounded-md3xs px-3 py-2"
           value={workoutDays}
           onChange={(e) => save("workoutDays", e.target.value)}
         />
@@ -85,7 +85,7 @@ export default function SettingsView({ token }: Props) {
       <label className="flex flex-col gap-1 text-sm">
         Italian level
         <select
-          className="border rounded px-3 py-2"
+          className="border border-md-outline rounded-md3xs px-3 py-2"
           value={italianLevel}
           onChange={(e) => save("italianLevel", e.target.value)}
         >
@@ -108,7 +108,7 @@ export default function SettingsView({ token }: Props) {
 
       <hr className="border-slate-200" />
       <div className="flex flex-col gap-2">
-        <button type="button" className="border rounded px-3 py-2 text-sm self-start" onClick={exportData}>
+        <button type="button" className="border border-md-outline rounded-md3xs px-3 py-2 text-sm self-start" onClick={exportData}>
           Export my data
         </button>
         <p className="text-xs text-slate-400">Downloads all your data as a JSON backup. {exportMsg}</p>

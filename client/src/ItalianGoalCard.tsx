@@ -20,7 +20,7 @@ export default function ItalianGoalCard({ token }: Props) {
   const pct = progress.totalLessons > 0 ? Math.round((progress.completedLessonIds.length / progress.totalLessons) * 100) : 0;
 
   return (
-    <div className="border rounded-lg bg-white p-4 flex flex-col gap-2">
+    <div className="md-card p-4 flex flex-col gap-2">
       <div className="flex justify-between text-sm font-medium">
         <span>🇮🇹 Italian path</span>
         <span className="text-gray-500">
