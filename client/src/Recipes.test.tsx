@@ -32,7 +32,7 @@ describe("CookingView", () => {
   it("shows an empty message when there are no recipes", async () => {
     mockApi({ "GET /api/recipes": [] });
     render(<CookingView token="tok" />);
-    expect(await screen.findByText("לא נמצאו מתכונים.")).toBeTruthy();
+    expect(await screen.findByText("אין מתכונים זמינים")).toBeTruthy();
   });
 
   it("shows the API error when the list fails", async () => {
@@ -52,7 +52,7 @@ describe("CookingView", () => {
   it("filters by meal using the tab query", async () => {
     const { fn } = mockApi({ "GET /api/recipes": [] });
     render(<CookingView token="tok" />);
-    await screen.findByText("לא נמצאו מתכונים.");
+    await screen.findByText("אין מתכונים זמינים");
     await userEvent.click(screen.getByRole("button", { name: "ארוחת ערב" }));
     await waitFor(() => expect(fn.mock.calls.some((c) => String(c[0]).includes("meal=dinner"))).toBe(true));
   });

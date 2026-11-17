@@ -262,7 +262,7 @@ export default function CookingView({ token }: Props) {
         )}
       </div>
 
-      <div className="fixed bottom-6 left-6 z-10">
+      <div className="fixed bottom-24 md:bottom-6 left-6 z-10">
         <button
           onClick={() => openForm()}
           className="bg-indigo-600 text-white rounded-full p-3 shadow-lg hover:bg-indigo-700 focus:outline-none"
@@ -276,7 +276,7 @@ export default function CookingView({ token }: Props) {
 
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-10 flex items-center gap-2 px-3 py-2 rounded-md3m shadow-lg ${
+          className={`fixed bottom-24 md:bottom-6 right-6 z-10 flex items-center gap-2 px-3 py-2 rounded-md3m shadow-lg ${
             toast.type === "success" ? "bg-green-900 text-white" : "bg-red-900 text-white"
           }`}
         >
