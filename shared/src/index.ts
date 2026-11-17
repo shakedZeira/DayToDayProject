@@ -32,8 +32,25 @@ export interface ProgressiveSuggestion {
   suggestedNextKg: number;
   reason: "completed_target" | "not_yet";
 }
-export interface FoodInput { name: string; nameHe?: string | null; caloriesPer100: number; servingUnit?: string; }
-export interface FoodRecord { id: string; name: string; nameHe?: string | null; caloriesPer100: number; servingUnit: string; }
+export interface FoodInput {
+  name: string; nameHe?: string | null; caloriesPer100: number; servingUnit?: string;
+  proteinPer100?: number; carbsPer100?: number; fatPer100?: number; barcode?: string | null;
+}
+export interface FoodRecord {
+  id: string; name: string; nameHe?: string | null; caloriesPer100: number; servingUnit: string;
+  proteinPer100: number; carbsPer100: number; fatPer100: number;
+  barcode?: string | null;
+  /** true when the food was created by the current user (custom food). */
+  custom?: boolean;
+}
+export interface MacroTotals { proteinG: number; carbsG: number; fatG: number; }
+export interface BarcodeFoodResult {
+  barcode: string;
+  source: "mine" | "openfoodfacts";
+  /** Set when the product already exists as one of the user's foods. */
+  foodId?: string;
+  food: FoodInput & { name: string };
+}
 export interface MealLogInput { foodId: string; grams: number; date?: string; }
 export interface DailyTargetInput { calories: number; }
 export interface NutritionSummary {
@@ -41,7 +58,11 @@ export interface NutritionSummary {
   target: number;
   consumed: number;
   remaining: number;
-  meals: { id: string; foodName: string; grams: number; servings?: number; calories: number }[];
+  /** Macro totals consumed today, in grams. */
+  macros: MacroTotals;
+  /** Macro goals derived from the calorie target (30% protein / 45% carbs / 25% fat). */
+  macroTargets: MacroTotals;
+  meals: { id: string; foodName: string; grams: number; servings?: number; calories: number; proteinG: number; carbsG: number; fatG: number }[];
 }
 
 export interface VisionEstimate {

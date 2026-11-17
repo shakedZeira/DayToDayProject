@@ -324,11 +324,16 @@ recipesRouter.post("/:id/log", async (req: AuthedRequest, res) => {
   if (!recipe) return res.status(404).json({ error: "not found" });
 
   const name = `${recipe.title} (${recipe.calories} kcal/serving)`;
-  const food =
-    (await prisma.food.findUnique({ where: { name } })) ??
-    (await prisma.food.create({
-      data: { name, caloriesPer100: recipe.calories, servingUnit: "serving", recipeId: recipe.id },
-    }));
+  const macros = { proteinPer100: recipe.proteinG, carbsPer100: recipe.carbsG, fatPer100: recipe.fatG };
+  let food = await prisma.food.findUnique({ where: { name } });
+  if (!food) {
+    food = await prisma.food.create({
+      data: { name, caloriesPer100: recipe.calories, servingUnit: "serving", recipeId: recipe.id, ...macros },
+    });
+  } else if (food.proteinPer100 === 0 && food.carbsPer100 === 0 && food.fatPer100 === 0) {
+    // legacy snapshot created before macros existed
+    food = await prisma.food.update({ where: { id: food.id }, data: macros });
+  }
   const meal = await prisma.mealLog.create({
     data: { ownerId: userId, foodId: food.id, grams: servings * 100, date: when },
   });
@@ -337,6 +342,9 @@ recipesRouter.post("/:id/log", async (req: AuthedRequest, res) => {
     recipeId: recipe.id,
     servings,
     calories: Math.round(recipe.calories * servings),
+    proteinG: Math.round(recipe.proteinG * servings * 10) / 10,
+    carbsG: Math.round(recipe.carbsG * servings * 10) / 10,
+    fatG: Math.round(recipe.fatG * servings * 10) / 10,
     date: meal.date,
   });
 });

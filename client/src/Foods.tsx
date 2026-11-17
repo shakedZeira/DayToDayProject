@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   searchFoods,
   logMeal,
   deleteMeal,
+  createFood,
+  lookupBarcode,
   type MealLogRecord,
 } from "./foodApi";
 import type { FoodRecord } from "shared";
+import { barcodeScanSupported, scanBarcode } from "./barcodeScan";
 
 interface Props {
   token: string;
@@ -27,6 +30,86 @@ export default function Foods({ token, meals, onChanged }: Props) {
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to search foods");
+    }
+  }
+
+  const [barcode, setBarcode] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const emptyForm = { name: "", calories: "", protein: "", carbs: "", fat: "", barcode: "" };
+  const [form, setForm] = useState(emptyForm);
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  function fillFormFrom(food: { name: string; caloriesPer100: number; proteinPer100?: number; carbsPer100?: number; fatPer100?: number; barcode?: string | null }) {
+    setForm({
+      name: food.name,
+      calories: String(food.caloriesPer100),
+      protein: String(food.proteinPer100 ?? 0),
+      carbs: String(food.carbsPer100 ?? 0),
+      fat: String(food.fatPer100 ?? 0),
+      barcode: food.barcode ?? "",
+    });
+    setShowForm(true);
+  }
+
+  async function onBarcode(code: string) {
+    const c = code.trim();
+    if (!c) return;
+    try {
+      const r = await lookupBarcode(token, c);
+      setError(null);
+      if (r.source === "mine" && r.foodId) {
+        setResults([{ id: r.foodId, servingUnit: "g", proteinPer100: 0, carbsPer100: 0, fatPer100: 0, ...r.food, caloriesPer100: r.food.caloriesPer100, custom: true }]);
+      } else {
+        fillFormFrom(r.food);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Barcode lookup failed");
+    }
+  }
+
+  async function onScan() {
+    if (scanning) {
+      abortRef.current?.abort();
+      return;
+    }
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setScanning(true);
+    try {
+      const code = await scanBarcode(videoRef.current!, ctrl.signal);
+      if (code) {
+        setBarcode(code);
+        await onBarcode(code);
+      }
+    } catch {
+      setError("Camera unavailable - type the barcode number instead.");
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  async function onCreateFood(e: React.FormEvent) {
+    e.preventDefault();
+    const n = (v: string) => (v.trim() === "" ? 0 : Number(v));
+    try {
+      const food = await createFood(token, {
+        name: form.name.trim(),
+        caloriesPer100: n(form.calories),
+        proteinPer100: n(form.protein),
+        carbsPer100: n(form.carbs),
+        fatPer100: n(form.fat),
+        barcode: form.barcode.trim() || null,
+      });
+      setResults([food]);
+      setForm(emptyForm);
+      setShowForm(false);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create food");
     }
   }
 
@@ -69,6 +152,27 @@ export default function Foods({ token, meals, onChanged }: Props) {
       </form>
 
       <div className="flex gap-2 items-center">
+        <input
+          className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
+          inputMode="numeric"
+          aria-label="Barcode"
+          placeholder="Barcode number"
+          value={barcode}
+          onChange={(e) => setBarcode(e.target.value.replace(/\D/g, ""))}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void onBarcode(barcode); } }}
+        />
+        <button type="button" onClick={() => onBarcode(barcode)} className="bg-indigo-600 text-white rounded-full px-4 py-2 font-medium">
+          Look up
+        </button>
+        {barcodeScanSupported() && (
+          <button type="button" onClick={onScan} className="border border-md-outline rounded-full px-4 py-2 font-medium">
+            {scanning ? "Stop" : "Scan"}
+          </button>
+        )}
+      </div>
+      <video ref={videoRef} playsInline muted className={scanning ? "w-full rounded-md3xs" : "hidden"} />
+
+      <div className="flex gap-2 items-center">
         <label className="text-sm text-slate-600">Grams</label>
         <input
           className="border border-md-outline rounded-md3xs px-3 py-2 w-24"
@@ -81,6 +185,21 @@ export default function Foods({ token, meals, onChanged }: Props) {
       </div>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
+
+      <section className="flex flex-col gap-2">
+        <button type="button" onClick={() => setShowForm((v) => !v)} className="self-start text-sm text-indigo-600 font-medium" aria-expanded={showForm}>
+          {showForm ? "Hide custom food" : "+ Custom food"}
+        </button>
+        {showForm && (
+          <form onSubmit={onCreateFood} className="grid grid-cols-2 gap-2">
+            <input className="col-span-2 border border-md-outline rounded-md3xs px-3 py-2" placeholder="Name" aria-label="Food name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            {([["calories", "kcal / 100g"], ["protein", "Protein g / 100g"], ["carbs", "Carbs g / 100g"], ["fat", "Fat g / 100g"]] as const).map(([k, label]) => (
+              <input key={k} className="border border-md-outline rounded-md3xs px-3 py-2" type="number" min={0} step="any" placeholder={label} aria-label={label} required={k === "calories"} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
+            ))}
+            <button className="col-span-2 bg-indigo-600 text-white rounded-full px-4 py-2 font-medium">Save food</button>
+          </form>
+        )}
+      </section>
 
       {results.length > 0 && (
         <ul className="flex flex-col gap-2">
@@ -96,6 +215,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
                 </span>
                 <span className="block text-xs text-slate-400">
                   {food.caloriesPer100} kcal/100{food.servingUnit}
+                  {` · P ${food.proteinPer100 ?? 0} C ${food.carbsPer100 ?? 0} F ${food.fatPer100 ?? 0}`}
                 </span>
               </span>
               <button

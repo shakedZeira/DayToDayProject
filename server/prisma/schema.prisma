@@ -132,10 +132,18 @@ model Food {
   servingUnit    String   @default("g")
   // Set for snapshot rows created when a recipe is logged as a meal (1 serving = 100 "grams").
   recipeId       String?
+  proteinPer100  Float    @default(0)
+  carbsPer100    Float    @default(0)
+  fatPer100      Float    @default(0)
+  // null = global catalog food; set = custom food visible only to that user.
+  ownerId        String?
+  barcode        String?
   createdAt      DateTime @default(now())
   meals          MealLog[]
   @@unique([name])
   @@index([recipeId])
+  @@index([ownerId])
+  @@index([ownerId, barcode])
 }
 
 model MealLog {

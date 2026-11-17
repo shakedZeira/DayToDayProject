@@ -111,3 +111,91 @@ test("GET /api/foods rejects unauthenticated access", async () => {
   const res = await request(app).get("/api/foods");
   expect(res.status).toBe(401);
 });
+import { setBarcodeFetcher, mapOffProduct } from "./barcode";
+
+const OFF_BODY = {
+  status: 1,
+  product: {
+    product_name: "Choco Spread",
+    brands: "Nutella, Ferrero",
+    nutriments: { "energy-kcal_100g": 539, proteins_100g: 6.3, carbohydrates_100g: 57.5, fat_100g: 30.9 },
+  },
+};
+
+test("custom foods are owner-scoped, carry macros, and the global list still works", async () => {
+  await seedFoods();
+  const created = await request(app)
+    .post("/api/foods")
+    .set("Authorization", `Bearer ${token}`)
+    .send({ name: "My Protein Bar", caloriesPer100: 380, proteinPer100: 30, carbsPer100: 35, fatPer100: 12 });
+  expect(created.status).toBe(201);
+  expect(created.body).toMatchObject({ proteinPer100: 30, carbsPer100: 35, fatPer100: 12, custom: true });
+
+  const mine = await request(app).post("/api/foods/search").set("Authorization", `Bearer ${token}`).send({ q: "protein bar" });
+  expect(mine.body.map((f: { name: string }) => f.name)).toContain("My Protein Bar");
+
+  const other = await request(app).post("/api/auth/register").send({ email: "other@example.com", password: "password123" });
+  const otherToken = other.body.token as string;
+  const theirs = await request(app).get("/api/foods").set("Authorization", `Bearer ${otherToken}`);
+  expect(theirs.status).toBe(200);
+  expect(theirs.body.some((f: { name: string }) => f.name === "My Protein Bar")).toBe(false);
+  expect(theirs.body.some((f: { name: string }) => f.name === "Chicken Breast")).toBe(true);
+  const log = await request(app).post("/api/foods/meals").set("Authorization", `Bearer ${otherToken}`).send({ foodId: created.body.id, grams: 100 });
+  expect(log.status).toBe(404);
+  const del = await request(app).delete(`/api/foods/${created.body.id}`).set("Authorization", `Bearer ${otherToken}`);
+  expect(del.status).toBe(404);
+  const dup = await request(app).post("/api/foods").set("Authorization", `Bearer ${token}`).send({ name: "My Protein Bar", caloriesPer100: 1 });
+  expect(dup.status).toBe(409);
+  const bad = await request(app).post("/api/foods").set("Authorization", `Bearer ${token}`).send({ name: "X", caloriesPer100: 1, proteinPer100: -1 });
+  expect(bad.status).toBe(400);
+});
+
+test("daily summary reports macro totals, per-meal macros and derived targets", async () => {
+  const food = await request(app)
+    .post("/api/foods")
+    .set("Authorization", `Bearer ${token}`)
+    .send({ name: "Macro Food", caloriesPer100: 200, proteinPer100: 20, carbsPer100: 10, fatPer100: 5 });
+  await request(app).post("/api/foods/meals").set("Authorization", `Bearer ${token}`).send({ foodId: food.body.id, grams: 150 });
+  const date = new Date().toISOString().slice(0, 10);
+  const sum = await request(app).get(`/api/nutrition/summary?date=${date}`).set("Authorization", `Bearer ${token}`);
+  expect(sum.status).toBe(200);
+  expect(sum.body.macros).toEqual({ proteinG: 30, carbsG: 15, fatG: 7.5 });
+  expect(sum.body.meals[0]).toMatchObject({ proteinG: 30, carbsG: 15, fatG: 7.5 });
+  expect(sum.body.macroTargets).toEqual({ proteinG: 150, carbsG: 225, fatG: 56 });
+});
+
+test("barcode lookup uses the injectable fetcher and never the network", async () => {
+  const calls: string[] = [];
+  setBarcodeFetcher(async (url) => {
+    calls.push(url);
+    return { status: 200, json: async () => OFF_BODY };
+  });
+  try {
+    const ok = await request(app).get("/api/foods/barcode/3017620422003").set("Authorization", `Bearer ${token}`);
+    expect(ok.status).toBe(200);
+    expect(calls).toEqual(["https://world.openfoodfacts.org/api/v2/product/3017620422003.json"]);
+    expect(ok.body.source).toBe("openfoodfacts");
+    expect(ok.body.food).toMatchObject({ name: "Choco Spread (Nutella)", caloriesPer100: 539, proteinPer100: 6.3, carbsPer100: 57.5, fatPer100: 30.9, barcode: "3017620422003" });
+
+    await request(app).post("/api/foods").set("Authorization", `Bearer ${token}`).send({ ...ok.body.food });
+    const again = await request(app).get("/api/foods/barcode/3017620422003").set("Authorization", `Bearer ${token}`);
+    expect(again.body.source).toBe("mine");
+    expect(calls.length).toBe(1);
+
+    expect((await request(app).get("/api/foods/barcode/abc").set("Authorization", `Bearer ${token}`)).status).toBe(400);
+
+    setBarcodeFetcher(async () => ({ status: 404, json: async () => ({ status: 0 }) }));
+    expect((await request(app).get("/api/foods/barcode/1234567890123").set("Authorization", `Bearer ${token}`)).status).toBe(404);
+    setBarcodeFetcher(async () => { throw new Error("offline"); });
+    expect((await request(app).get("/api/foods/barcode/1234567890124").set("Authorization", `Bearer ${token}`)).status).toBe(502);
+  } finally {
+    setBarcodeFetcher(null);
+  }
+});
+
+test("mapOffProduct handles kJ-only energy and unusable products", () => {
+  const m = mapOffProduct("111111", { status: 1, product: { product_name: "Bar", nutriments: { energy_100g: 1000 } } });
+  expect(m?.caloriesPer100).toBe(239);
+  expect(mapOffProduct("1", { status: 0 })).toBeNull();
+  expect(mapOffProduct("1", { status: 1, product: { nutriments: {} } })).toBeNull();
+});

@@ -1,5 +1,5 @@
 import { authedFetch } from "./auth";
-import type { FoodRecord, MealLogInput } from "shared";
+import type { BarcodeFoodResult, FoodInput, FoodRecord, MealLogInput } from "shared";
 
 export interface MealLogRecord {
   id: string;
@@ -50,4 +50,18 @@ export async function logRecipeMeal(token: string, recipeId: string, servings: n
     body: JSON.stringify({ servings }),
   });
   await json<unknown>(res);
+}
+
+export async function createFood(token: string, input: FoodInput): Promise<FoodRecord> {
+  const res = await authedFetch(token, "/api/foods", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return json<FoodRecord>(res);
+}
+
+export async function lookupBarcode(token: string, code: string): Promise<BarcodeFoodResult> {
+  const res = await authedFetch(token, `/api/foods/barcode/${encodeURIComponent(code)}`);
+  return json<BarcodeFoodResult>(res);
 }

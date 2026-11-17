@@ -305,6 +305,11 @@ test("POST /api/recipes/:id/log logs servings into the nutrition summary and hid
   const summary = await request(app).get("/api/nutrition/summary").set("Authorization", `Bearer ${token}`);
   expect(summary.body.consumed).toBe(500);
   expect(summary.body.meals[0].servings).toBe(2);
+  const base = created.body;
+  expect(summary.body.macros.proteinG).toBeCloseTo(base.proteinG * 2, 1);
+  expect(summary.body.macros.carbsG).toBeCloseTo(base.carbsG * 2, 1);
+  expect(summary.body.macros.fatG).toBeCloseTo(base.fatG * 2, 1);
+  expect(res.body.proteinG).toBeCloseTo(base.proteinG * 2, 1);
 
   const foods = await request(app).get("/api/foods").set("Authorization", `Bearer ${token}`);
   expect(foods.body.some((f: { name: string }) => f.name.includes("Test Oatmeal"))).toBe(false);
