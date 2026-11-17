@@ -14,6 +14,7 @@ import { profileRouter } from "./profile";
 import { routinesRouter } from "./routines";
 import { progressionRouter } from "./progression";
 import { recipesRouter } from "./recipes";
+import { weeklyReviewRouter } from "./weeklyReview";
 import { shoppingRouter, mealPlanRouter } from "./shopping";
 import { italianRouter } from "./italian";
 import { italianChatRouter } from "./italianChat";
@@ -51,6 +52,7 @@ app.use("/api/italian-path", italianPathRouter);
 app.use("/api/digest", digestRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/progress", progressRouter);
+app.use("/api/review", weeklyReviewRouter);
 app.use("/api/export", exportRouter);
 
 // Verify the DB is reachable on boot.

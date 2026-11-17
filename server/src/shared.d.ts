@@ -388,3 +388,27 @@ export interface MealPlanEntryView {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface WeeklyReviewPR {
+  exerciseName: string;
+  repRange: number;
+  weight: number;
+  e1rm: number;
+  date: string;
+}
+
+export interface WeeklyReviewResponse {
+  from: string; // local YYYY-MM-DD, first day of the 7-day window
+  to: string; // local YYYY-MM-DD, last day (today unless ?date= given)
+  tasks: { completed: number; completedByDay: number[] };
+  workouts: { count: number; target: number; days: string[] };
+  nutrition: {
+    targetCalories: number;
+    daysLogged: number;
+    avgCalories: number;
+    diffFromTarget: number; // avgCalories - targetCalories (0 when nothing logged)
+    byDay: { date: string; calories: number }[];
+  };
+  italian: { lessonsCompleted: number; xpEarned: number; streak: number };
+  personalRecords: WeeklyReviewPR[];
+}
