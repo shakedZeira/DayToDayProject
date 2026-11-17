@@ -40,9 +40,6 @@ describe("GET /api/progress", () => {
     await prisma.mealLog.deleteMany({});
     await prisma.food.deleteMany({});
     await prisma.dailyTarget.deleteMany({});
-    await prisma.highlight.deleteMany({});
-    await prisma.flashcard.deleteMany({});
-    await prisma.pdf.deleteMany({});
     await prisma.practiceLog.deleteMany({});
     await prisma.lesson.deleteMany({});
     await prisma.user.deleteMany({});
@@ -57,11 +54,6 @@ describe("GET /api/progress", () => {
     await prisma.workout.create({ data: { ownerId, title: "Gym Session", date: new Date() } });
     const food = await prisma.food.create({ data: { name: "Chicken Breast", caloriesPer100: 165 } });
     await prisma.mealLog.create({ data: { ownerId, foodId: food.id, grams: 200, date: new Date() } });
-    const pdf = await prisma.pdf.create({
-      data: { ownerId, title: "Laplace Notes", fileName: "n.pdf", path: "n", size: 1 }
-    });
-    await prisma.highlight.create({ data: { ownerId, pdfId: pdf.id, pageNumber: 1, text: "transform pair" } });
-    await prisma.flashcard.create({ data: { ownerId, pdfId: pdf.id, front: "What is X?", back: "Y" } });
     await prisma.lesson.create({
       data: { ownerId, date: todayKey(new Date()), title: "Gli articoli", tip: "t", vocab: "[]", phrases: "[]", completedAt: new Date() }
     });
@@ -77,7 +69,6 @@ describe("GET /api/progress", () => {
     expect(res.status).toBe(200);
     expect(res.body.tasks).toMatchObject({ total: 0, completionRateWeek: 0, streak: 0 });
     expect(res.body.health).toMatchObject({ workoutsThisWeek: 1, workoutsTarget: 2, caloriesToday: 330, calorieTarget: 2500 });
-    expect(res.body.study).toMatchObject({ pdfs: 1, highlights: 1, flashcards: 1, pdfsInProgress: 0 });
     expect(res.body.italian).toMatchObject({ streak: 1, totalLessons: 1, lessonsThisWeek: 1 });
   });
 

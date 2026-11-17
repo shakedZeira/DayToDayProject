@@ -55,7 +55,7 @@ progressRouter.get("/", async (req: AuthedRequest, res) => {
   const weekAgo = new Date(now.getTime() - 7 * 86_400_000);
   const ownerId = req.userId!;
 
-  const [tasks, workoutCount, targetRow, meals, pdfCount, highlightCount, flashcardCount, pdfsInProgress, practiceLogs, completedLessons, lessonsThisWeek] =
+  const [tasks, workoutCount, targetRow, meals, practiceLogs, completedLessons, lessonsThisWeek] =
     await Promise.all([
       prisma.task.findMany({
         where: { ownerId },
@@ -67,10 +67,6 @@ progressRouter.get("/", async (req: AuthedRequest, res) => {
         where: { ownerId, date: { gte: range.start, lt: range.end } },
         include: { food: { select: { caloriesPer100: true } } }
       }),
-      prisma.pdf.count({ where: { ownerId } }),
-      prisma.highlight.count({ where: { ownerId } }),
-      prisma.flashcard.count({ where: { ownerId } }),
-      prisma.pdf.count({ where: { ownerId, readProgress: { gt: 0, lt: 1 } } }),
       prisma.practiceLog.findMany({ where: { ownerId }, select: { createdAt: true } }),
       prisma.lesson.findMany({ where: { ownerId, completedAt: { not: null } }, select: { completedAt: true, createdAt: true } }),
       prisma.lesson.count({ where: { ownerId, completedAt: { not: null, gte: weekAgo } } })
@@ -92,12 +88,6 @@ progressRouter.get("/", async (req: AuthedRequest, res) => {
       workoutsTarget: 2,
       caloriesToday: consumedCalories(meals),
       calorieTarget: targetRow?.calories ?? 2000
-    },
-    study: {
-      pdfs: pdfCount,
-      highlights: highlightCount,
-      flashcards: flashcardCount,
-      pdfsInProgress
     },
     italian: {
       streak: currentStreak(activeDays, now),

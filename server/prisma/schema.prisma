@@ -250,78 +250,6 @@ model PersonalRecord {
   @@index([ownerId])
 }
 
-model Pdf {
-  id          String   @id @default(cuid())
-  ownerId     String
-  title       String
-  fileName    String
-  path        String
-  size        Int
-  pageCount   Int      @default(0)
-  lastPage    Int      @default(0)
-  readProgress Float   @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  highlights  Highlight[]
-  flashcards  Flashcard[]
-  quizzes     Quiz[]
-
-  @@index([ownerId])
-}
-
-model Highlight {
-  id         String   @id @default(cuid())
-  pdfId      String
-  ownerId    String
-  pageNumber Int
-  text       String
-  note       String?
-  color      String   @default("yellow")
-  positions  String   @default("[]")
-  createdAt  DateTime @default(now())
-
-  pdf        Pdf      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
-
-  @@index([pdfId])
-  @@index([ownerId])
-}
-
-model Flashcard {
-  id        String   @id @default(cuid())
-  pdfId     String
-  ownerId   String
-  front     String
-  back      String
-  createdAt DateTime @default(now())
-
-  pdf       Pdf      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
-
-  @@index([pdfId])
-}
-
-model Quiz {
-  id        String       @id @default(cuid())
-  pdfId     String
-  ownerId   String
-  question  String
-  options   QuizOption[]
-  answerIndex Int
-  createdAt DateTime     @default(now())
-
-  pdf       Pdf          @relation(fields: [pdfId], references: [id], onDelete: Cascade)
-
-  @@index([pdfId])
-}
-
-model QuizOption {
-  id    String @id @default(cuid())
-  quizId String
-  text  String
-
-  quiz  Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
-}
-
 model Lesson {
   id          String    @id @default(cuid())
   ownerId     String
@@ -383,5 +311,53 @@ model Setting {
   updatedAt DateTime @updatedAt
 
   @@unique([ownerId, key])
+  @@index([ownerId])
+}
+
+model Recipe {
+  id          String   @id @default(cuid())
+  ownerId     String?  // null = shared/system recipe visible to all users
+  title       String
+  description String?
+  meal        String   // "breakfast" | "lunch" | "dinner" | "snack"
+  difficulty  String   // "beginner" | "intermediate" | "advanced"
+  prepTimeMin Int
+  cookTimeMin Int
+  servings    Int
+  calories    Int      // per serving
+  proteinG    Float
+  carbsG      Float
+  fatG        Float
+  ingredients String   // JSON: [{name,amount,unit}]
+  instructions String  // JSON: [{step,text,timerSeconds?}]
+  imageUrl    String?
+  source      String?
+  tags        String?  // comma-separated
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  favorites   RecipeFavorite[]
+
+  @@index([meal])
+  @@index([ownerId])
+}
+
+model RecipeFavorite {
+  id        String   @id @default(cuid())
+  ownerId   String
+  recipeId  String
+  createdAt DateTime @default(now())
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, recipeId])
+  @@index([ownerId])
+}
+
+model RecipePhoto {
+  id        String   @id @default(cuid())
+  ownerId   String
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+
   @@index([ownerId])
 }

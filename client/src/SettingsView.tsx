@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { authedFetch } from "./auth";
 import { getSettings, putSetting } from "./settingsApi";
 import { getSummary, setTarget } from "./nutritionApi";
 import Profile from "./Profile";
@@ -11,6 +12,7 @@ interface Props {
 export default function SettingsView({ token }: Props) {
   const [settings, setSettings] = useState<Record<string, string> | null>(null);
   const [calorieTarget, setCalorieTarget] = useState<string>("");
+  const [exportMsg, setExportMsg] = useState<string>("");
 
   useEffect(() => {
     getSettings(token)
@@ -31,6 +33,26 @@ export default function SettingsView({ token }: Props) {
     if (!Number.isFinite(n) || n <= 0) return;
     await setTarget(token, n);
     setCalorieTarget(String(n));
+  }
+
+  async function exportData() {
+    setExportMsg("Exporting…");
+    try {
+      const res = await authedFetch(token, "/api/export");
+      if (!res.ok) throw new Error(String(res.status));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `daytoday-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportMsg("Export downloaded.");
+    } catch {
+      setExportMsg("Export failed — try again.");
+    }
   }
 
   if (!settings) return <p className="text-slate-400">Loading settings…</p>;
@@ -84,6 +106,13 @@ export default function SettingsView({ token }: Props) {
         iOS Safari push only works for installed home-screen PWAs (spec §7).
       </p>
 
+      <hr className="border-slate-200" />
+      <div className="flex flex-col gap-2">
+        <button type="button" className="border rounded px-3 py-2 text-sm self-start" onClick={exportData}>
+          Export my data
+        </button>
+        <p className="text-xs text-slate-400">Downloads all your data as a JSON backup. {exportMsg}</p>
+      </div>
       <hr className="border-slate-200" />
       <Notifications token={token} />
       <hr className="border-slate-200" />

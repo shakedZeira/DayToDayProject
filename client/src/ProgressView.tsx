@@ -69,7 +69,6 @@ export default function ProgressView({ token }: Props) {
         <Stat label="Workouts this week" value={`${progress.health.workoutsThisWeek}/${progress.health.workoutsTarget}`} />
         <Stat label="Italian streak" value={`${progress.italian.streak}d`} sub={`${progress.italian.totalLessons} lessons`} />
         <Stat label="Calories today" value={`${Math.round(progress.health.caloriesToday)}`} sub={`target ${progress.health.calorieTarget}`} />
-        <Stat label="PDFs in progress" value={`${progress.study.pdfsInProgress}`} sub={`${progress.study.flashcards} flashcards`} />
       </div>
       <ActivityChart days={progress.tasks.completedByDay} labels={last7Labels(new Date())} />
     </div>

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { DigestResponse, DigestTaskItem, DigestStudyItem } from "shared";
+import type { DigestResponse, DigestTaskItem } from "shared";
 import { prisma } from "./db";
 import { requireAuth, type AuthedRequest } from "./session";
 import { dueOn } from "./tasks";
@@ -35,26 +35,6 @@ export function workoutReminder(workoutsThisWeek: number, lastWorkoutDaysAgo: nu
   return null;
 }
 
-export interface StudySeeds {
-  inProgressPdf: { id: string; title: string } | null;
-  pdfsInProgress: number;
-  flashcardCount: number;
-}
-
-export function pickStudyItem(seed: StudySeeds): DigestStudyItem {
-  if (seed.inProgressPdf) {
-    return {
-      type: "pdf",
-      title: seed.inProgressPdf.title,
-      detail: `${seed.pdfsInProgress} PDF(s) in progress — resume reading`
-    };
-  }
-  if (seed.flashcardCount > 0) {
-    return { type: "flashcards", title: null, detail: `${seed.flashcardCount} flashcards ready to review` };
-  }
-  return { type: "none", title: null, detail: "No study material queued for today" };
-}
-
 export interface DigestInput {
   today: string;
   tasksToday: TaskRow[];
@@ -63,7 +43,6 @@ export interface DigestInput {
   lessonTitle: string | null;
   activeDays: Date[];
   totalLessons: number;
-  study: StudySeeds;
 }
 
 export function buildDigest(input: DigestInput): DigestResponse {
@@ -87,8 +66,7 @@ export function buildDigest(input: DigestInput): DigestResponse {
       lessonTitle: input.lessonTitle,
       streak: currentStreak(input.activeDays, new Date(input.today + "T12:00:00")),
       totalLessons: input.totalLessons
-    },
-    study: pickStudyItem(input.study)
+    }
   };
 }
 
@@ -100,21 +78,14 @@ digestRouter.get("/today", async (req: AuthedRequest, res) => {
   const weekAgo = new Date(now.getTime() - 7 * 86_400_000);
   const ownerId = req.userId!;
 
-  const [ownedTasks, workoutsThisWeek, lastWorkout, lessonToday, practiceLogs, completedLessons, inProgressPdf, pdfsInProgress, flashcardCount] =
+  const [ownedTasks, workoutsThisWeek, lastWorkout, lessonToday, practiceLogs, completedLessons] =
     await Promise.all([
       prisma.task.findMany({ where: { ownerId } }),
       prisma.workout.count({ where: { ownerId, date: { gte: weekAgo } } }),
       prisma.workout.findFirst({ where: { ownerId }, orderBy: { date: "desc" }, select: { date: true } }),
       prisma.lesson.findFirst({ where: { ownerId, date: todayKey(now) }, select: { title: true } }),
       prisma.practiceLog.findMany({ where: { ownerId }, select: { createdAt: true } }),
-      prisma.lesson.findMany({ where: { ownerId, completedAt: { not: null } }, select: { completedAt: true } }),
-      prisma.pdf.findFirst({
-        where: { ownerId, readProgress: { gt: 0, lt: 1 } },
-        orderBy: { updatedAt: "desc" },
-        select: { id: true, title: true }
-      }),
-      prisma.pdf.count({ where: { ownerId, readProgress: { gt: 0, lt: 1 } } }),
-      prisma.flashcard.count({ where: { ownerId } })
+      prisma.lesson.findMany({ where: { ownerId, completedAt: { not: null } }, select: { completedAt: true } })
     ]);
 
   const tasksToday = ownedTasks.filter(
@@ -136,8 +107,7 @@ digestRouter.get("/today", async (req: AuthedRequest, res) => {
       lastWorkoutDaysAgo,
       lessonTitle: lessonToday?.title ?? null,
       activeDays,
-      totalLessons: completedLessons.length,
-      study: { inProgressPdf, pdfsInProgress, flashcardCount }
+      totalLessons: completedLessons.length
     })
   );
 });

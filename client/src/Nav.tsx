@@ -7,7 +7,7 @@ const ITEMS: NavItem[] = [
   { key: "today", label: "Today" },
   { key: "tasks", label: "Tasks" },
   { key: "health", label: "Health" },
-  { key: "study", label: "Study" },
+  { key: "cooking", label: "בישול" },
   { key: "italian", label: "Italian" },
   { key: "progress", label: "Progress" },
   { key: "settings", label: "Settings" }

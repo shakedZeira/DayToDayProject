@@ -64,16 +64,6 @@ export default function DigestView({ token }: Props) {
           )}
           <p className="text-xs text-slate-400">Streak {digest.italian.streak} days · {digest.italian.totalLessons} lessons</p>
         </Card>
-        <Card title="Study">
-          {digest.study.type !== "none" ? (
-            <>
-              <p className="text-slate-800">{digest.study.detail}</p>
-              {digest.study.title && <p className="text-xs text-slate-400">{digest.study.title}</p>}
-            </>
-          ) : (
-            <p className="text-slate-400">No study material queued for today.</p>
-          )}
-        </Card>
       </div>
     </div>
   );

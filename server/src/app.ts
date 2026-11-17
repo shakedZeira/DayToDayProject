@@ -13,15 +13,14 @@ import { nutritionPhotoRouter } from "./nutritionPhoto";
 import { profileRouter } from "./profile";
 import { routinesRouter } from "./routines";
 import { progressionRouter } from "./progression";
-import { pdfsRouter } from "./pdfs";
-import { highlightsRouter } from "./highlights";
-import { studyRouter } from "./study";
+import { recipesRouter } from "./recipes";
 import { italianRouter } from "./italian";
 import { italianChatRouter } from "./italianChat";
 import { italianPathRouter } from "./italianPath";
 import { digestRouter } from "./digest";
 import { settingsRouter } from "./settings";
 import { progressRouter } from "./progress";
+import { exportRouter } from "./exportData";
 import { prisma } from "./db";
 
 export const app = express();
@@ -42,15 +41,14 @@ app.use("/api/progression", progressionRouter);
 app.use("/api/nutrition", nutritionRouter);
 app.use("/api/nutrition", nutritionPhotoRouter);
 app.use("/api/profile", profileRouter);
-app.use("/api/pdfs", pdfsRouter);
-app.use("/api", highlightsRouter);
-app.use("/api", studyRouter);
+app.use("/api/recipes", recipesRouter);
 app.use("/api/italian", italianRouter);
 app.use("/api/italian", italianChatRouter);
 app.use("/api/italian-path", italianPathRouter);
 app.use("/api/digest", digestRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/progress", progressRouter);
+app.use("/api/export", exportRouter);
 
 // Verify the DB is reachable on boot.
 app.get("/api/ready", async (_req, res) => {

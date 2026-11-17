@@ -6,7 +6,7 @@ import ProgressView from "./ProgressView";
 import SettingsView from "./SettingsView";
 import HealthView from "./HealthView";
 import ItalianView from "./ItalianView";
-import PdfHub from "./PdfHub";
+import CookingView from "./CookingView";
 import Nav from "./Nav";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
@@ -79,8 +79,8 @@ export default function App() {
             {view === "today" && <DigestView token={token} />}
             {view === "tasks" && <Tasks token={token} />}
             {view === "health" && <HealthView token={token} />}
-            {view === "study" && <PdfHub token={token} />}
             {view === "italian" && <ItalianView token={token} />}
+            {view === "cooking" && <CookingView token={token} />}
             {view === "progress" && <ProgressView token={token} />}
             {view === "settings" && <SettingsView token={token} />}
           </main>

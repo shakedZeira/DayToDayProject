@@ -110,18 +110,6 @@ export interface ProgressionUpdateInput {
   targetSets?: number; targetReps?: number; targetWeight?: number | null; incrementKg?: number;
 }
 
-export interface FlashcardOut {
-  front: string;
-  back: string;
-}
-
-export interface QuizOut {
-  question: string;
-  choices: string[];
-  answerIndex: number;
-  explanation?: string;
-}
-
 export interface ItalianVocabItem {
   english: string;
   italian: string;
@@ -186,19 +174,12 @@ export interface DigestItalianItem {
   totalLessons: number;
 }
 
-export interface DigestStudyItem {
-  type: "pdf" | "flashcards" | "none";
-  title: string | null;
-  detail: string;
-}
-
 export interface DigestResponse {
   date: string; // local YYYY-MM-DD
   topTask: DigestTaskItem | null;
   tasksToday: DigestTaskItem[];
   health: DigestHealthItem;
   italian: DigestItalianItem;
-  study: DigestStudyItem;
 }
 
 export interface ProgressTaskSummary {
@@ -216,13 +197,6 @@ export interface ProgressHealthSummary {
   calorieTarget: number;
 }
 
-export interface ProgressStudySummary {
-  pdfs: number;
-  highlights: number;
-  flashcards: number;
-  pdfsInProgress: number;
-}
-
 export interface ProgressItalianSummary {
   streak: number;
   totalLessons: number;
@@ -233,7 +207,6 @@ export interface ProgressResponse {
   date: string; // local YYYY-MM-DD
   tasks: ProgressTaskSummary;
   health: ProgressHealthSummary;
-  study: ProgressStudySummary;
   italian: ProgressItalianSummary;
 }
 
@@ -262,6 +235,8 @@ export type ItalianExercise = ItalianChoiceExercise | ItalianMatchExercise;
 export interface ItalianLessonDef {
   id: string;
   title: string;
+  /** "test" marks the review quiz at the end of a unit. */
+  kind?: "lesson" | "test";
   exercises: ItalianExercise[];
 }
 
@@ -298,4 +273,87 @@ export interface ItalianSubmitResult {
   xpGained: number;
   lessonCompleted: boolean;
   progress: ItalianPathProgress;
+}
+
+export interface RecipeIngredient {
+  name: string;
+  amount: number;
+  unit: string;
+}
+
+export interface RecipeInstructionStep {
+  step: number;
+  text: string;
+  timerSeconds?: number | null;
+}
+
+export type RecipeMeal = "breakfast" | "lunch" | "dinner" | "snack";
+export type RecipeDifficulty = "beginner" | "intermediate" | "advanced";
+
+export interface Recipe {
+  id: string;
+  ownerId: string | null;
+  title: string;
+  description: string | null;
+  meal: RecipeMeal;
+  difficulty: RecipeDifficulty;
+  prepTimeMin: number;
+  cookTimeMin: number;
+  servings: number;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  ingredients: RecipeIngredient[];
+  instructions: RecipeInstructionStep[];
+  imageUrl: string | null;
+  source: string | null;
+  tags: string | null;
+  createdAt: string;
+  updatedAt: string;
+  favoriteCount?: number;
+  isFavorited?: boolean;
+}
+
+export interface RecipeCreateInput {
+  title: string;
+  description?: string | null;
+  meal: RecipeMeal;
+  difficulty: RecipeDifficulty;
+  prepTimeMin: number;
+  cookTimeMin: number;
+  servings: number;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  ingredients: RecipeIngredient[];
+  instructions: RecipeInstructionStep[];
+  imageUrl?: string | null;
+  source?: string | null;
+  tags?: string | null;
+}
+
+export interface RecipeView {
+  id: string;
+  title: string;
+  description: string | null;
+  meal: RecipeMeal;
+  difficulty: RecipeDifficulty;
+  prepTimeMin: number;
+  cookTimeMin: number;
+  servings: number;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  ingredients: RecipeIngredient[];
+  instructions: RecipeInstructionStep[];
+  imageUrl: string | null;
+  source: string | null;
+  tags: string[] | null;
+  createdAt: string;
+  updatedAt: string;
+  favoriteCount: number;
+  isFavorited: boolean;
 }
