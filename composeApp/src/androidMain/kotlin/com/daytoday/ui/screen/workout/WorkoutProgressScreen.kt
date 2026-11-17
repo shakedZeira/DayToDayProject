@@ -127,6 +127,9 @@ fun WorkoutProgressScreenContent(
                         }
                     }
 
+                    // Weight, sleep and heart rate from Health Connect (device-local)
+                    com.daytoday.ui.screen.vitals.VitalsCard()
+
                     // Personal Bests
                     (personalBests as? UiState.Success<List<PersonalBests>>)?.data?.let { bests ->
                         if (bests.isNotEmpty()) {

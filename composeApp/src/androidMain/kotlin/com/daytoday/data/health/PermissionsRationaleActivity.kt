@@ -30,7 +30,8 @@ class PermissionsRationaleActivity : Activity() {
 
     private companion object {
         const val RATIONALE =
-            "DayToDay reads your step count from Health Connect to show daily activity " +
-                "progress alongside your workouts. Your health data never leaves this device."
+            "DayToDay reads your step count, weight, sleep and heart rate from Health Connect " +
+                "to show daily activity and recovery alongside your workouts. " +
+                "Your health data never leaves this device."
     }
 }
