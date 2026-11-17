@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import type { ItalianAnswer, ItalianExercise, ItalianLessonDef, ItalianSubmitResult } from "shared";
 import { submitPathLesson } from "./italianApi";
 import { gradeExercise } from "./italianPathLogic";
+import { isSpeechRecognitionSupported, startListening } from "./speech";
+import { scoreSpeech } from "./speechScore";
 
 interface Props {
   token: string;
@@ -34,6 +36,13 @@ export function buildAnswer(ex: ItalianExercise, picks: Picks): ItalianAnswer {
   return { exerciseId: ex.id, kind: "match", pairs: picks.matchPicks };
 }
 
+/** Phrase worth saying aloud for an exercise, or null (match exercises). */
+export function speakTarget(ex: ItalianExercise): string | null {
+  if (ex.kind !== "choice") return null;
+  if (ex.direction === "listen") return ex.speak ?? null;
+  return ex.direction === "en_to_it" ? ex.choices[ex.answerIndex] : null;
+}
+
 export function nextHearts(hearts: number, correct: boolean): number {
   return correct ? hearts : Math.max(hearts - 1, 0);
 }
@@ -47,6 +56,8 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
   const [matchPicks, setMatchPicks] = useState<{ left: string; right: string }[]>([]);
   const [pickLeft, setPickLeft] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [spoken, setSpoken] = useState<{ transcript: string; score: number } | null>(null);
 
   const ex = lesson.exercises[idx];
   const rights = useMemo<string[]>(
@@ -83,8 +94,22 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
     setChoicePick(null);
     setMatchPicks([]);
     setPickLeft(null);
+    setSpoken(null);
     setIdx((i) => i + 1);
     if (idx + 1 >= lesson.exercises.length || hearts <= 0) void finish(next);
+  }
+
+  function onSay(target: string) {
+    setListening(true);
+    setSpoken(null);
+    startListening({
+      lang: "it-IT",
+      onResult: (r) => {
+        if (r.isFinal) setSpoken({ transcript: r.transcript, score: scoreSpeech(r.transcript, target).score });
+      },
+      onEnd: () => setListening(false),
+      onError: () => setListening(false)
+    });
   }
 
   if (submitting) {
@@ -180,6 +205,19 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {feedback && ex && speakTarget(ex) && isSpeechRecognitionSupported() && (
+        <div className="flex items-center gap-3 text-sm">
+          <button className="border rounded px-3 py-1" disabled={listening} onClick={() => onSay(speakTarget(ex)!)}>
+            {listening ? "Listening…" : "🎤 Say it"}
+          </button>
+          {spoken && (
+            <span>
+              Pronunciation: <strong>{spoken.score}%</strong> ({spoken.transcript})
+            </span>
+          )}
         </div>
       )}
 
