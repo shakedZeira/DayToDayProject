@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type {
   AnalyticsSummary,
+  DeloadSuggestion,
   ProgressiveOverloadView,
   ProgressionUpdateInput,
 } from "shared";
-import { getAnalytics, getProgressions, setProgression } from "./analyticsApi";
+import { getAnalytics, getDeloads, getProgressions, setProgression } from "./analyticsApi";
 
 interface Props {
   token: string;
@@ -36,6 +37,44 @@ function BarRow({ label, value, max }: { label: string; value: number; max: numb
         {Math.round(value)} kg
       </span>
     </li>
+  );
+}
+
+type WeeklyRow = AnalyticsSummary["weeklyMuscleVolume"][number];
+
+export function WeeklyMuscleChart({ data }: { data: WeeklyRow[] }) {
+  const weeks = [...new Set(data.map((d) => d.weekStart))].sort();
+  const muscles = [...new Set(data.map((d) => d.muscle))].sort(
+    (a, b) => data.filter((d) => d.muscle === b).reduce((s, d) => s + d.sets, 0) - data.filter((d) => d.muscle === a).reduce((s, d) => s + d.sets, 0)
+  );
+  if (weeks.length === 0) return <p className="text-sm text-slate-400">No weekly volume yet.</p>;
+  const maxSets = Math.max(...data.map((d) => d.sets));
+  return (
+    <section className="flex flex-col gap-2" data-testid="weekly-muscle-chart">
+      <h3 className="md-title-medium text-md-onSurface">Weekly sets per muscle</h3>
+      <ul className="flex flex-col gap-2">
+        {muscles.map((m) => (
+          <li key={m} className="flex items-center gap-2 text-sm">
+            <span className="w-24 shrink-0 truncate text-slate-600">{m}</span>
+            <div className="flex-1 flex items-end gap-1 h-10" role="img" aria-label={`${m} sets per week`}>
+              {weeks.map((w) => {
+                const row = data.find((d) => d.muscle === m && d.weekStart === w);
+                const sets = row?.sets ?? 0;
+                return (
+                  <div key={w} className="flex-1 bg-slate-100 rounded-sm h-full flex items-end" title={`${formatDate(w)}: ${sets} sets, ${Math.round(row?.kg ?? 0)} kg`}>
+                    <div className="w-full bg-indigo-500 rounded-sm" style={{ height: `${sets > 0 ? Math.max(8, Math.round((sets / maxSets) * 100)) : 0}%` }} />
+                  </div>
+                );
+              })}
+            </div>
+            <span className="w-14 shrink-0 text-right text-slate-500 tabular-nums">
+              {data.find((d) => d.muscle === m && d.weekStart === weeks[weeks.length - 1])?.sets ?? 0} sets
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-slate-400">Oldest week left, this week right. Number shows this week's working sets.</p>
+    </section>
   );
 }
 
@@ -75,6 +114,7 @@ interface EditDraft {
 export default function Analytics({ token, refreshKey }: Props) {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [progressions, setProgressions] = useState<ProgressiveOverloadView[]>([]);
+  const [deloads, setDeloads] = useState<DeloadSuggestion[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditDraft>({ targetSets: "", targetReps: "", targetWeight: "" });
   const [loading, setLoading] = useState(true);
@@ -85,6 +125,7 @@ export default function Analytics({ token, refreshKey }: Props) {
       const [analytics, prog] = await Promise.all([getAnalytics(token), getProgressions(token)]);
       setSummary(analytics);
       setProgressions(prog);
+      setDeloads(await getDeloads(token).catch(() => []));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load analytics");
@@ -146,6 +187,19 @@ export default function Analytics({ token, refreshKey }: Props) {
             <strong className="text-slate-800">{summary.thisWeekWorkouts}</strong> this week
           </span>
         </div>
+      )}
+
+      {deloads.length > 0 && (
+        <section className="flex flex-col gap-2" data-testid="deload-suggestions">
+          <h3 className="md-title-medium text-md-onSurface">Deload suggestions</h3>
+          <ul className="flex flex-col gap-1">
+            {deloads.map((d) => (
+              <li key={d.exerciseName} className="border border-amber-300 rounded-md3xs px-3 py-2 bg-amber-50 text-sm text-slate-700">
+                <strong>{d.exerciseName}</strong>: try {d.suggestedWeightKg}kg (from {d.currentWeightKg}kg). {d.detail}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <section className="flex flex-col gap-2">
@@ -257,6 +311,7 @@ export default function Analytics({ token, refreshKey }: Props) {
       )}
 
       {summary && <VolumeBars title="Volume per day" data={summary.volumeTrend} />}
+      {summary?.weeklyMuscleVolume && <WeeklyMuscleChart data={summary.weeklyMuscleVolume} />}
       {summary && <VolumeBars title="Volume by muscle group" data={summary.muscleVolume} />}
     </div>
   );

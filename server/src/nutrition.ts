@@ -11,6 +11,18 @@ function startOfLocalDay(date: string): { start: Date; end: Date } {
   return { start, end };
 }
 
+const r1 = (n: number) => Math.round(n * 10) / 10;
+const FOOD_SEL = { id: true, name: true, caloriesPer100: true, servingUnit: true, proteinPer100: true, carbsPer100: true, fatPer100: true } as const;
+
+type MealWithFood = { grams: number; food: { caloriesPer100: number; proteinPer100: number; carbsPer100: number; fatPer100: number } };
+export function mealMacros(m: MealWithFood) {
+  const f = m.grams / 100;
+  return { proteinG: r1(m.food.proteinPer100 * f), carbsG: r1(m.food.carbsPer100 * f), fatG: r1(m.food.fatPer100 * f) };
+}
+export function macroTargetsFor(calories: number) {
+  return { proteinG: Math.round((calories * 0.3) / 4), carbsG: Math.round((calories * 0.45) / 4), fatG: Math.round((calories * 0.25) / 9) };
+}
+
 function resolveDate(date: unknown): string {
   return typeof date === "string" && date ? date : new Date().toISOString().slice(0, 10);
 }
@@ -26,7 +38,7 @@ nutritionRouter.get("/summary", async (req: AuthedRequest, res) => {
 
   const meals = await prisma.mealLog.findMany({
     where: { ownerId: req.userId, date: { gte: start, lt: end } },
-    include: { food: { select: { id: true, name: true, caloriesPer100: true, servingUnit: true } } },
+    include: { food: { select: FOOD_SEL } },
     orderBy: { date: "asc" },
   });
 
@@ -34,17 +46,26 @@ nutritionRouter.get("/summary", async (req: AuthedRequest, res) => {
     meals.reduce((sum, m) => sum + m.food.caloriesPer100 * (m.grams / 100), 0)
   );
 
+  const macros = {
+    proteinG: r1(meals.reduce((s, m) => s + m.food.proteinPer100 * (m.grams / 100), 0)),
+    carbsG: r1(meals.reduce((s, m) => s + m.food.carbsPer100 * (m.grams / 100), 0)),
+    fatG: r1(meals.reduce((s, m) => s + m.food.fatPer100 * (m.grams / 100), 0)),
+  };
+
   res.json({
     date,
     target,
     consumed,
     remaining: target - consumed,
+    macros,
+    macroTargets: macroTargetsFor(target),
     meals: meals.map((m) => ({
       id: m.id,
       foodName: m.food.name,
       grams: m.grams,
       ...(m.food.servingUnit === "serving" ? { servings: m.grams / 100 } : {}),
       calories: Math.round(m.food.caloriesPer100 * (m.grams / 100)),
+      ...mealMacros(m),
     })),
   });
 });
@@ -55,7 +76,7 @@ nutritionRouter.get("/detail", async (req: AuthedRequest, res) => {
 
   const meals = await prisma.mealLog.findMany({
     where: { ownerId: req.userId, date: { gte: start, lt: end } },
-    include: { food: { select: { id: true, name: true, caloriesPer100: true, servingUnit: true } } },
+    include: { food: { select: FOOD_SEL } },
     orderBy: { date: "asc" },
   });
 
@@ -68,6 +89,7 @@ nutritionRouter.get("/detail", async (req: AuthedRequest, res) => {
       grams: m.grams,
       ...(m.food.servingUnit === "serving" ? { servings: m.grams / 100 } : {}),
       calories: Math.round(m.food.caloriesPer100 * (m.grams / 100)),
+      ...mealMacros(m),
     })),
   });
 });

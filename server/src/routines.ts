@@ -13,6 +13,10 @@ async function isUsableExercise(exerciseId: string, userId: string): Promise<boo
   return !!ex;
 }
 
+export function validSupersetGroup(v: unknown): boolean {
+  return v === undefined || v === null || (typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 99);
+}
+
 function mapToView(routine: any): RoutineView {
   return {
     id: routine.id,
@@ -29,6 +33,7 @@ function mapToView(routine: any): RoutineView {
         targetReps: re.targetReps,
         targetWeight: re.targetWeight,
         notes: re.notes,
+        supersetGroup: re.supersetGroup ?? null,
         exerciseId: re.exerciseId,
         exercise: {
           id: re.exercise.id,
@@ -106,6 +111,9 @@ routinesRouter.post("/", async (req: AuthedRequest, res) => {
           if (ex.targetWeight !== undefined && ex.targetWeight !== null && (typeof ex.targetWeight !== "number" || ex.targetWeight <= 0)) {
             return res.status(400).json({ error: "targetWeight must be > 0" });
           }
+          if (!validSupersetGroup(ex.supersetGroup)) {
+            return res.status(400).json({ error: "supersetGroup must be an integer 1-99" });
+          }
           if (typeof ex.exerciseId !== "string") {
             return res.status(400).json({ error: "exerciseId required" });
           }
@@ -138,6 +146,7 @@ routinesRouter.post("/", async (req: AuthedRequest, res) => {
                       targetWeight: ex.targetWeight ?? null,
                       notes: typeof ex.notes === "string" ? ex.notes : null,
                       exerciseId: ex.exerciseId,
+                      supersetGroup: ex.supersetGroup ?? null,
                     })),
                   }
                 : undefined,
@@ -191,6 +200,9 @@ routinesRouter.put("/:id", async (req: AuthedRequest, res) => {
           if (ex.targetWeight !== undefined && ex.targetWeight !== null && (typeof ex.targetWeight !== "number" || ex.targetWeight <= 0)) {
             return res.status(400).json({ error: "targetWeight must be > 0" });
           }
+          if (!validSupersetGroup(ex.supersetGroup)) {
+            return res.status(400).json({ error: "supersetGroup must be an integer 1-99" });
+          }
           if (typeof ex.exerciseId !== "string") {
             return res.status(400).json({ error: "exerciseId required" });
           }
@@ -227,6 +239,7 @@ routinesRouter.put("/:id", async (req: AuthedRequest, res) => {
                       targetWeight: ex.targetWeight ?? null,
                       notes: typeof ex.notes === "string" ? ex.notes : null,
                       exerciseId: ex.exerciseId,
+                      supersetGroup: ex.supersetGroup ?? null,
                     })),
                   }
                 : undefined,

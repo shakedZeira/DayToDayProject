@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createWorkout,
   addWorkoutExercise,
+  setExerciseSuperset,
   appendSetToExercise,
   getWorkouts,
   type Workout,
@@ -10,6 +11,8 @@ import {
 import { getExercises } from "./exerciseApi";
 import type { ExerciseRecord } from "shared";
 import { useDialog } from "./useDialog";
+import PlateCalc from "./PlateCalc";
+import { toggleLinkWithPrevious, isSupersetContinuation, supersetLabel } from "./supersets";
 import ExerciseDemoModal, { type DemoExercise } from "./ExerciseDemoModal";
 
 export interface ActiveInitialExercise {
@@ -17,6 +20,7 @@ export interface ActiveInitialExercise {
   exerciseName: string;
   targetSets?: number;
   targetReps?: number;
+  supersetGroup?: number | null;
 }
 
 interface ActiveInitial {
@@ -41,6 +45,8 @@ interface ActiveExercise {
   targetReps?: number;
   prevWeight?: number;
   prevReps?: number;
+  supersetGroup?: number | null;
+  showPlates?: boolean;
   sets: ActiveSet[];
 }
 
@@ -156,6 +162,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
             const xe = await addWorkoutExercise(token, w.id, {
               exerciseId: x.exerciseId,
               exerciseName: x.exerciseName,
+              supersetGroup: x.supersetGroup ?? null,
             });
             const prev = prevMap.get(x.exerciseName);
             const sets: ActiveSet[] = Array.from(
@@ -172,6 +179,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
               exerciseName: xe.exerciseName,
               targetSets: x.targetSets,
               targetReps: x.targetReps,
+              supersetGroup: x.supersetGroup ?? null,
               prevWeight: prev?.weight,
               prevReps: prev?.reps,
               sets,
@@ -295,10 +303,31 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
       target.loggedSet = logged;
         return next;
       });
-      setRestRemaining(restDuration);
+      // No rest between the exercises of a superset; rest after the last one.
+      if (!isSupersetContinuation(exercises.map((e) => e.supersetGroup), exIdx)) {
+        setRestRemaining(restDuration);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to log set");
     }
+  }
+
+  async function toggleSuperset(exIdx: number) {
+    if (!workout) return;
+    const before = exercises.map((e) => e.supersetGroup ?? null);
+    const after = toggleLinkWithPrevious(before, exIdx);
+    try {
+      for (let i = 0; i < after.length; i++) {
+        if (after[i] !== before[i]) await setExerciseSuperset(token, workout.id, exercises[i].xeId, after[i]);
+      }
+      setExercises((prev) => prev.map((e, i) => ({ ...e, supersetGroup: after[i] })));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update superset");
+    }
+  }
+
+  function togglePlates(exIdx: number) {
+    setExercises((prev) => prev.map((e, i) => (i === exIdx ? { ...e, showPlates: !e.showPlates } : e)));
   }
 
   function addEmptySet(exIdx: number) {
@@ -407,6 +436,28 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
             >
               Demo
             </button>
+            {supersetLabel(ex.supersetGroup) && (
+              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">
+                {supersetLabel(ex.supersetGroup)}
+              </span>
+            )}
+            <button
+              onClick={() => togglePlates(exIdx)}
+              aria-expanded={!!ex.showPlates}
+              className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-100"
+            >
+              Plates
+            </button>
+            {exIdx > 0 && (
+              <button
+                onClick={() => toggleSuperset(exIdx)}
+                className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-violet-600 hover:bg-violet-100"
+              >
+                {ex.supersetGroup != null && ex.supersetGroup === exercises[exIdx - 1].supersetGroup
+                  ? "Unlink superset"
+                  : "Superset with previous"}
+              </button>
+            )}
             {ex.targetSets != null && ex.targetReps != null && (
               <span className="text-xs text-slate-500">
                 Target: {ex.targetSets} × {ex.targetReps}
@@ -418,6 +469,12 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
               </span>
             )}
           </div>
+
+          {ex.showPlates && (
+            <PlateCalc
+              weightKg={ex.sets.find((st) => !st.logged)?.weightKg || ex.sets[ex.sets.length - 1]?.weightKg || 0}
+            />
+          )}
 
           {ex.sets.map((s, sIdx) => (
             <div key={sIdx} className="flex items-center gap-1 flex-wrap">

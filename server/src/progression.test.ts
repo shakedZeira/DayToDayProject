@@ -3,7 +3,10 @@ import request from "supertest";
 import { app } from "./index";
 import { prisma } from "./db";
 import { seedExercises } from "./exercises.seed";
-import { e1rm, matchRepRange, progressingTargetsComplete, updateProgression } from "./progression";
+import {
+  e1rm, matchRepRange, progressingTargetsComplete, updateProgression,
+  detectDeload, deloadSuggestions, roundToPlate, weekStartOf, weeklyMuscleVolume, type SessionPoint,
+} from "./progression";
 
 let token = "";
 
@@ -104,4 +107,70 @@ test("PUT /api/progression/:exerciseName updates targets; invalid → 400", asyn
     .set("Authorization", `Bearer ${token}`)
     .send({ targetSets: 0 });
   expect(bad.status).toBe(400);
+});
+
+
+const sess = (...e: number[]): SessionPoint[] =>
+  e.map((v, i) => ({ date: `2026-10-0${i + 1}`, bestE1rm: v, topWeightKg: 100 }));
+
+test("detectDeload: needs 3+ sessions, flags >5% e1RM drop", () => {
+  expect(detectDeload(sess(100, 90))).toBeNull();
+});
+
+test("detectDeload: e1rm_drop and stalled rules", () => {
+  expect(detectDeload(sess(100, 102, 96))?.reason).toBe("e1rm_drop");
+  expect(detectDeload(sess(100, 102, 98))).toBeNull(); // 3.9% dip is fine
+  expect(detectDeload(sess(100, 100, 100))).toBeNull(); // only 3 sessions: cannot be stalled
+  expect(detectDeload(sess(100, 100, 99, 100))?.reason).toBe("stalled");
+  expect(detectDeload(sess(100, 101, 99, 100))).toBeNull(); // 101 beats the 100 reference
+  expect(detectDeload(sess(100, 100, 101, 102))).toBeNull(); // still progressing
+});
+
+test("deloadSuggestions proposes ~90% of the latest top weight rounded to 2.5kg", () => {
+  const m = new Map<string, SessionPoint[]>([
+    ["Squat", sess(150, 150, 150, 150).map((s) => ({ ...s, topWeightKg: 120 }))],
+    ["Curl", sess(30, 31, 32)],
+  ]);
+  const out = deloadSuggestions(m);
+  expect(out).toHaveLength(1);
+  expect(out[0]).toMatchObject({ exerciseName: "Squat", reason: "stalled", currentWeightKg: 120, suggestedWeightKg: 107.5 });
+  expect(roundToPlate(101)).toBe(100);
+});
+
+test("weeklyMuscleVolume buckets working sets by Monday week and muscle, last 8 weeks only", () => {
+  const muscles = new Map([["Squat", "Legs"], ["Bench Press", "Chest"]]);
+  const now = new Date("2026-11-18T12:00:00Z"); // Wednesday, week of 2026-11-16
+  expect(weekStartOf(now)).toBe("2026-11-16");
+  expect(weekStartOf(new Date("2026-11-22T23:00:00Z"))).toBe("2026-11-16"); // Sunday
+  const rows = weeklyMuscleVolume(
+    [
+      { date: new Date("2026-11-16T08:00:00Z"), exercise: "Squat", weightKg: 100, reps: 5 },
+      { date: new Date("2026-11-17T08:00:00Z"), exercise: "Squat", weightKg: 100, reps: 5 },
+      { date: new Date("2026-11-10T08:00:00Z"), exercise: "Bench Press", weightKg: 60, reps: 10 },
+      { date: new Date("2026-11-10T08:00:00Z"), exercise: "Mystery", weightKg: 10, reps: 10 },
+      { date: new Date("2026-08-01T08:00:00Z"), exercise: "Squat", weightKg: 100, reps: 5 }, // too old
+    ],
+    muscles,
+    now
+  );
+  expect(rows).toEqual([
+    { weekStart: "2026-11-09", muscle: "Chest", sets: 1, kg: 600 },
+    { weekStart: "2026-11-09", muscle: "Other", sets: 1, kg: 100 },
+    { weekStart: "2026-11-16", muscle: "Legs", sets: 2, kg: 1000 },
+  ]);
+});
+
+test("GET /api/progression/deload and analytics weekly volume work end to end", async () => {
+  const auth = { Authorization: `Bearer ${token}` };
+  for (const w of [100, 100, 100, 100]) {
+    const wk = await request(app).post("/api/workouts").set(auth).send({ title: "w" });
+    const xe = await request(app).post(`/api/workouts/${wk.body.id}/exercises`).set(auth).send({ exerciseName: "Squat" });
+    await request(app).post(`/api/workouts/${wk.body.id}/exercises/${xe.body.id}/sets`).set(auth).send({ weightKg: w, reps: 5 });
+  }
+  const res = await request(app).get("/api/progression/deload").set(auth);
+  expect(res.status).toBe(200);
+  expect(res.body[0]).toMatchObject({ exerciseName: "Squat", reason: "stalled", suggestedWeightKg: 90 });
+  const an = await request(app).get("/api/workouts/analytics/summary").set(auth);
+  expect(an.body.weeklyMuscleVolume.length).toBeGreaterThan(0);
+  expect(an.body.weeklyMuscleVolume[0]).toHaveProperty("sets");
 });

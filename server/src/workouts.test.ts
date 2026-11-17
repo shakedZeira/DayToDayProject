@@ -292,3 +292,20 @@ test("GET /progress/weekly returns 401 without a token", async () => {
   const res = await request(app).get("/api/workouts/progress/weekly");
   expect(res.status).toBe(401);
 });
+
+test("workout exercises accept supersetGroup on create and via PATCH", async () => {
+  const auth = { Authorization: `Bearer ${token}` };
+  const wk = await request(app).post("/api/workouts").set(auth).send({ title: "ss" });
+  const a = await request(app).post(`/api/workouts/${wk.body.id}/exercises`).set(auth).send({ exerciseName: "Curl", supersetGroup: 1 });
+  expect(a.status).toBe(201);
+  expect(a.body.supersetGroup).toBe(1);
+  const b = await request(app).post(`/api/workouts/${wk.body.id}/exercises`).set(auth).send({ exerciseName: "Pushdown" });
+  expect(b.body.supersetGroup).toBeNull();
+  const patched = await request(app).patch(`/api/workouts/${wk.body.id}/exercises/${b.body.id}`).set(auth).send({ supersetGroup: 1 });
+  expect(patched.status).toBe(200);
+  expect(patched.body.supersetGroup).toBe(1);
+  const cleared = await request(app).patch(`/api/workouts/${wk.body.id}/exercises/${b.body.id}`).set(auth).send({ supersetGroup: null });
+  expect(cleared.body.supersetGroup).toBeNull();
+  expect((await request(app).patch(`/api/workouts/${wk.body.id}/exercises/${b.body.id}`).set(auth).send({ supersetGroup: 0 })).status).toBe(400);
+  expect((await request(app).post(`/api/workouts/${wk.body.id}/exercises`).set(auth).send({ exerciseName: "X", supersetGroup: 1.5 })).status).toBe(400);
+});

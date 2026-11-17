@@ -25,15 +25,32 @@ export interface WeeklyGoalView {
 export interface WorkoutCreateInput { title: string; date?: string; notes?: string | null; }
 export interface WorkoutSetInput { exercise: string; weightKg: number; reps: number; setType?: string; restSeconds?: number; rpe?: number; }
 export interface WorkoutSetView { id: string; exercise: string; weightKg: number; reps: number; setType: string; order: number; restSeconds?: number | null; rpe?: number | null; }
-export interface WorkoutExerciseView { id: string; order: number; exerciseId?: string | null; exerciseName: string; sets: WorkoutSetView[]; }
+export interface WorkoutExerciseView { id: string; order: number; exerciseId?: string | null; exerciseName: string; supersetGroup?: number | null; sets: WorkoutSetView[]; }
 export interface ProgressiveSuggestion {
   exercise: string;
   currentWeightKg: number;
   suggestedNextKg: number;
   reason: "completed_target" | "not_yet";
 }
-export interface FoodInput { name: string; nameHe?: string | null; caloriesPer100: number; servingUnit?: string; }
-export interface FoodRecord { id: string; name: string; nameHe?: string | null; caloriesPer100: number; servingUnit: string; }
+export interface FoodInput {
+  name: string; nameHe?: string | null; caloriesPer100: number; servingUnit?: string;
+  proteinPer100?: number; carbsPer100?: number; fatPer100?: number; barcode?: string | null;
+}
+export interface FoodRecord {
+  id: string; name: string; nameHe?: string | null; caloriesPer100: number; servingUnit: string;
+  proteinPer100: number; carbsPer100: number; fatPer100: number;
+  barcode?: string | null;
+  /** true when the food was created by the current user (custom food). */
+  custom?: boolean;
+}
+export interface MacroTotals { proteinG: number; carbsG: number; fatG: number; }
+export interface BarcodeFoodResult {
+  barcode: string;
+  source: "mine" | "openfoodfacts";
+  /** Set when the product already exists as one of the user's foods. */
+  foodId?: string;
+  food: FoodInput & { name: string };
+}
 export interface MealLogInput { foodId: string; grams: number; date?: string; }
 export interface DailyTargetInput { calories: number; }
 export interface NutritionSummary {
@@ -41,7 +58,11 @@ export interface NutritionSummary {
   target: number;
   consumed: number;
   remaining: number;
-  meals: { id: string; foodName: string; grams: number; servings?: number; calories: number }[];
+  /** Macro totals consumed today, in grams. */
+  macros: MacroTotals;
+  /** Macro goals derived from the calorie target (30% protein / 45% carbs / 25% fat). */
+  macroTargets: MacroTotals;
+  meals: { id: string; foodName: string; grams: number; servings?: number; calories: number; proteinG: number; carbsG: number; fatG: number }[];
 }
 
 export interface VisionEstimate {
@@ -84,6 +105,8 @@ export interface ExerciseCreateInput { name: string; muscleGroup?: string; equip
 export interface RoutineExerciseInput {
   order: number; targetSets: number; targetReps: number; targetWeight?: number | null;
   notes?: string | null; exerciseId: string;
+  /** Exercises of one day sharing a group id are performed as a superset. */
+  supersetGroup?: number | null;
 }
 export interface RoutineDayInput { name: string; order?: number; exercises?: RoutineExerciseInput[]; }
 export interface RoutineCreateInput { name: string; description?: string | null; days?: RoutineDayInput[]; }
@@ -104,7 +127,16 @@ export interface AnalyticsSummary {
   totalWorkouts: number; thisWeekWorkouts: number;
   volumeTrend: { date: string; kg: number }[];
   muscleVolume: { muscle: string; kg: number }[];
+  /** Last 8 ISO weeks (Monday start), oldest first; one entry per muscle per week with working sets. */
+  weeklyMuscleVolume: { weekStart: string; muscle: string; sets: number; kg: number }[];
   prs: { exerciseName: string; repRange: number; weight: number; e1rm: number; date: string }[];
+}
+export interface DeloadSuggestion {
+  exerciseName: string;
+  reason: "e1rm_drop" | "stalled";
+  detail: string;
+  currentWeightKg: number;
+  suggestedWeightKg: number;
 }
 export interface ProgressionUpdateInput {
   targetSets?: number; targetReps?: number; targetWeight?: number | null; incrementKg?: number;
