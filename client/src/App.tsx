@@ -68,8 +68,12 @@ export default function App() {
         {signedIn && (
           <span className="flex items-center gap-3 text-sm">
             <span className="hidden sm:inline text-slate-500">{user.email}</span>
-            <span className="text-xs text-slate-400">Backend: {backend}</span>
-            <button className="text-red-600 underline" onClick={onLogout}>Log out</button>
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${backend === "connected" ? "bg-md-secondary" : "bg-md-error"}`}
+              title={`Backend: ${backend}`}
+              aria-label={`Backend: ${backend}`}
+            />
+            <button className="text-md-primary font-medium relative z-10" onClick={onLogout}>Log out</button>
           </span>
         )}
       </header>
