@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ItalianLesson from "./ItalianLesson";
 import ItalianPath from "./ItalianPath";
+import ItalianReview from "./ItalianReview";
 import { getProgress } from "./italianApi";
 
 interface Props {
@@ -16,6 +17,7 @@ type TabKey = (typeof TABS)[number]["key"];
 
 export default function ItalianView({ token }: Props) {
   const [tab, setTab] = useState<TabKey>("path");
+  const [reviewing, setReviewing] = useState(false);
   const [progress, setProgress] = useState<{ streak: number; totalLessons: number } | null>(null);
 
   useEffect(() => {
@@ -39,7 +41,17 @@ export default function ItalianView({ token }: Props) {
           </button>
         ))}
       </div>
-      {tab === "path" ? (
+      {reviewing ? (
+        <ItalianReview token={token} onClose={() => setReviewing(false)} />
+      ) : (
+        <button
+          className="self-start border border-md-outline rounded-full px-4 h-10 text-sm font-medium text-md-primary"
+          onClick={() => setReviewing(true)}
+        >
+          Review
+        </button>
+      )}
+      {reviewing ? null : tab === "path" ? (
         <ItalianPath token={token} />
       ) : (
         <ItalianLesson token={token} streak={progress?.streak} totalLessons={progress?.totalLessons} />

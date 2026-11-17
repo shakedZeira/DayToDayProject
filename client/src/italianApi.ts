@@ -6,7 +6,9 @@ import type {
   ItalianCourse,
   ItalianPathProgress,
   ItalianSubmitResult,
-  ItalianAnswer
+  ItalianAnswer,
+  ItalianReviewQueue,
+  ItalianReviewGradeResult
 } from "shared";
 
 interface TranslateResult {
@@ -78,4 +80,22 @@ export async function submitPathLesson(
     body: JSON.stringify({ answers })
   });
   return json<ItalianSubmitResult>(res);
+}
+
+export async function getReviewQueue(token: string, limit = 20): Promise<ItalianReviewQueue> {
+  const res = await authedFetch(token, `/api/italian-path/review/due?limit=${limit}`);
+  return json<ItalianReviewQueue>(res);
+}
+
+export async function gradeReviewItem(
+  token: string,
+  exerciseId: string,
+  grade: number
+): Promise<ItalianReviewGradeResult> {
+  const res = await authedFetch(token, "/api/italian-path/review/grade", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ exerciseId, grade })
+  });
+  return json<ItalianReviewGradeResult>(res);
 }

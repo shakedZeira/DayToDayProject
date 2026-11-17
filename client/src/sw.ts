@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute } from "workbox-precaching";
 import { registerRoute, NavigationRoute } from "workbox-routing";
-import { NetworkFirst } from "workbox-strategies";
+import { NetworkFirst, StaleWhileRevalidate } from "workbox-strategies";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
@@ -14,6 +14,17 @@ registerRoute(
     return (await caches.match("/index.html")) || (await fetch("/index.html"));
   }, {
     denylist: [/^\/api/]
+  })
+);
+
+// Offline lesson packs: Italian course/lesson content is cached for offline study (GET only).
+registerRoute(
+  ({ url, request }) =>
+    request.method === "GET" &&
+    (url.pathname === "/api/italian-path/course" || url.pathname === "/api/italian/lesson/today"),
+  new StaleWhileRevalidate({
+    cacheName: "italian-lessons-v1",
+    plugins: [new CacheableResponsePlugin({ statuses: [200] })]
   })
 );
 
