@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Mirrors composeApp/.../ui/screen/BottomNavHost.kt: Material 3 NavigationBar with an icon, a 12sp
 // label and a primaryContainer pill behind the selected icon. NBA is Android-only (no web feature),
@@ -43,7 +43,42 @@ interface Props {
 
 export default function Nav({ view, onNavigate }: Props) {
   const [moreOpen, setMoreOpen] = useState(false);
+  const moreBtnRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLUListElement | null>(null);
   const moreActive = MORE_ITEMS.some((m) => m.key === view);
+
+  // Keyboard: focus the first item when the menu opens; Escape closes and returns focus to "More".
+  useEffect(() => {
+    if (moreOpen) menuRef.current?.querySelector<HTMLElement>("button")?.focus();
+  }, [moreOpen]);
+
+  function closeMore(restoreFocus: boolean) {
+    setMoreOpen(false);
+    if (restoreFocus) moreBtnRef.current?.focus();
+  }
+
+  function onMenuKeyDown(e: React.KeyboardEvent) {
+    const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>("button") ?? []);
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeMore(true);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      items[(i + 1) % items.length]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      items[(i - 1 + items.length) % items.length]?.focus();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      items[0]?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      items[items.length - 1]?.focus();
+    } else if (e.key === "Tab") {
+      setMoreOpen(false); // let focus move on naturally
+    }
+  }
 
   function go(key: string) {
     if (key === "more") {
@@ -58,12 +93,20 @@ export default function Nav({ view, onNavigate }: Props) {
     <>
       {moreOpen && (
         <div className="fixed inset-0 z-20" onClick={() => setMoreOpen(false)}>
-          <ul className="absolute bottom-20 right-3 bg-md-surface rounded-md3m shadow-lg border border-md-outlineVariant overflow-hidden min-w-[10rem]">
+          <ul
+            id="more-menu"
+            ref={menuRef}
+            role="menu"
+            aria-label="More"
+            onKeyDown={onMenuKeyDown}
+            className="absolute bottom-20 right-3 bg-md-surface rounded-md3m shadow-lg border border-md-outlineVariant overflow-hidden min-w-[10rem]">
             {MORE_ITEMS.map((m) => (
-              <li key={m.key}>
+              <li key={m.key} role="none">
                 <button
+                  role="menuitem"
+                  aria-current={view === m.key ? "page" : undefined}
                   className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-md-surfaceVariant ${
-                    view === m.key ? "text-md-primary" : "text-md-onSurface"
+                    view === m.key ? "text-indigo-700" : "text-md-onSurface"
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -87,7 +130,11 @@ export default function Nav({ view, onNavigate }: Props) {
             return (
               <li key={item.key} className="flex-1">
                 <button
-                  aria-current={selected ? "page" : undefined}
+                  ref={item.key === "more" ? moreBtnRef : undefined}
+                  aria-haspopup={item.key === "more" ? "menu" : undefined}
+                  aria-expanded={item.key === "more" ? moreOpen : undefined}
+                  aria-controls={item.key === "more" && moreOpen ? "more-menu" : undefined}
+                  aria-current={selected && item.key !== "more" ? "page" : undefined}
                   className="w-full flex flex-col items-center gap-1 pt-3 pb-3"
                   onClick={() => go(item.key)}
                 >
@@ -101,6 +148,7 @@ export default function Nav({ view, onNavigate }: Props) {
                     </svg>
                   </span>
                   <span
+                    lang={item.key === "cooking" ? "he" : undefined}
                     className={`text-xs leading-4 ${
                       selected ? "font-semibold text-md-onSurface" : "font-medium text-md-onSurfaceVariant"
                     }`}

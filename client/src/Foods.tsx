@@ -57,7 +57,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
       </h2>
 
       <form onSubmit={onSearch} className="flex gap-2">
-        <input
+        <input aria-label="Search foods — e.g. chicken / עוף"
           className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
           placeholder="Search foods — e.g. chicken / עוף"
           value={query}
@@ -70,7 +70,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
 
       <div className="flex gap-2 items-center">
         <label className="text-sm text-slate-600">Grams</label>
-        <input
+        <input aria-label="Grams"
           className="border border-md-outline rounded-md3xs px-3 py-2 w-24"
           type="number"
           min={1}
@@ -94,7 +94,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
                   {food.name}
                   {food.nameHe ? <span className="font-normal text-slate-500"> · {food.nameHe}</span> : null}
                 </span>
-                <span className="block text-xs text-slate-400">
+                <span className="block text-xs text-slate-500">
                   {food.caloriesPer100} kcal/100{food.servingUnit}
                 </span>
               </span>
@@ -114,7 +114,7 @@ export default function Foods({ token, meals, onChanged }: Props) {
           Today's meals
         </h3>
         {meals.length === 0 ? (
-          <div className="text-center text-slate-400 py-4 text-sm">No meals logged yet.</div>
+          <div className="text-center text-slate-500 py-4 text-sm">No meals logged yet.</div>
         ) : (
           <ul className="flex flex-col gap-2">
             {meals.map((meal) => (
@@ -126,11 +126,12 @@ export default function Foods({ token, meals, onChanged }: Props) {
                   {meal.name ?? meal.foodId}: {meal.grams}g
                 </span>
                 <button
+                  aria-label={`Delete ${meal.name ?? meal.foodId}`}
                   onClick={() => onDelete(meal.id)}
-                  className="text-slate-300 hover:text-red-500 flex-shrink-0"
+                  className="text-slate-500 hover:text-red-600 flex-shrink-0"
                   title="Delete"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>

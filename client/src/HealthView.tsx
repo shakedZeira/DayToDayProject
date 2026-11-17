@@ -65,7 +65,7 @@ export default function HealthView({ token, tab = "nutrition" }: Props) {
                 }}
                 className={`flex-1 px-3 h-12 text-sm font-medium border-b-2 transition-colors ${
                   workoutSubTab === st
-                    ? "border-md-primary text-md-primary"
+                    ? "border-md-primary text-indigo-700"
                     : "border-transparent text-md-onSurfaceVariant hover:bg-md-surfaceVariant"
                 }`}
               >

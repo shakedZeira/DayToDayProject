@@ -15,10 +15,16 @@ export default function OutboxStatus() {
     };
   }, []);
 
-  if (state.pending === 0 && state.notes.length === 0) return null;
+  const idle = state.pending === 0 && state.notes.length === 0;
 
+  // The live region stays mounted (empty) so screen readers announce changes when content appears.
   return (
-    <div role="status" className="text-xs text-slate-600 bg-amber-50 border-b border-amber-200 px-4 py-1 flex flex-wrap items-center gap-2">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
+      className={idle ? "sr-only" : "text-xs text-slate-600 bg-amber-50 border-b border-amber-200 px-4 py-1 flex flex-wrap items-center gap-2"}
+    >
       {state.pending > 0 && (
         <span>
           {state.pending} change{state.pending === 1 ? "" : "s"} waiting to sync
@@ -26,10 +32,10 @@ export default function OutboxStatus() {
         </span>
       )}
       {state.notes.map((n, i) => (
-        <span key={i} className="text-red-700">{n}</span>
+        <span key={i} role="alert" className="text-red-700">{n}</span>
       ))}
       {state.notes.length > 0 && (
-        <button className="underline" onClick={() => getOutbox().dismissNotes()}>Dismiss</button>
+        <button type="button" className="underline" onClick={() => getOutbox().dismissNotes()}>Dismiss</button>
       )}
     </div>
   );

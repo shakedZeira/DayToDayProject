@@ -16,15 +16,15 @@ export default function NutritionSummary({ summary }: Props) {
 
       <div className="flex gap-6">
         <div className="flex flex-col">
-          <span className="text-xs text-slate-400">Target</span>
+          <span className="text-xs text-slate-500">Target</span>
           <span className="text-lg font-semibold text-slate-800">{summary.target} kcal</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs text-slate-400">Consumed</span>
+          <span className="text-xs text-slate-500">Consumed</span>
           <span className="text-lg font-semibold text-slate-800">{summary.consumed} kcal</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs text-slate-400">Remaining</span>
+          <span className="text-xs text-slate-500">Remaining</span>
           <span className={`text-lg font-semibold ${over ? "text-red-600" : "text-slate-800"}`}>
             {summary.remaining} kcal
           </span>
@@ -38,14 +38,14 @@ export default function NutritionSummary({ summary }: Props) {
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           {pct}% of daily target
         </p>
       </div>
 
       <ul className="flex flex-col gap-2">
         {summary.meals.length === 0 ? (
-          <li className="text-sm text-slate-400">No meals logged for this day.</li>
+          <li className="text-sm text-slate-500">No meals logged for this day.</li>
         ) : (
           summary.meals.map((meal) => (
             <li
@@ -55,7 +55,7 @@ export default function NutritionSummary({ summary }: Props) {
               <span className="text-slate-700">
                 {meal.foodName} · {meal.servings !== undefined ? `${meal.servings} serving${meal.servings === 1 ? "" : "s"}` : `${meal.grams}g`}
               </span>
-              <span className="text-slate-400">
+              <span className="text-slate-500">
                 {meal.calories} kcal
               </span>
             </li>

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useDialog } from "./useDialog";
 import { getExerciseArchetype } from "./exerciseDemos";
 import ExerciseSVG from "./ExerciseSVG";
 
@@ -15,28 +16,12 @@ interface Props {
 }
 
 export default function ExerciseDemoModal({ exercise, onClose }: Props) {
-  const panelRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useDialog<HTMLDivElement>(exercise !== null, onClose);
   const [watch, setWatch] = useState(false);
 
   useEffect(() => {
-    if (!exercise) return;
-    const prev = document.activeElement as HTMLElement | null;
-    setWatch(false);
-    const raf = requestAnimationFrame(() => panelRef.current?.focus());
-    return () => {
-      cancelAnimationFrame(raf);
-      prev?.focus?.();
-    };
+    if (exercise) setWatch(false);
   }, [exercise]);
-
-  useEffect(() => {
-    if (!exercise) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [exercise, onClose]);
 
   if (!exercise) return null;
 
@@ -81,9 +66,9 @@ export default function ExerciseDemoModal({ exercise, onClose }: Props) {
           <button
             onClick={onClose}
             aria-label="Close demo"
-            className="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
           >
-            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 5l10 10M15 5L5 15" strokeLinecap="round" />
             </svg>
           </button>
@@ -91,7 +76,7 @@ export default function ExerciseDemoModal({ exercise, onClose }: Props) {
 
         <div className="flex flex-col items-center gap-1 rounded border border-slate-100 bg-slate-50/70 py-2">
           <ExerciseSVG archetype={archetype} />
-          <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
             Animated demonstration
           </span>
         </div>
@@ -116,7 +101,7 @@ export default function ExerciseDemoModal({ exercise, onClose }: Props) {
               onClick={() => setWatch(true)}
               className="flex items-center justify-center gap-2 rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
             >
-              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
+              <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
                 <path d="M6 4l10 6-10 6V4z" />
               </svg>
               Watch demo video

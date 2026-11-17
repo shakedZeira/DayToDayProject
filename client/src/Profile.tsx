@@ -79,7 +79,7 @@ export default function Profile({ token }: Props) {
 
   if (loading) {
     return (
-      <div className="w-full max-w-2xl text-center text-slate-400 py-8">Loading profile…</div>
+      <div className="w-full max-w-2xl text-center text-slate-500 py-8">Loading profile…</div>
     );
   }
 
@@ -94,7 +94,7 @@ export default function Profile({ token }: Props) {
           <div className="flex gap-2">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-slate-500">Height (cm) *</label>
-              <input
+              <input aria-label="Height in cm"
                 className="border border-md-outline rounded-md3xs px-3 py-2"
                 type="number"
                 min={1}
@@ -107,7 +107,7 @@ export default function Profile({ token }: Props) {
             </div>
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-slate-500">Weight (kg) *</label>
-              <input
+              <input aria-label="Weight in kg"
                 className="border border-md-outline rounded-md3xs px-3 py-2"
                 type="number"
                 min={1}
@@ -123,7 +123,7 @@ export default function Profile({ token }: Props) {
           <div className="flex gap-2">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-slate-500">Age</label>
-              <input
+              <input aria-label="Age"
                 className="border border-md-outline rounded-md3xs px-3 py-2"
                 type="number"
                 min={1}
@@ -134,7 +134,7 @@ export default function Profile({ token }: Props) {
             </div>
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-slate-500">Sex</label>
-              <select
+              <select aria-label="Sex"
                 className="border border-md-outline rounded-md3xs px-3 py-2"
                 value={sex}
                 onChange={(e) => setSex(e.target.value)}
@@ -147,7 +147,7 @@ export default function Profile({ token }: Props) {
 
           <div className="flex flex-col gap-1">
             <label className="text-xs text-slate-500">Activity Level</label>
-            <select
+            <select aria-label="Activity level"
               className="border border-md-outline rounded-md3xs px-3 py-2"
               value={activity}
               onChange={(e) => setActivity(e.target.value)}
@@ -196,24 +196,24 @@ export default function Profile({ token }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col">
-              <span className="text-xs text-slate-400">BMR (resting)</span>
+              <span className="text-xs text-slate-500">BMR (resting)</span>
               <span className="text-lg font-semibold text-slate-800">{recommendation.bmr} kcal</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs text-slate-400">TDEE (maintenance)</span>
+              <span className="text-xs text-slate-500">TDEE (maintenance)</span>
               <span className="text-lg font-semibold text-slate-800">{recommendation.tdee} kcal</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs text-slate-400">Weight Loss (−500)</span>
+              <span className="text-xs text-slate-500">Weight Loss (−500)</span>
               <span className="text-lg font-semibold text-slate-800">{recommendation.weightLoss} kcal</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs text-slate-400">Weight Gain (+300)</span>
+              <span className="text-xs text-slate-500">Weight Gain (+300)</span>
               <span className="text-lg font-semibold text-slate-800">{recommendation.weightGain} kcal</span>
             </div>
           </div>
 
-          <div className="flex flex-col gap-1 text-xs text-slate-400">
+          <div className="flex flex-col gap-1 text-xs text-slate-500">
             <p>Method: {recommendation.method}</p>
             <p className="italic">{recommendation.disclaimer}</p>
           </div>

@@ -12,7 +12,7 @@ async function getWeeklyReview(token: string): Promise<WeeklyReviewResponse> {
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-2">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">{title}</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
       {children}
     </section>
   );
@@ -27,7 +27,7 @@ export default function WeeklyReview({ token }: { token: string }) {
   }, [token]);
 
   if (error) return <p className="text-red-600">{error}</p>;
-  if (!review) return <p className="text-slate-400">Loading your week…</p>;
+  if (!review) return <p className="text-slate-500">Loading your week…</p>;
 
   const { tasks, workouts, nutrition, italian, personalRecords } = review;
   const max = Math.max(1, ...tasks.completedByDay);
@@ -36,7 +36,7 @@ export default function WeeklyReview({ token }: { token: string }) {
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-2xl font-bold text-slate-800">Weekly review</h2>
-        <p className="text-sm text-slate-400">{review.from} – {review.to}</p>
+        <p className="text-sm text-slate-500">{review.from} – {review.to}</p>
       </div>
 
       <Card title="Tasks">
@@ -50,12 +50,12 @@ export default function WeeklyReview({ token }: { token: string }) {
 
       <Card title="Workouts">
         <p className="text-slate-700">{workouts.count} of {workouts.target} target</p>
-        {workouts.days.length > 0 && <p className="text-xs text-slate-400">{workouts.days.join(", ")}</p>}
+        {workouts.days.length > 0 && <p className="text-xs text-slate-500">{workouts.days.join(", ")}</p>}
       </Card>
 
       <Card title="Calories">
         {nutrition.daysLogged === 0 ? (
-          <p className="text-slate-400">Nothing logged this week.</p>
+          <p className="text-slate-500">Nothing logged this week.</p>
         ) : (
           <p className="text-slate-700">
             avg {nutrition.avgCalories} / {nutrition.targetCalories} kcal ({nutrition.diffFromTarget > 0 ? "+" : ""}
@@ -72,7 +72,7 @@ export default function WeeklyReview({ token }: { token: string }) {
 
       <Card title="Personal records">
         {personalRecords.length === 0 ? (
-          <p className="text-slate-400">No new PRs this week.</p>
+          <p className="text-slate-500">No new PRs this week.</p>
         ) : (
           <ul className="text-slate-700 text-sm">
             {personalRecords.map((p) => (

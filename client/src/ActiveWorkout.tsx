@@ -9,6 +9,7 @@ import {
 } from "./workoutApi";
 import { getExercises } from "./exerciseApi";
 import type { ExerciseRecord } from "shared";
+import { useDialog } from "./useDialog";
 import ExerciseDemoModal, { type DemoExercise } from "./ExerciseDemoModal";
 
 export interface ActiveInitialExercise {
@@ -106,6 +107,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
   const [restRemaining, setRestRemaining] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
+  const finishRef = useDialog<HTMLDivElement>(finishing, () => setFinishing(false));
   const [loading, setLoading] = useState(true);
   const [demoExercise, setDemoExercise] = useState<DemoExercise | null>(null);
   const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -357,7 +359,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
 
   if (loading) {
     return (
-      <div className="w-full max-w-2xl text-center text-slate-400 py-8">
+      <div className="w-full max-w-2xl text-center text-slate-500 py-8">
         Starting workout…
       </div>
     );
@@ -381,7 +383,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
 
       <div className="flex items-center gap-2 text-sm text-slate-600">
         <label>Rest timer:</label>
-        <input
+        <input aria-label="Rest timer seconds"
           type="number"
           min={10}
           step={15}
@@ -406,12 +408,12 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
               Demo
             </button>
             {ex.targetSets != null && ex.targetReps != null && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-500">
                 Target: {ex.targetSets} × {ex.targetReps}
               </span>
             )}
             {ex.prevWeight != null && ex.prevReps != null && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-500">
                 Previous: {ex.prevWeight}kg × {ex.prevReps}
               </span>
             )}
@@ -419,17 +421,17 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
 
           {ex.sets.map((s, sIdx) => (
             <div key={sIdx} className="flex items-center gap-1 flex-wrap">
-              <span className="text-xs text-slate-400 w-6 text-right">
+              <span className="text-xs text-slate-500 w-6 text-right">
                 {sIdx + 1}
               </span>
               {s.logged ? (
-                <span className="text-sm text-green-600 font-medium">
+                <span className="text-sm text-green-700 font-medium">
                   ✓ {s.weightKg}kg × {s.reps}
                   {s.setType !== "working" ? ` (${s.setType})` : ""}
                 </span>
               ) : (
                 <>
-                  <input
+                  <input aria-label="Weight in kg"
                     type="number"
                     min={0}
                     step="any"
@@ -438,7 +440,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
                     onChange={(e) => updateSetField(exIdx, sIdx, "weightKg", e.target.value)}
                     className="w-20 border border-md-outline rounded-md3xs px-2 py-1.5 text-sm"
                   />
-                  <input
+                  <input aria-label="Repetitions"
                     type="number"
                     min={1}
                     placeholder={ex.prevReps != null ? String(ex.prevReps) : "reps"}
@@ -446,7 +448,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
                     onChange={(e) => updateSetField(exIdx, sIdx, "reps", e.target.value)}
                     className="w-16 border border-md-outline rounded-md3xs px-2 py-1.5 text-sm"
                   />
-                  <select
+                  <select aria-label="Set type"
                     value={s.setType}
                     onChange={(e) => updateSetType(exIdx, sIdx, e.target.value)}
                     className="border border-md-outline rounded-md3xs px-1 py-1.5 text-xs"
@@ -455,6 +457,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
                     <option value="warmup">Warm-up</option>
                   </select>
                   <button
+                    aria-label={`Log set ${sIdx + 1}`}
                     onClick={() => logSet(exIdx, sIdx)}
                     className="bg-indigo-600 text-white rounded-full px-3 py-1.5 text-sm font-medium hover:bg-indigo-700"
                   >
@@ -482,7 +485,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setRestRemaining(0)}
-              className="text-sm text-slate-300 underline"
+              className="text-sm text-slate-500 underline"
             >
               Skip
             </button>
@@ -492,7 +495,7 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
 
       {addingEx ? (
         <div className="md-card p-3 flex flex-col gap-2">
-          <input
+          <input aria-label="Search exercises"
             type="text"
             placeholder="Search exercises…"
             value={searchQuery}
@@ -509,13 +512,13 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
                   className="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
                 >
                   {ex.name}{" "}
-                  <span className="text-xs text-slate-400">{ex.muscleGroup}</span>
+                  <span className="text-xs text-slate-500">{ex.muscleGroup}</span>
                 </button>
               ))}
             </div>
           )}
           <div className="flex gap-2">
-            <input
+            <input aria-label="Or type exercise name"
               type="text"
               placeholder="Or type exercise name…"
               value={freeTextName}
@@ -552,9 +555,17 @@ export default function ActiveWorkout({ token, initial, onFinish }: Props) {
       )}
 
       {finishing && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-md3m p-6 flex flex-col gap-4 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-slate-800">Finish workout?</h3>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setFinishing(false)}>
+          <div
+            ref={finishRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="finish-workout-title"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-md3m p-6 flex flex-col gap-4 max-w-sm w-full"
+          >
+            <h3 id="finish-workout-title" className="text-lg font-bold text-slate-800">Finish workout?</h3>
             <p className="text-sm text-slate-600">
               {exercises.length} exercise{exercises.length !== 1 ? "s" : ""},{" "}
               {exercises.reduce((sum, ex) => sum + ex.sets.filter((s) => s.logged).length, 0)} sets logged.

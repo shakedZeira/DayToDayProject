@@ -29,12 +29,12 @@ export default function Login({ onAuthed }: Props) {
       <h2 className="text-xl font-semibold text-slate-800">
         {mode === "login" ? "Log in" : "Create account"}
       </h2>
-      <input
+      <input aria-label="Email" autoComplete="email"
         className="border rounded px-3 py-2"
         type="email" placeholder="email" value={email}
         onChange={(e) => setEmail(e.target.value)} required
       />
-      <input
+      <input aria-label="Password (min 8 characters)" autoComplete="current-password"
         className="border rounded px-3 py-2"
         type="password" placeholder="password (min 8)" value={password}
         onChange={(e) => setPassword(e.target.value)} required minLength={8}
@@ -46,7 +46,7 @@ export default function Login({ onAuthed }: Props) {
         />
         Remember me
       </label>
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
       <button className="bg-indigo-600 text-white rounded py-2">{mode === "login" ? "Log in" : "Register"}</button>
       <button type="button" className="text-sm text-indigo-600 underline" onClick={() => setMode(mode === "login" ? "register" : "login")}>
         {mode === "login" ? "Need an account? Register" : "Have an account? Log in"}

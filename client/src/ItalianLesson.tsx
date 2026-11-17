@@ -110,7 +110,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
   }
 
   if (error) return <p className="text-red-600 text-sm">{error}</p>;
-  if (!lesson) return <p className="text-slate-400 text-sm">Loading today's lesson…</p>;
+  if (!lesson) return <p className="text-slate-500 text-sm">Loading today's lesson…</p>;
 
   return (
     <section className="w-full max-w-2xl flex flex-col gap-5">
@@ -120,7 +120,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
       </header>
 
       {streak !== undefined && totalLessons !== undefined && (
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           {streak} day streak · {totalLessons} lessons completed
         </p>
       )}
@@ -170,7 +170,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
           {practice.status === "listening" && (
             <p className="text-sm text-indigo-600">Listening… "{practice.interim}"</p>
           )}
-          {practice.status === "submitting" && <p className="text-sm text-slate-400">Checking…</p>}
+          {practice.status === "submitting" && <p className="text-sm text-slate-500">Checking…</p>}
           {practice.status === "done" && (
             <div className="flex flex-col gap-2 text-sm">
               <p className={practice.correction.isCorrect ? "text-green-700" : "text-red-700"}>
@@ -219,12 +219,12 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
                 >
                   {speechSupported ? "Speak Italian" : "Mic unavailable"}
                 </button>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-500">
                   {speechSupported ? "uses your microphone (it-IT)" : "microphone unsupported — type below"}
                 </span>
               </div>
               <div className="flex gap-2">
-                <input
+                <input aria-label="…or type the Italian here"
                   className="border border-md-outline rounded-md3xs px-3 py-1 flex-1"
                   placeholder="…or type the Italian here"
                   value={attemptText}
@@ -267,7 +267,7 @@ export default function ItalianLesson({ token, streak, totalLessons }: Props) {
           >
             {tutorListening ? "Listening…" : "Speak English"}
           </button>
-          <input
+          <input aria-label="…or type an English phrase"
             className="border border-md-outline rounded-md3xs px-3 py-1 flex-1 text-sm"
             placeholder="…or type an English phrase"
             value={tutorInput}

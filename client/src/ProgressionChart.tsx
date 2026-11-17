@@ -19,7 +19,7 @@ function formatDate(iso: string): string {
 export default function ProgressionChart({ points }: Props) {
   if (points.length < 2) {
     return (
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-slate-500">
         Log at least 2 sets to see your progression chart.
       </p>
     );
@@ -44,7 +44,7 @@ export default function ProgressionChart({ points }: Props) {
   const linePath = coords.map((c, i) => `${i === 0 ? "M" : "L"} ${c.x} ${c.y}`).join(" ");
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Progression chart: max weight over time">
       <polyline
         fill="none"
         stroke="#4f46e5"

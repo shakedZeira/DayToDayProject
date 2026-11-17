@@ -242,14 +242,14 @@ export default function Plans({ token }: { token: string }) {
               Cancel
             </button>
           </div>
-          <input
+          <input aria-label="Workout name"
             type="text"
             placeholder="Workout name"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             className="w-full rounded-md3xs border border-md-outline border-md-outline px-3 py-2 text-sm"
           />
-          <input
+          <input aria-label="Description (optional)"
             type="text"
             placeholder="Description (optional)"
             value={form.description}
@@ -262,11 +262,11 @@ export default function Plans({ token }: { token: string }) {
               {form.exercises.map((re, idx) => (
                 <div key={idx} className="flex items-center gap-2 text-sm">
                   <div className="flex flex-col gap-0.5 mr-1">
-                    <button onClick={() => moveExercise(idx, -1)} className="text-slate-300 hover:text-slate-600 leading-none" title="Move up">&#9650;</button>
-                    <button onClick={() => moveExercise(idx, 1)} className="text-slate-300 hover:text-slate-600 leading-none" title="Move down">&#9660;</button>
+                    <button aria-label={`Move ${re.exerciseName} up`} onClick={() => moveExercise(idx, -1)} className="text-slate-500 hover:text-slate-600 leading-none" title="Move up">&#9650;</button>
+                    <button aria-label={`Move ${re.exerciseName} down`} onClick={() => moveExercise(idx, 1)} className="text-slate-500 hover:text-slate-600 leading-none" title="Move down">&#9660;</button>
                   </div>
                   <span className="w-36 truncate text-slate-600 font-medium">{re.exerciseName}</span>
-                  <input
+                  <input aria-label="Target sets"
                     type="number"
                     value={re.targetSets}
                     onChange={(e) => updateExerciseField(idx, "targetSets", parseInt(e.target.value) || 1)}
@@ -274,8 +274,8 @@ export default function Plans({ token }: { token: string }) {
                     min={1}
                     title="Sets"
                   />
-                  <span className="text-xs text-slate-400">×</span>
-                  <input
+                  <span className="text-xs text-slate-500">×</span>
+                  <input aria-label="Target reps"
                     type="number"
                     value={re.targetReps}
                     onChange={(e) => updateExerciseField(idx, "targetReps", parseInt(e.target.value) || 1)}
@@ -290,8 +290,9 @@ export default function Plans({ token }: { token: string }) {
                     Demo
                   </button>
                   <button
+                    aria-label={`Remove ${re.exerciseName}`}
                     onClick={() => removeExercise(idx)}
-                    className="ml-auto text-xs text-red-400 hover:text-red-600"
+                    className="ml-auto text-xs text-red-600 hover:text-red-600"
                   >
                     ×
                   </button>
@@ -302,7 +303,7 @@ export default function Plans({ token }: { token: string }) {
 
           {searchOpen ? (
             <div className="space-y-2 rounded-md3xs border border-md-outline border-slate-200 bg-slate-50 p-3">
-              <input
+              <input aria-label="Search exercises"
                 type="text"
                 placeholder="Search exercises..."
                 value={searchQuery}
@@ -319,7 +320,7 @@ export default function Plans({ token }: { token: string }) {
                       className="flex w-full items-center justify-between px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
                     >
                       <span>{ex.name}</span>
-                      <span className="text-xs text-slate-400">{ex.muscleGroup}</span>
+                      <span className="text-xs text-slate-500">{ex.muscleGroup}</span>
                     </button>
                   ))}
                 </div>
@@ -371,7 +372,7 @@ export default function Plans({ token }: { token: string }) {
                 <div className="min-w-0">
                   <div className="font-semibold text-slate-800">{r.name}</div>
                   {r.description && <div className="text-xs text-slate-500">{r.description}</div>}
-                  <div className="mt-0.5 text-xs text-slate-400">
+                  <div className="mt-0.5 text-xs text-slate-500">
                     {exCount} exercise{exCount !== 1 ? "s" : ""}
                     {day && (
                       <span className="ml-2">

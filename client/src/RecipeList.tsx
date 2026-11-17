@@ -48,7 +48,7 @@ export default function RecipeList({
 
   if (recipes.length === 0) {
     return (
-      <div className="bg-md-surfaceVariant rounded-md3m flex flex-col items-center p-6 text-center" dir="rtl">
+      <div className="bg-md-surfaceVariant rounded-md3m flex flex-col items-center p-6 text-center" dir="rtl" lang="he">
         <svg viewBox="0 0 24 24" className="w-12 h-12 fill-md-onSurfaceVariant" aria-hidden><path d="M11.5 2C11.5 2 5 8.5 5 14a7 7 0 0014 0c0-2.4-1.1-4.6-2.4-6.3-.4 1.2-1.3 2.3-2.2 2.3C13 10 13 7 11.5 2z" /></svg>
         <p className="md-title-medium text-md-onSurfaceVariant mt-3">אין מתכונים זמינים</p>
         <p className="md-body-medium text-md-onSurfaceVariant mt-2">נסה סינון אחר</p>
@@ -57,7 +57,7 @@ export default function RecipeList({
   }
 
   return (
-    <div className="flex flex-col gap-3" dir="rtl">
+    <div className="flex flex-col gap-3" dir="rtl" lang="he">
       {recipes.map((recipe) => (
         <div
           key={recipe.id}
@@ -69,7 +69,7 @@ export default function RecipeList({
               {recipe.imageUrl ? (
                 <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
+                <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">
                   אין תמונה
                 </div>
               )}
@@ -85,13 +85,15 @@ export default function RecipeList({
                 {recipe.title}
               </h3>
               <button
+                aria-pressed={recipe.isFavorited}
+                aria-label={recipe.isFavorited ? "הסר ממועדפים" : "הוסף למועדפים"}
                 onClick={(e) => handleToggle(recipe, e)}
                 className={`p-1 rounded-full transition-colors ${
-                  recipe.isFavorited ? "bg-yellow-100 text-yellow-600" : "text-slate-400 hover:bg-slate-100"
+                  recipe.isFavorited ? "bg-yellow-100 text-yellow-600" : "text-slate-500 hover:bg-slate-100"
                 }`}
                 title={recipe.isFavorited ? "הסר ממועדפים" : "הוסף למועדפים"}
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 5c0 1 1 2 2 2v3l3-3 3 3v-3c1 0 2-1 2-2 0-1-1-2-2-2s-2 1-2 2V7l-3-3-3 3V7c-1-1-2-1-2-2s-1-1-2-2" />
                 </svg>
               </button>
@@ -104,7 +106,7 @@ export default function RecipeList({
             <div className="mt-2 flex items-center justify-between gap-2">
               <div className="flex gap-1.5 text-xs text-slate-500">
                 <span className="flex items-center gap-0.5">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {Math.round(recipe.calories)} קלוריות

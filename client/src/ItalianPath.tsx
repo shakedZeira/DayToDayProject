@@ -77,7 +77,7 @@ export default function ItalianPath({ token }: Props) {
           <b>{completed.size}</b>/{progress.totalLessons} lessons
         </span>
         {progress.reviewDue.length > 0 && (
-          <span className="text-amber-600">
+          <span className="text-amber-700">
             {progress.reviewDue.length} mistake{progress.reviewDue.length > 1 ? "s" : ""} to review
           </span>
         )}
@@ -131,7 +131,7 @@ export default function ItalianPath({ token }: Props) {
                           ? "border-[#FF9600] bg-[#FF9600]/10"
                           : status === "unlocked"
                             ? "border-[#58CC02] bg-[#58CC02]/10"
-                            : "border-[#4B4B55]/40 bg-gray-100 text-gray-400"
+                            : "border-[#4B4B55]/40 bg-gray-100 text-slate-500"
                     }`}
                   >
                     <span className="text-2xl">

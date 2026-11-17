@@ -16,7 +16,7 @@ function StatCard({ title, value, hint, color, onClick }: { title: string; value
     <div className="flex flex-col items-center p-4 text-center">
       <span className="md-headline-medium" style={{ color }}>{value}</span>
       <span className="md-body-small text-md-onSurfaceVariant">{title}</span>
-      {hint && <span className="md-label-small text-md-primary mt-1">{hint}</span>}
+      {hint && <span className="md-label-small text-indigo-700 mt-1">{hint}</span>}
     </div>
   );
   return onClick ? (
@@ -103,7 +103,7 @@ export default function DigestView({ token, onNavigate }: Props) {
           <span className="block md-title-medium font-bold text-md-onSurface">Workout Progress &amp; History</span>
           <span className="block md-body-small text-md-onSurfaceVariant">View volume stats, personal bests &amp; workout trends</span>
         </span>
-        <svg viewBox="0 0 24 24" className="w-6 h-6 fill-md-onSurfaceVariant" aria-label="Open Workout Progress"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" /></svg>
+        <svg viewBox="0 0 24 24" className="w-6 h-6 fill-md-onSurfaceVariant" aria-hidden><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" /></svg>
       </button>
 
       <h3 className="md-title-large text-md-onSurface">Quick Actions</h3>

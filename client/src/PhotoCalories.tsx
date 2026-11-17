@@ -32,7 +32,7 @@ export default function PhotoCalories({ token }: Props) {
         Photo Calories
       </h2>
       <div className="flex gap-2 items-center">
-        <input
+        <input aria-label="Meal photo"
           type="file"
           accept="image/*"
           className="flex-1 text-sm text-slate-600"
@@ -53,7 +53,7 @@ export default function PhotoCalories({ token }: Props) {
         <div className="flex flex-col gap-2">
           <p className="text-slate-800 font-semibold">
             {estimate.totalCalories} kcal{" "}
-            <span className="text-sm font-normal text-slate-400">(rough)</span>
+            <span className="text-sm font-normal text-slate-500">(rough)</span>
           </p>
           <ul className="flex flex-col gap-1">
             {estimate.items.map((item, i) => (
@@ -62,7 +62,7 @@ export default function PhotoCalories({ token }: Props) {
               </li>
             ))}
           </ul>
-          <p className="text-xs text-slate-400 italic">{estimate.disclaimer}</p>
+          <p className="text-xs text-slate-500 italic">{estimate.disclaimer}</p>
         </div>
       )}
     </div>

@@ -102,7 +102,7 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
         <span>
           {lesson.title} · {idx + 1}/{lesson.exercises.length}
         </span>
-        <span className="text-red-500">{"❤️".repeat(Math.max(hearts, 0))}</span>
+        <span className="text-red-600">{"❤️".repeat(Math.max(hearts, 0))}</span>
       </div>
 
       <div className="h-2 bg-gray-100 rounded">

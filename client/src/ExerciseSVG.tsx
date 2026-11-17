@@ -28,6 +28,8 @@ function T({
   keySplines = "0.45 0 0.55 1;0.45 0 0.55 1",
   calcMode = "spline",
 }: TProps) {
+  // prefers-reduced-motion: render the static pose instead of the looping SMIL animation.
+  if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return null;
   return (
     <animateTransform
       attributeName="transform"

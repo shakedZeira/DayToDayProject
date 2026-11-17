@@ -48,7 +48,7 @@ function VolumeBars({
 }) {
   if (data.length === 0) {
     return (
-      <p className="text-sm text-slate-400">No working volume logged yet.</p>
+      <p className="text-sm text-slate-500">No working volume logged yet.</p>
     );
   }
   const label = (d: (typeof data)[number]) =>
@@ -125,7 +125,7 @@ export default function Analytics({ token, refreshKey }: Props) {
 
   if (loading) {
     return (
-      <div className="w-full max-w-2xl text-center text-slate-400 py-8">Loading analytics…</div>
+      <div className="w-full max-w-2xl text-center text-slate-500 py-8">Loading analytics…</div>
     );
   }
 
@@ -153,7 +153,7 @@ export default function Analytics({ token, refreshKey }: Props) {
           Progress targets
         </h3>
         {progressions.length === 0 ? (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-500">
             Log working sets to start tracking targets here.
           </p>
         ) : (
@@ -188,23 +188,23 @@ export default function Analytics({ token, refreshKey }: Props) {
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-2 items-center">
                       <span className="text-slate-600">{p.exerciseName}</span>
-                      <input
+                      <input aria-label="Target sets"
                         className="border border-md-outline rounded-md3xs px-2 py-1 w-14"
                         type="number"
                         min={1}
                         value={draft.targetSets}
                         onChange={(e) => setDraft({ ...draft, targetSets: e.target.value })}
                       />
-                      <span className="text-slate-400">×</span>
-                      <input
+                      <span className="text-slate-500">×</span>
+                      <input aria-label="Target reps"
                         className="border border-md-outline rounded-md3xs px-2 py-1 w-14"
                         type="number"
                         min={1}
                         value={draft.targetReps}
                         onChange={(e) => setDraft({ ...draft, targetReps: e.target.value })}
                       />
-                      <span className="text-slate-400">kg</span>
-                      <input
+                      <span className="text-slate-500">kg</span>
+                      <input aria-label="weight"
                         className="border border-md-outline rounded-md3xs px-2 py-1 w-16"
                         type="number"
                         min={0}
@@ -248,7 +248,7 @@ export default function Analytics({ token, refreshKey }: Props) {
                 className="border border-md-outline rounded-md3xs px-3 py-2 bg-slate-50 text-sm text-slate-700"
               >
                 {pr.exerciseName} — {pr.repRange}×{pr.weight}kg{" "}
-                <span className="text-slate-400">(e1rm ~{Math.round(pr.e1rm)}kg)</span>{" "}
+                <span className="text-slate-500">(e1rm ~{Math.round(pr.e1rm)}kg)</span>{" "}
                 {formatDate(pr.date)}
               </li>
             ))}

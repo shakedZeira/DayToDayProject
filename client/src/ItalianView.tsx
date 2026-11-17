@@ -32,7 +32,7 @@ export default function ItalianView({ token }: Props) {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex-1 px-4 h-12 text-sm font-medium border-b-2 ${
-              tab === t.key ? "border-md-primary text-md-primary" : "border-transparent text-md-onSurfaceVariant hover:bg-md-surfaceVariant"
+              tab === t.key ? "border-md-primary text-indigo-700" : "border-transparent text-md-onSurfaceVariant hover:bg-md-surfaceVariant"
             }`}
           >
             {t.label}

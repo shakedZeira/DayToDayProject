@@ -116,7 +116,7 @@ export default function Workouts({ token }: Props) {
 
   if (loading) {
     return (
-      <div className="w-full max-w-2xl text-center text-slate-400 py-8">Loading workouts…</div>
+      <div className="w-full max-w-2xl text-center text-slate-500 py-8">Loading workouts…</div>
     );
   }
 
@@ -141,7 +141,7 @@ export default function Workouts({ token }: Props) {
       <h3 className="text-xs font-semibold text-slate-500">
         Past Workouts
       </h3>
-      <select
+      <select aria-label="Past workouts"
         className="border border-md-outline rounded-md3xs px-3 py-2"
         value={selectedId}
         onChange={(e) => setSelectedId(e.target.value)}
@@ -156,14 +156,14 @@ export default function Workouts({ token }: Props) {
       {selected && (
         <>
           <form onSubmit={onLogSet} className="flex gap-2">
-            <input
+            <input aria-label="Exercise"
               className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
               placeholder="Exercise"
               value={exercise}
               onChange={(e) => setExercise(e.target.value)}
               required
             />
-            <input
+            <input aria-label="kg"
               className="border border-md-outline rounded-md3xs px-3 py-2 w-20"
               type="number"
               min={0}
@@ -173,7 +173,7 @@ export default function Workouts({ token }: Props) {
               onChange={(e) => setWeightKg(e.target.value)}
               required
             />
-            <input
+            <input aria-label="reps"
               className="border border-md-outline rounded-md3xs px-3 py-2 w-20"
               type="number"
               min={1}
@@ -188,7 +188,7 @@ export default function Workouts({ token }: Props) {
           </form>
 
           {selected.sets.length === 0 ? (
-            <div className="text-center text-slate-400 py-4">No sets logged yet.</div>
+            <div className="text-center text-slate-500 py-4">No sets logged yet.</div>
           ) : (
             <ul className="flex flex-col gap-1">
               {selected.sets.map((s, setIdx) => {

@@ -80,7 +80,7 @@ export default function ShoppingList({ token, recipes, onClose }: Props) {
   const checkedCount = items.filter((i) => i.checked).length;
 
   return (
-    <div className="border border-slate-200 rounded-xl bg-white p-4 max-w-2xl" dir="rtl">
+    <div className="border border-slate-200 rounded-xl bg-white p-4 max-w-2xl" dir="rtl" lang="he">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-slate-800">רשימת קניות</h2>
         <button onClick={onClose} className="text-slate-500 hover:text-slate-700 font-medium">
@@ -92,7 +92,7 @@ export default function ShoppingList({ token, recipes, onClose }: Props) {
 
       {/* Add a recipe's ingredients */}
       <section className="mb-4 border border-slate-200 rounded-lg p-3">
-        <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">הוספת מתכון לרשימה</label>
+        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">הוספת מתכון לרשימה</label>
         <div className="flex gap-2 mt-2">
           <select
             value={recipeId}
@@ -151,15 +151,15 @@ export default function ShoppingList({ token, recipes, onClose }: Props) {
             aria-label="פריט חדש"
             className="flex-1 min-w-0 border border-slate-300 rounded px-2 py-1 text-sm"
           />
-          <button type="button" onClick={addManual} className="px-3 py-1 text-sm rounded border border-slate-300">
+          <button type="button" aria-label="הוסף פריט" onClick={addManual} className="px-3 py-1 text-sm rounded border border-slate-300">
             +
           </button>
         </div>
         <div className="divide-y divide-slate-100">
           {loading ? (
-            <div className="px-3 py-6 text-center text-slate-400 text-sm">טוען...</div>
+            <div className="px-3 py-6 text-center text-slate-500 text-sm">טוען...</div>
           ) : items.length === 0 ? (
-            <div className="px-3 py-6 text-center text-slate-400 text-sm">הרשימה ריקה. הוסף מתכון או פריט.</div>
+            <div className="px-3 py-6 text-center text-slate-500 text-sm">הרשימה ריקה. הוסף מתכון או פריט.</div>
           ) : (
             items.map((item) => (
               <div key={item.id} className={`px-3 py-2 flex items-center gap-2 ${item.checked ? "bg-green-50" : ""}`}>
@@ -168,10 +168,10 @@ export default function ShoppingList({ token, recipes, onClose }: Props) {
                   checked={item.checked}
                   onChange={() => toggle(item)}
                   aria-label={item.name}
-                  className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                  className="w-4 h-4 rounded border-slate-300 text-green-700 focus:ring-green-500"
                 />
                 <div className="flex-1 min-w-0">
-                  <span className={`block text-sm ${item.checked ? "line-through text-slate-400" : "text-slate-700"}`}>
+                  <span className={`block text-sm ${item.checked ? "line-through text-slate-500" : "text-slate-700"}`}>
                     {item.name}
                   </span>
                   <span className="text-xs text-slate-500">
@@ -182,7 +182,7 @@ export default function ShoppingList({ token, recipes, onClose }: Props) {
                   type="button"
                   onClick={() => remove(item)}
                   aria-label="מחיקה"
-                  className="text-slate-400 hover:text-red-600 text-sm px-1"
+                  className="text-slate-500 hover:text-red-600 text-sm px-1"
                 >
                   ✕
                 </button>

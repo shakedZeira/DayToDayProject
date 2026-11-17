@@ -4,11 +4,13 @@
 // scales; every screen picks up the Android look without per-file edits.
 const blue = {
   50: "#EFF6FF", 100: "#DBEAFE", 200: "#BFDBFE", 300: "#93C5FD", 400: "#60A5FA",
-  500: "#3B82F6", 600: "#3B82F6", 700: "#2563EB", 800: "#1E3A5F", 900: "#1E3A5F", 950: "#172554"
+  500: "#2563EB", 600: "#1D4ED8", 700: "#1E40AF", 800: "#1E3A5F", 900: "#1E3A5F", 950: "#172554"
 };
+// A11y (WCAG AA): blue 500-700 and gray 500 are darkened from the Android values so text and white-on-blue
+// buttons reach 4.5:1. md.primary itself (rings, fills, progress) keeps the Android #3B82F6.
 const gray = {
   50: "#F9FAFB", 100: "#F3F4F6", 200: "#E5E7EB", 300: "#D1D5DB", 400: "#9CA3AF",
-  500: "#6B7280", 600: "#4B5563", 700: "#374151", 800: "#1F2937", 900: "#111827", 950: "#030712"
+  500: "#5B6472", 600: "#4B5563", 700: "#374151", 800: "#1F2937", 900: "#111827", 950: "#030712"
 };
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],

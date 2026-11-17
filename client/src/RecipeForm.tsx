@@ -26,11 +26,11 @@ function NumField({
   onChange: (n: number) => void;
 }) {
   return (
-    <div dir="rtl">
-      <label className="block text-xs font-semibold text-slate-400 mb-1">
+    <div dir="rtl" lang="he">
+      <label className="block text-xs font-semibold text-slate-500 mb-1">
         {label}
       </label>
-      <input
+      <input aria-label={label}
         className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
         type="number"
         min="0"
@@ -190,7 +190,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
 
   if (submitting) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-500 text-sm" dir="rtl">
+      <div className="flex flex-col items-center justify-center py-20 text-slate-500 text-sm" dir="rtl" lang="he">
         שומר…
       </div>
     );
@@ -210,7 +210,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
   ];
 
   return (
-    <div className="border border-slate-200 md-card p-4 max-w-xl" dir="rtl">
+    <div className="border border-slate-200 md-card p-4 max-w-xl" dir="rtl" lang="he">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-slate-800">{isEdit ? "עריכת מתכון" : "מתכון חדש"}</h2>
         <button
@@ -225,10 +225,10 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 mb-1">
             כותרת
           </label>
-          <input
+          <input aria-label="למשל: פנקייק חלבון"
             className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
             value={form.title}
             onChange={(e) => setField("title", e.target.value)}
@@ -239,10 +239,10 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               ארוחה
             </label>
-            <select
+            <select aria-label="ארוחה"
               className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
               value={form.meal}
               onChange={(e) => setField("meal", e.target.value as RecipeMeal)}
@@ -255,10 +255,10 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-400 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               רמה
             </label>
-            <select
+            <select aria-label="רמת קושי"
               className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
               value={form.difficulty}
               onChange={(e) => setField("difficulty", e.target.value as RecipeDifficulty)}
@@ -286,10 +286,10 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 mb-1">
             תיאור
           </label>
-          <textarea
+          <textarea aria-label="תיאור קצר"
             className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
             value={form.description}
             onChange={(e) => setField("description", e.target.value)}
@@ -301,7 +301,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         {/* Ingredients */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold text-slate-400">
+            <label className="text-xs font-semibold text-slate-500">
               רכיבים
             </label>
             <button
@@ -314,13 +314,13 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
           </div>
           {ingredients.map((ing, idx) => (
             <div key={idx} className="flex gap-2 items-end">
-              <input
+              <input aria-label="שם"
                 className="border border-md-outline rounded-md3xs px-2 py-2 flex-1"
                 value={ing.name}
                 onChange={(e) => updateIngredient(idx, "name", e.target.value)}
                 placeholder="שם"
               />
-              <input
+              <input aria-label="כמות"
                 className="border border-md-outline rounded-md3xs px-2 py-2 w-16"
                 type="number"
                 min="0"
@@ -331,7 +331,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
                   updateIngredient(idx, "amount", isFinite(v) ? v : 0);
                 }}
               />
-              <input
+              <input aria-label="יחידה"
                 className="border border-md-outline rounded-md3xs px-2 py-2 w-20"
                 value={ing.unit}
                 onChange={(e) => updateIngredient(idx, "unit", e.target.value)}
@@ -339,10 +339,11 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
               />
               <button
                 type="button"
+                aria-label={`הסר רכיב ${idx + 1}`}
                 onClick={() => removeIngredient(idx)}
-                className="text-slate-400 hover:text-red-600"
+                className="text-slate-500 hover:text-red-600"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -353,7 +354,7 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         {/* Instructions */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold text-slate-400">
+            <label className="text-xs font-semibold text-slate-500">
               הוראות הכנה
             </label>
             <button
@@ -366,17 +367,17 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
           </div>
           {instructions.map((inst, idx) => (
             <div key={idx} className="flex gap-2 items-start mb-1">
-              <span className="mt-1.5 text-xs font-bold text-slate-400 flex-shrink-0 w-4 text-center">
+              <span className="mt-1.5 text-xs font-bold text-slate-500 flex-shrink-0 w-4 text-center">
                 {inst.step}
               </span>
-              <textarea
+              <textarea aria-label="הוראות לשלב"
                 className="border border-md-outline rounded-md3xs px-2 py-2 flex-1"
                 value={inst.text}
                 onChange={(e) => updateInstruction(idx, "text", e.target.value)}
                 rows={2}
                 placeholder="הוראות לשלב…"
               />
-              <input
+              <input aria-label="טיימר (שניות)"
                 className="border border-md-outline rounded-md3xs px-2 py-2 w-20 ml-1"
                 type="number"
                 min="0"
@@ -390,10 +391,11 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
               />
               <button
                 type="button"
+                aria-label={`הסר שלב ${idx + 1}`}
                 onClick={() => removeInstruction(idx)}
-                className="mt-0.5 text-slate-400 hover:text-red-600"
+                className="mt-0.5 text-slate-500 hover:text-red-600"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -403,18 +405,18 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
 
         {/* Photo */}
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 mb-1">
             תמונה
           </label>
           <div className="flex flex-col gap-2">
-            <input
+            <input aria-label="תמונת מתכון"
               type="file"
               accept="image/*"
               onChange={handleImageChange}
               disabled={uploading}
               className="block w-full text-sm text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
             />
-            {uploading && <span className="text-xs text-slate-400">מעלה תמונה…</span>}
+            {uploading && <span className="text-xs text-slate-500">מעלה תמונה…</span>}
             {imageUrl && (
               <div className="flex items-center gap-2">
                 <img src={imageUrl} alt="preview" className="w-16 h-16 rounded object-cover border border-slate-200" />
@@ -431,10 +433,10 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 mb-1">
             מקור (אופציונלי)
           </label>
-          <input
+          <input aria-label="כתובת אתר או ספר בישול"
             className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
             value={form.source}
             onChange={(e) => setField("source", e.target.value)}
@@ -443,10 +445,10 @@ export default function RecipeForm({ token, recipe, onSave, onCancel }: Props) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 mb-1">
             תגיות (מופרדות בפסיקים, אופציונלי)
           </label>
-          <input
+          <input aria-label="למשל: צמחוני, עתיר חלבון"
             className="border border-md-outline rounded-md3xs px-3 py-2 w-full"
             value={form.tags}
             onChange={(e) => setField("tags", e.target.value)}

@@ -9,7 +9,7 @@ interface Props {
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="bg-white md-card p-4 flex flex-col gap-1">
-      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-xs text-slate-500">{label}</span>
       <span className="text-2xl font-bold text-slate-800">{value}</span>
       {sub && <span className="text-xs text-slate-500">{sub}</span>}
     </div>
@@ -38,7 +38,7 @@ export function ActivityChart({ days, labels }: { days: number[]; labels: string
           return <rect key={i} x={i * 20} y={40 - h} width={14} height={h} rx={2} fill="#4f46e5" />;
         })}
       </svg>
-      <div className="flex justify-between text-[10px] text-slate-400">
+      <div className="flex justify-between text-[10px] text-slate-500">
         {labels.map((l, i) => (
           <span key={i} style={{ width: 14 }}>{l}</span>
         ))}
@@ -58,7 +58,7 @@ export default function ProgressView({ token }: Props) {
   }, [token]);
 
   if (error) return <p className="text-red-600">{error}</p>;
-  if (!progress) return <p className="text-slate-400">Loading progress…</p>;
+  if (!progress) return <p className="text-slate-500">Loading progress…</p>;
 
   return (
     <div className="flex flex-col gap-4">

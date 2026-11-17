@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Accessibility: visible keyboard focus in the md primary color, readable placeholders, reduced motion. */
+@layer base {
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid #3B82F6; outline-offset: 2px; border-radius: 4px; box-shadow: 0 0 0 4px rgba(59,130,246,.25); }
+  input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 0; }
+  input::placeholder, textarea::placeholder { color: #5B6472; opacity: 1; }
+  .sr-only-focusable:not(:focus):not(:focus-within) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+  }
+}
+
 /* Android (Compose Material 3) component look. Typography scale from Type.kt, DayTodayCard from Components.kt. */
 @layer components {
   .md-card { @apply bg-white rounded-md3m border-0; box-shadow: 0 1px 3px rgba(0,0,0,.14), 0 1px 2px rgba(0,0,0,.1); }
@@ -12,8 +27,8 @@
   .md-body-small { font-size: 12px; line-height: 16px; }
   .md-label-small { font-size: 11px; line-height: 16px; font-weight: 500; }
   .md-btn { @apply inline-flex items-center justify-center rounded-full px-6 h-10 text-sm font-medium transition-colors; }
-  .md-btn-filled { @apply md-btn bg-md-primary text-white hover:bg-indigo-700; }
-  .md-btn-outlined { @apply md-btn border border-md-outline text-md-primary bg-transparent hover:bg-md-primaryContainer/40; }
+  .md-btn-filled { @apply md-btn bg-indigo-700 text-white hover:bg-indigo-800; }
+  .md-btn-outlined { @apply md-btn border border-md-outline text-indigo-700 bg-transparent hover:bg-md-primaryContainer/40; }
   .md-btn-tonal { @apply md-btn bg-md-secondaryContainer text-md-onSecondaryContainer; }
   .md-progress { @apply w-full h-1 rounded-full bg-md-primaryContainer overflow-hidden; }
   .md-progress > div { @apply h-full bg-md-primary rounded-full; }

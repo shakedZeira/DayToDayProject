@@ -41,9 +41,9 @@ export default function Notifications({ token }: Props) {
   return (
     <div className="flex flex-col gap-2">
       {error ? (
-        <p className="text-xs text-slate-400">{error}</p>
+        <p className="text-xs text-slate-500">{error}</p>
       ) : (
-        registered && <p className="text-xs text-slate-400">🔔 notifications enabled</p>
+        registered && <p className="text-xs text-slate-500">🔔 notifications enabled</p>
       )}
 
       {loaded && (

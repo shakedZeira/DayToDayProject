@@ -96,7 +96,7 @@ export default function CookingMode({ token, recipe, onComplete, onClose }: Prop
   const allDone = instructions.length > 0 && instructions.every((i) => doneSteps.has(i.step));
 
   return (
-    <div className="flex flex-col h-full" dir="rtl">
+    <div className="flex flex-col h-full" dir="rtl" lang="he">
       <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200 bg-white">
         <button
           onClick={onClose}
@@ -118,7 +118,7 @@ export default function CookingMode({ token, recipe, onComplete, onClose }: Prop
         </p>
 
         {instructions.length === 0 ? (
-          <div className="text-center text-slate-400 text-sm py-8" dir="rtl">אין הוראות למתכון הזה.</div>
+          <div className="text-center text-slate-500 text-sm py-8" dir="rtl" lang="he">אין הוראות למתכון הזה.</div>
         ) : (
           <ul className="flex flex-col gap-3">
             {instructions.map((step) => {
@@ -137,7 +137,7 @@ export default function CookingMode({ token, recipe, onComplete, onClose }: Prop
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <input
+                    <input aria-label={`Step ${step.step} done`}
                       type="checkbox"
                       checked={done}
                       onChange={() => toggleDone(step.step)}
@@ -159,7 +159,7 @@ export default function CookingMode({ token, recipe, onComplete, onClose }: Prop
                       {hasTimer && (
                         <div className="mt-2 flex items-center gap-2">
                           <span className={`text-sm font-mono font-bold ${
-                            running ? "text-indigo-600" : finished ? "text-green-600" : "text-slate-500"
+                            running ? "text-indigo-600" : finished ? "text-green-700" : "text-slate-500"
                           }`}>
                             {formatTime(remaining)}
                           </span>
@@ -182,7 +182,7 @@ export default function CookingMode({ token, recipe, onComplete, onClose }: Prop
                           {(running || finished) && (
                             <button
                               onClick={() => resetTimer(step.step)}
-                              className="text-xs text-slate-400 hover:text-slate-600 font-medium underline"
+                              className="text-xs text-slate-500 hover:text-slate-600 font-medium underline"
                             >
                               איפוס
                             </button>

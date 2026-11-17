@@ -123,7 +123,7 @@ export default function SettingsView({ token }: Props) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-medium text-md-primary">{title}</h3>
+      <h3 className="text-sm font-medium text-indigo-700">{title}</h3>
       <div className="md-card p-4 flex flex-col gap-4">{children}</div>
     </div>
   );
