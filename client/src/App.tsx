@@ -76,7 +76,7 @@ export default function App() {
       {signedIn ? (
         <>
           <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-4 pb-24 md:pb-6">
-            {view === "today" && <DigestView token={token} />}
+            {view === "today" && <DigestView token={token} onNavigate={setView} />}
             {view === "tasks" && <Tasks token={token} />}
             {view === "workouts" && <HealthView token={token} tab="workouts" />}
             {view === "goals" && <HealthView token={token} tab="goals" />}

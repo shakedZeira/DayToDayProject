@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Android (Compose Material 3) component look. Typography scale from Type.kt, DayTodayCard from Components.kt. */
+@layer components {
+  .md-card { @apply bg-white rounded-md3m border-0; box-shadow: 0 1px 3px rgba(0,0,0,.14), 0 1px 2px rgba(0,0,0,.1); }
+  .md-headline-medium { font-size: 28px; line-height: 36px; font-weight: 700; }
+  .md-title-large { font-size: 22px; line-height: 28px; font-weight: 500; }
+  .md-title-medium { font-size: 16px; line-height: 24px; font-weight: 500; }
+  .md-body-medium { font-size: 14px; line-height: 20px; }
+  .md-body-small { font-size: 12px; line-height: 16px; }
+  .md-label-small { font-size: 11px; line-height: 16px; font-weight: 500; }
+  .md-btn { @apply inline-flex items-center justify-center rounded-full px-6 h-10 text-sm font-medium transition-colors; }
+  .md-btn-filled { @apply md-btn bg-md-primary text-white hover:bg-indigo-700; }
+  .md-btn-outlined { @apply md-btn border border-md-outline text-md-primary bg-transparent hover:bg-md-primaryContainer/40; }
+  .md-btn-tonal { @apply md-btn bg-md-secondaryContainer text-md-onSecondaryContainer; }
+  .md-progress { @apply w-full h-1 rounded-full bg-md-primaryContainer overflow-hidden; }
+  .md-progress > div { @apply h-full bg-md-primary rounded-full; }
+}
