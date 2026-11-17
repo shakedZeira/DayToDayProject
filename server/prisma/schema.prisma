@@ -309,6 +309,23 @@ model ItalianExerciseAttempt {
   @@index([ownerId, exerciseId])
 }
 
+model ItalianReviewItem {
+  id             String    @id @default(cuid())
+  ownerId        String
+  exerciseId     String
+  lessonId       String
+  ease           Float     @default(2.5)
+  intervalDays   Int       @default(0)
+  repetitions    Int       @default(0)
+  dueAt          DateTime  @default(now())
+  lastReviewedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([ownerId, exerciseId])
+  @@index([ownerId, dueAt])
+}
+
 model Setting {
   id        String   @id @default(cuid())
   ownerId   String

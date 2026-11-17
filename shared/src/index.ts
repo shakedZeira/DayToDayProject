@@ -260,6 +260,31 @@ export interface ItalianReviewDue {
   exerciseId: string;
 }
 
+export interface ItalianReviewItem {
+  exerciseId: string;
+  lessonId: string;
+  exercise: ItalianExercise;
+  ease: number;
+  intervalDays: number;
+  repetitions: number;
+  dueAt: string;
+}
+
+export interface ItalianReviewQueue {
+  due: ItalianReviewItem[];
+  dueCount: number;
+  totalItems: number;
+}
+
+/** 0..5 SM-2 quality (0-2 = lapse). */
+export interface ItalianReviewGradeResult {
+  exerciseId: string;
+  ease: number;
+  intervalDays: number;
+  repetitions: number;
+  dueAt: string;
+}
+
 export interface ItalianPathProgress {
   xp: number;
   streak: number;
