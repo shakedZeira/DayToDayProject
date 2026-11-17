@@ -67,6 +67,18 @@ sw.addEventListener("notificationclick", (event: NotificationEvent) => {
   );
 });
 
+// Background Sync: the SW has no auth token, so it wakes an open window to replay the outbox.
+sw.addEventListener("sync", (event) => {
+  const e = event as unknown as { tag: string; waitUntil(p: Promise<unknown>): void };
+  if (e.tag !== "dtd-outbox") return;
+  e.waitUntil(
+    sw.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      if (list.length === 0) throw new Error("no window to flush outbox; retry later");
+      list.forEach((c) => c.postMessage("dtd-outbox-flush"));
+    })
+  );
+});
+
 sw.addEventListener("install", () => {
   sw.skipWaiting();
 });

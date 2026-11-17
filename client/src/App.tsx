@@ -8,6 +8,7 @@ import HealthView from "./HealthView";
 import ItalianView from "./ItalianView";
 import CookingView from "./CookingView";
 import Nav from "./Nav";
+import OutboxStatus from "./OutboxStatus";
 import { fetchHealth } from "./api";
 import type { AuthUser } from "./auth";
 
@@ -75,6 +76,7 @@ export default function App() {
 
       {signedIn ? (
         <>
+          <OutboxStatus />
           <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-4 pb-24 md:pb-6">
             {view === "today" && <DigestView token={token} />}
             {view === "tasks" && <Tasks token={token} />}
