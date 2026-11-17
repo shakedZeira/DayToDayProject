@@ -78,7 +78,9 @@ export default function App() {
           <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-4 pb-24 md:pb-6">
             {view === "today" && <DigestView token={token} />}
             {view === "tasks" && <Tasks token={token} />}
-            {view === "health" && <HealthView token={token} />}
+            {view === "workouts" && <HealthView token={token} tab="workouts" />}
+            {view === "goals" && <HealthView token={token} tab="goals" />}
+            {view === "nutrition" && <HealthView token={token} tab="nutrition" />}
             {view === "italian" && <ItalianView token={token} />}
             {view === "cooking" && <CookingView token={token} />}
             {view === "progress" && <ProgressView token={token} />}
