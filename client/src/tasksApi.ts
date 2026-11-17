@@ -11,6 +11,7 @@ export interface Task {
   dueAt: string | null;
   recurrence: string;
   category: string | null;
+  snoozedUntil?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,4 +58,13 @@ export async function deleteTask(token: string, id: string): Promise<void> {
     const err = await res.json().catch(() => ({ error: "request failed" }));
     throw new Error(err.error ?? "request failed");
   }
+}
+
+export async function snoozeTask(token: string, id: string, minutes = 10): Promise<Task> {
+  const res = await authedFetch(token, `/api/tasks/${id}/snooze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ minutes }),
+  });
+  return json<Task>(res);
 }

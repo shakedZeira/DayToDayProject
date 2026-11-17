@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { listTasks, getTodayTasks, createTask, updateTask, deleteTask, type Task } from "./tasksApi";
+import { listTasks, getTodayTasks, createTask, updateTask, deleteTask, snoozeTask, type Task } from "./tasksApi";
 
 interface Props {
   token: string;
@@ -85,6 +85,18 @@ export default function Tasks({ token }: Props) {
     }
   }
 
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function onSnooze(t: Task) {
+    try {
+      await snoozeTask(token, t.id, 10);
+      setNotice(`Snoozed "${t.title}" for 10 minutes`);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to snooze task");
+    }
+  }
+
   async function onDelete(id: string) {
     try {
       await deleteTask(token, id);
@@ -108,40 +120,40 @@ export default function Tasks({ token }: Props) {
 
   if (loading) {
     return (
-      <div className="w-full max-w-2xl text-center text-slate-400 py-8">Loading tasks…</div>
+      <div className="w-full max-w-2xl text-center text-slate-500 py-8">Loading tasks…</div>
     );
   }
 
   return (
     <div className="w-full max-w-2xl flex flex-col gap-4">
       <form onSubmit={onAdd} className="flex flex-col gap-2 md-card p-4">
-        <input
+        <input aria-label="Task title"
           className="border border-md-outline rounded-md3xs px-3 py-2"
           placeholder="Task title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
         />
-        <input
+        <input aria-label="Notes (optional)"
           className="border border-md-outline rounded-md3xs px-3 py-2"
           placeholder="Notes (optional)"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
         <div className="flex gap-2">
-          <input
+          <input aria-label="Category"
             className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
             placeholder="Category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           />
-          <input
+          <input aria-label="Due date and time"
             className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
             type="datetime-local"
             value={dueAt}
             onChange={(e) => setDueAt(e.target.value)}
           />
-          <select
+          <select aria-label="Repeat"
             className="border border-md-outline rounded-md3xs px-3 py-2"
             value={recurrence}
             onChange={(e) => setRecurrence(e.target.value)}
@@ -158,7 +170,8 @@ export default function Tasks({ token }: Props) {
         </button>
       </form>
 
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
+      <p role="status" className="text-sm text-md-onSurfaceVariant empty:hidden">{notice}</p>
 
       {today.length > 0 && (
         <section className="flex flex-col gap-2">
@@ -190,7 +203,7 @@ export default function Tasks({ token }: Props) {
       )}
 
       {tasks.length === 0 ? (
-        <div className="text-center text-slate-400 py-8">No tasks yet. Add one above!</div>
+        <div className="text-center text-slate-500 py-8">No tasks yet. Add one above!</div>
       ) : (
         <ul className="flex flex-col gap-2">
           {tasks.map((t) => (
@@ -201,6 +214,8 @@ export default function Tasks({ token }: Props) {
               }`}
             >
               <button
+                aria-pressed={t.status === "DONE"}
+                aria-label={`Mark "${t.title}" ${t.status === "DONE" ? "pending" : "done"}`}
                 onClick={() => onToggle(t)}
                 className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
                   t.status === "DONE"
@@ -210,14 +225,14 @@ export default function Tasks({ token }: Props) {
                 title={t.status === "DONE" ? "Mark pending" : "Mark done"}
               >
                 {t.status === "DONE" && (
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
               </button>
               <div className={`flex-1 min-w-0 ${t.status === "DONE" ? "line-through" : ""}`}>
                 <p className="text-slate-800 font-medium truncate">{t.title}</p>
-                <div className="flex gap-2 text-xs text-slate-400">
+                <div className="flex gap-2 text-xs text-slate-500">
                   {t.category && (
                     <span className="bg-slate-100 rounded px-2 py-0.5">{t.category}</span>
                   )}
@@ -225,12 +240,23 @@ export default function Tasks({ token }: Props) {
                   {t.recurrence !== "none" && <span>{recurrenceLabel(t.recurrence)}</span>}
                 </div>
               </div>
+              {t.status !== "DONE" && (
+                <button
+                  type="button"
+                  onClick={() => onSnooze(t)}
+                  className="text-indigo-700 text-xs font-medium rounded-full px-3 h-8 border border-md-outline flex-shrink-0 hover:bg-md-primaryContainer/40"
+                  aria-label={`Snooze ${t.title} for 10 minutes`}
+                >
+                  Snooze
+                </button>
+              )}
               <button
+                aria-label={`Delete ${t.title}`}
                 onClick={() => onDelete(t.id)}
-                className="text-slate-300 hover:text-red-500 flex-shrink-0"
+                className="text-slate-500 hover:text-red-600 flex-shrink-0"
                 title="Delete"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>

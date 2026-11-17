@@ -33,6 +33,9 @@ interface PushPayload {
   body?: string;
   url?: string;
   icon?: string;
+  taskId?: string;
+  actions?: { action: string; title: string }[];
+  snoozeMinutes?: number;
 }
 
 sw.addEventListener("push", (event: PushEvent) => {
@@ -47,7 +50,9 @@ sw.addEventListener("push", (event: PushEvent) => {
     body: data?.body ?? "You have a new notification.",
     icon: data?.icon ?? "/favicon.svg",
     badge: "/favicon.svg",
-  };
+    data,
+    ...(data?.actions?.length ? { actions: data.actions } : {}),
+  } as NotificationOptions;
   event.waitUntil(sw.registration.showNotification(title, options));
 });
 
@@ -55,6 +60,22 @@ sw.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
   const payload = event.notification.data as PushPayload | undefined;
   const url = payload?.url ?? "/";
+  // Snooze: the SW holds no auth token (nothing long-lived is stored here), so an open app window
+  // performs the call; with no window we deep-link to /?snooze=<id> and the app asks to confirm.
+  if (event.action === "snooze" && payload?.taskId) {
+    const minutes = payload.snoozeMinutes ?? 10;
+    const taskId = payload.taskId;
+    event.waitUntil(
+      sw.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+        if (list.length > 0) {
+          list.forEach((c) => c.postMessage({ type: "dtd-snooze", taskId, minutes }));
+          return undefined;
+        }
+        return sw.clients.openWindow(`/?snooze=${encodeURIComponent(taskId)}&minutes=${minutes}`);
+      })
+    );
+    return;
+  }
   event.waitUntil(
     sw.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
