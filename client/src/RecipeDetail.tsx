@@ -54,7 +54,7 @@ export default function RecipeDetail({
         <button onClick={onBack} className="text-slate-600 font-medium hover:text-indigo-600">
           → חזרה למתכונים
         </button>
-        <h1 className="text-2xl font-bold text-slate-800 flex-1">{recipe.title}</h1>
+        <h1 className="text-2xl font-bold text-md-onSurface flex-1">{recipe.title}</h1>
         <button
           onClick={() => onToggleFavorite(recipe)}
           className={`p-1.5 rounded-full transition-colors ${
@@ -68,7 +68,7 @@ export default function RecipeDetail({
         </button>
       </div>
 
-      <div className="aspect-video w-full rounded-md3m overflow-hidden bg-slate-100 relative mb-2">
+      <div className="h-60 w-full rounded-md3m overflow-hidden bg-md-surfaceVariant relative mb-2">
         {recipe.imageUrl ? (
           <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover" />
         ) : (
@@ -89,21 +89,21 @@ export default function RecipeDetail({
       )}
 
       {/* Macros */}
-      <div className="grid grid-cols-4 gap-2 border border-slate-200 rounded-md3m p-2 mb-2">
+      <div className="grid grid-cols-4 gap-2 md-card p-4 mb-2">
         <div className="flex flex-col items-center">
-          <span className="text-xs text-slate-400">קלוריות</span>
-          <span className="font-semibold text-slate-800">{Math.round(recipe.calories)} קלוריות</span>
+          <span className="md-label-small text-md-onSurfaceVariant">קלוריות</span>
+          <span className="md-title-medium text-md-onSurface">{Math.round(recipe.calories)}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-xs text-slate-400">חלבון</span>
+          <span className="md-label-small text-md-onSurfaceVariant">חלבון</span>
           <span className="font-semibold text-slate-800">{macrosLabel(recipe.proteinG, "ג׳")}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-xs text-slate-400">פחמימות</span>
+          <span className="md-label-small text-md-onSurfaceVariant">פחמימות</span>
           <span className="font-semibold text-slate-800">{macrosLabel(recipe.carbsG, "ג׳")}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-xs text-slate-400">שומן</span>
+          <span className="md-label-small text-md-onSurfaceVariant">שומן</span>
           <span className="font-semibold text-slate-800">{macrosLabel(recipe.fatG, "ג׳")}</span>
         </div>
       </div>
@@ -120,11 +120,11 @@ export default function RecipeDetail({
       </div>
 
       {/* Ingredients checklist */}
-      <section className="border border-slate-200 rounded-md3m bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-          <h3 className="font-semibold text-slate-800 text-sm">רכיבים ({recipe.ingredients.length})</h3>
+      <section className="md-card overflow-hidden">
+        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+          <h3 className="md-title-medium text-md-onSurface">מצרכים</h3>
         </div>
-        <ul className="divide-y divide-slate-100">
+        <ul className="">
           {recipe.ingredients.length === 0 ? (
             <li className="px-3 py-3 text-center text-slate-400 text-sm">אין רכיבים רשומים.</li>
           ) : (
@@ -143,9 +143,9 @@ export default function RecipeDetail({
       </section>
 
       {/* Instructions */}
-      <section className="border border-slate-200 rounded-md3m bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-          <h3 className="font-semibold text-slate-800 text-sm">הוראות הכנה ({recipe.instructions.length})</h3>
+      <section className="md-card overflow-hidden">
+        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+          <h3 className="md-title-medium text-md-onSurface">אופן ההכנה</h3>
           <button
             onClick={() => setCooking(true)}
             className="bg-indigo-600 text-white text-xs font-medium px-2.5 py-1 rounded-full hover:bg-indigo-700"
@@ -153,7 +153,7 @@ export default function RecipeDetail({
             התחל לבשל
           </button>
         </div>
-        <ul className="divide-y divide-slate-100">
+        <ul className="">
           {recipe.instructions.length === 0 ? (
             <li className="px-3 py-3 text-center text-slate-400 text-sm">אין הוראות רשומות.</li>
           ) : (
@@ -187,7 +187,7 @@ export default function RecipeDetail({
         </button>
         <button
           onClick={() => onEdit(recipe)}
-          className="bg-white border border-slate-200 text-slate-700 font-medium py-2.5 rounded-md3m px-4 hover:bg-slate-50"
+          className="border border-md-outline text-md-primary font-medium py-2.5 rounded-full px-4 hover:bg-md-primaryContainer/40"
         >
           עריכה
         </button>

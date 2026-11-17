@@ -107,7 +107,7 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
 
       <div className="h-2 bg-gray-100 rounded">
         <div
-          className="h-2 bg-emerald-500 rounded"
+          className="h-2 bg-[#58CC02] rounded"
           style={{ width: `${(idx / lesson.exercises.length) * 100}%` }}
         />
       </div>
@@ -132,7 +132,7 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
               key={c}
               onClick={() => !feedback && setChoicePick(i)}
               className={`border rounded px-4 py-3 text-left ${
-                choicePick === i ? "border-emerald-600 bg-emerald-50" : "border-gray-300"
+                choicePick === i ? "border-[#58CC02] bg-[#58CC02]/10" : "border-gray-300"
               }`}
             >
               {c}
@@ -156,7 +156,7 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
                   setPickLeft(p.left);
                 }}
                 className={`border rounded px-3 py-2 ${
-                  pickLeft === p.left ? "border-emerald-600 bg-emerald-50" : "border-gray-300"
+                  pickLeft === p.left ? "border-[#58CC02] bg-[#58CC02]/10" : "border-gray-300"
                 } ${pairedLefts.has(p.left) ? "opacity-40" : ""}`}
               >
                 {p.left}
@@ -186,7 +186,7 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
       {feedback && (
         <div
           className={`rounded px-4 py-3 text-sm ${
-            feedback.correct ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
+            feedback.correct ? "bg-[#58CC02]/20 text-[#58A700]" : "bg-red-100 text-red-800"
           }`}
         >
           {feedback.correct ? "Correct!" : `Incorrect — correct answer: ${correctText(ex)}`}
@@ -196,7 +196,7 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
       <div className="flex justify-end">
         {!feedback ? (
           <button
-            className="bg-emerald-600 text-white rounded px-6 py-2 disabled:opacity-40"
+            className="bg-[#58CC02] text-white rounded px-6 py-2 disabled:opacity-40"
             disabled={
               (ex.kind === "choice" && choicePick === null) ||
               (ex.kind === "match" && matchPicks.length !== ex.pairs.length)
@@ -206,7 +206,7 @@ export default function ItalianLessonRunner({ token, lesson, onDone }: Props) {
             Check
           </button>
         ) : (
-          <button className="bg-emerald-600 text-white rounded px-6 py-2" onClick={onContinue}>
+          <button className="bg-[#58CC02] text-white rounded px-6 py-2" onClick={onContinue}>
             Continue
           </button>
         )}

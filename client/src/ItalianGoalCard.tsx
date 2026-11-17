@@ -28,7 +28,7 @@ export default function ItalianGoalCard({ token }: Props) {
         </span>
       </div>
       <div className="h-2 bg-gray-100 rounded">
-        <div className="h-2 bg-emerald-500 rounded" style={{ width: `${pct}%` }} />
+        <div className="h-2 bg-[#58CC02] rounded" style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs text-gray-500">
         {progress.completedLessonIds.length}/{progress.totalLessons} lessons ({pct}%)

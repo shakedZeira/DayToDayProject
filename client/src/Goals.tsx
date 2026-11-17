@@ -102,14 +102,9 @@ export default function Goals({ token }: Props) {
   }
 
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-4 md-card p-4">
-      <ItalianGoalCard token={token} />
-
-      <h2 className="md-title-medium text-md-onSurface">
-        Weekly Goals
-      </h2>
-
-      <form onSubmit={onAdd} className="flex flex-col gap-2">
+    <div className="w-full flex flex-col gap-4">
+      <form onSubmit={onAdd} className="md-card p-4 flex flex-col gap-2">
+        <h2 className="md-title-medium text-md-onSurface">Add goal</h2>
         <div className="flex gap-2">
           <input
             className="border border-md-outline rounded-md3xs px-3 py-2 flex-1"
@@ -159,24 +154,26 @@ export default function Goals({ token }: Props) {
           </select>
         </div>
         <button className="bg-indigo-600 text-white rounded-full py-2 font-medium">
-          Add Goal
+          Add goal
         </button>
       </form>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
       {goals.length === 0 ? (
-        <div className="text-center text-slate-400 py-6">No goals yet. Add one above!</div>
+        <p className="md-body-medium text-md-onSurfaceVariant text-center py-6">No goals yet. Use "Add goal" above to create one.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <>
+        <h2 className="md-title-large text-md-onSurface">This Week</h2>
+        <ul className="flex flex-col gap-3">
           {goals.map((g) => {
             const pct = g.targetCount > 0 ? Math.min(100, (g.thisWeekCount / g.targetCount) * 100) : 0;
             const done = g.thisWeekCount >= g.targetCount;
             return (
-              <li key={g.id} className="border border-md-outline rounded-md3xs p-3 bg-slate-50 flex flex-col gap-2">
+              <li key={g.id} className="md-card p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-slate-800 font-medium truncate">{g.title}</p>
+                    <p className="md-title-medium text-md-onSurface truncate">{g.title}</p>
                     <div className="flex gap-2 text-xs text-slate-400">
                       {(g.category || g.autoSource) && (
                         <span className="bg-slate-100 rounded px-2 py-0.5">
@@ -213,9 +210,9 @@ export default function Goals({ token }: Props) {
                     </svg>
                   </button>
                 </div>
-                <div className="h-2 w-full bg-slate-200 rounded overflow-hidden">
+                <div className="h-2 w-full bg-md-primaryContainer rounded-full overflow-hidden">
                   <div
-                    className={`h-full ${done ? "bg-emerald-500" : "bg-indigo-500"}`}
+                    className={`h-full ${done ? "bg-md-secondary" : "bg-md-primary"}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -231,7 +228,11 @@ export default function Goals({ token }: Props) {
             );
           })}
         </ul>
+        </>
       )}
+
+      <h2 className="md-title-large text-md-onSurface">Italian</h2>
+      <ItalianGoalCard token={token} />
     </div>
   );
 }

@@ -26,13 +26,13 @@ export default function ItalianView({ token }: Props) {
 
   return (
     <div className="w-full max-w-3xl flex flex-col gap-4">
-      <div className="flex gap-1 border-b">
+      <div className="flex border-b border-md-outlineVariant">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 rounded-t font-medium ${
-              tab === t.key ? "bg-emerald-600 text-white" : "text-gray-500 hover:text-gray-800"
+            className={`flex-1 px-4 h-12 text-sm font-medium border-b-2 ${
+              tab === t.key ? "border-md-primary text-md-primary" : "border-transparent text-md-onSurfaceVariant hover:bg-md-surfaceVariant"
             }`}
           >
             {t.label}

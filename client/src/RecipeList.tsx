@@ -48,8 +48,10 @@ export default function RecipeList({
 
   if (recipes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-sm" dir="rtl">
-        לא נמצאו מתכונים.
+      <div className="bg-md-surfaceVariant rounded-md3m flex flex-col items-center p-6 text-center" dir="rtl">
+        <svg viewBox="0 0 24 24" className="w-12 h-12 fill-md-onSurfaceVariant" aria-hidden><path d="M11.5 2C11.5 2 5 8.5 5 14a7 7 0 0014 0c0-2.4-1.1-4.6-2.4-6.3-.4 1.2-1.3 2.3-2.2 2.3C13 10 13 7 11.5 2z" /></svg>
+        <p className="md-title-medium text-md-onSurfaceVariant mt-3">אין מתכונים זמינים</p>
+        <p className="md-body-medium text-md-onSurfaceVariant mt-2">נסה סינון אחר</p>
       </div>
     );
   }
@@ -60,10 +62,10 @@ export default function RecipeList({
         <div
           key={recipe.id}
           onClick={() => onSelect(recipe)}
-          className="border border-slate-200 rounded-md3m bg-white p-3 hover:shadow-md cursor-pointer transition-all"
+          className="md-card p-3 cursor-pointer overflow-hidden"
         >
           <div className="flex flex-col gap-2">
-            <div className="aspect-video w-full rounded overflow-hidden bg-slate-100 relative">
+            <div className="h-40 w-full rounded-md3s overflow-hidden bg-md-surfaceVariant relative">
               {recipe.imageUrl ? (
                 <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover" />
               ) : (
@@ -78,8 +80,8 @@ export default function RecipeList({
               </span>
             </div>
 
-            <div className="flex items-baseline gap-2">
-              <h3 className="font-semibold text-slate-800 text-sm leading-tight truncate" title={recipe.title}>
+            <div className="flex items-center gap-2">
+              <h3 className="md-title-medium text-md-onSurface truncate flex-1" title={recipe.title}>
                 {recipe.title}
               </h3>
               <button
@@ -96,7 +98,7 @@ export default function RecipeList({
             </div>
 
             {recipe.description && (
-              <p className="text-xs text-slate-500 line-clamp-1">{recipe.description}</p>
+              <p className="md-body-small text-md-onSurfaceVariant line-clamp-1">{recipe.description}</p>
             )}
 
             <div className="mt-2 flex items-center justify-between gap-2">
