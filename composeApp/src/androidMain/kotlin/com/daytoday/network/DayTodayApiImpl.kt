@@ -216,6 +216,22 @@ class DayTodayApiImpl internal constructor(private val client: HttpClient) : Day
         client.post(absoluteUrl("api/recipes/$recipeId/favorite")) {
             header("Authorization", "Bearer $authToken")
         }.body<FavoriteToggleResponse>().favorited
+
+    override suspend fun getTasks(authToken: String): List<TaskDto> =
+        client.get(absoluteUrl("api/tasks")) {
+            header("Authorization", "Bearer $authToken")
+        }.body()
+
+    override suspend fun getWeeklyGoals(authToken: String): List<WeeklyGoalDto> =
+        client.get(absoluteUrl("api/goals")) {
+            header("Authorization", "Bearer $authToken")
+        }.body()
+
+    override suspend fun getMeals(authToken: String, date: String): MealsDetailDto =
+        client.get(absoluteUrl("api/nutrition/detail")) {
+            header("Authorization", "Bearer $authToken")
+            parameter("date", date)
+        }.body()
 }
 
 /** Non-2xx reply from the backend; [status] is the HTTP code (0 when unknown). */

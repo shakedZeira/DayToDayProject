@@ -516,6 +516,11 @@ private fun HomeContent(
                 buttonType = ButtonType.Filled,
                 modifier = Modifier.weight(1f)
             )
+            DayTodayButton(
+                text = "Tasks",
+                onClick = { onNavigate(Screen.Tasks.route) },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

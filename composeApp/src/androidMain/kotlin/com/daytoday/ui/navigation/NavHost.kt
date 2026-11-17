@@ -18,6 +18,7 @@ import com.daytoday.ui.screen.nba.NbaScoreboardScreen
 import com.daytoday.ui.screen.cooking.CookingScreen
 import com.daytoday.ui.screen.cooking.RecipeDetailScreen
 import com.daytoday.ui.screen.settings.SettingsScreen
+import com.daytoday.ui.screen.tasks.TasksScreen
 import com.daytoday.ui.screen.workout.WorkoutActiveScreen
 import com.daytoday.ui.screen.workout.WorkoutHistoryScreen
 import com.daytoday.ui.screen.workout.WorkoutProgressScreen
@@ -62,6 +63,9 @@ fun DayTodayNavHost(
         }
         composable(Screen.Settings.route) {
             SettingsScreen()
+        }
+        composable(Screen.Tasks.route) {
+            TasksScreen()
         }
         composable(Screen.Goals.route) {
             GoalsScreen()

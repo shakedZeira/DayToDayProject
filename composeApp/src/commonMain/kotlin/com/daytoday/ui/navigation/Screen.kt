@@ -39,6 +39,10 @@ sealed interface Screen {
         override val route: String = "Settings"
     }
 
+    data object Tasks : Screen {
+        override val route: String = "Tasks"
+    }
+
     data object Goals : Screen {
         override val route: String = "Goals"
     }

@@ -93,3 +93,45 @@ data class FavoriteToggleResponse(
     @SerialName("favorited") val favorited: Boolean,
     @SerialName("recipeId") val recipeId: String
 )
+
+/** Row from `GET /api/tasks`. Dates are ISO-8601 strings straight from the server. */
+@Serializable
+data class TaskDto(
+    @SerialName("id") val id: String,
+    @SerialName("title") val title: String,
+    @SerialName("notes") val notes: String? = null,
+    @SerialName("status") val status: String = "PENDING",
+    @SerialName("dueAt") val dueAt: String? = null,
+    @SerialName("recurrence") val recurrence: String? = "none",
+    @SerialName("category") val category: String? = null,
+    @SerialName("remindAt") val remindAt: String? = null,
+)
+
+/** Row from `GET /api/goals` (the server-side weekly goals, not the on-device goal list). */
+@Serializable
+data class WeeklyGoalDto(
+    @SerialName("id") val id: String,
+    @SerialName("title") val title: String,
+    @SerialName("targetCount") val targetCount: Int = 1,
+    @SerialName("unit") val unit: String? = null,
+    @SerialName("category") val category: String? = null,
+    @SerialName("autoSource") val autoSource: String? = null,
+    @SerialName("thisWeekCount") val thisWeekCount: Int = 0,
+    @SerialName("lastEventAt") val lastEventAt: String? = null,
+)
+
+@Serializable
+data class MealLogDto(
+    @SerialName("id") val id: String,
+    @SerialName("foodId") val foodId: String,
+    @SerialName("foodName") val foodName: String,
+    @SerialName("grams") val grams: Double,
+    @SerialName("calories") val calories: Int = 0,
+)
+
+/** `GET /api/nutrition/detail?date=` */
+@Serializable
+data class MealsDetailDto(
+    @SerialName("date") val date: String,
+    @SerialName("meals") val meals: List<MealLogDto> = emptyList(),
+)

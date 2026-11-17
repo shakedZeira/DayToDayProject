@@ -59,4 +59,10 @@ interface DayTodayApi {
     suspend fun getRecipe(authToken: String, recipeId: String): RecipeView
 
     suspend fun toggleFavorite(authToken: String, recipeId: String): Boolean
+
+    suspend fun getTasks(authToken: String): List<TaskDto>
+
+    suspend fun getWeeklyGoals(authToken: String): List<WeeklyGoalDto>
+
+    suspend fun getMeals(authToken: String, date: String): MealsDetailDto
 }
