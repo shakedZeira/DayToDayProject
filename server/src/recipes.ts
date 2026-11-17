@@ -302,6 +302,45 @@ recipesRouter.post("/:id/favorite", async (req: AuthedRequest, res) => {
   res.status(201).json({ favorited: true, recipeId: recipe.id });
 });
 
+// POST /api/recipes/:id/log — log servings of a recipe as a meal ({ servings?: number, date?: string }).
+// Calories come from a Food snapshot row named after the recipe and its per-serving calories, so
+// later edits to the recipe never change meals that were already logged. 1 serving = 100 "grams".
+recipesRouter.post("/:id/log", async (req: AuthedRequest, res) => {
+  const userId = req.userId!;
+  const { servings = 1, date } = req.body ?? {};
+  if (typeof servings !== "number" || !Number.isFinite(servings) || servings <= 0 || servings > 100) {
+    return res.status(400).json({ error: "servings must be a number > 0 and <= 100" });
+  }
+  let when = new Date();
+  if (date !== undefined) {
+    when = new Date(date);
+    if (typeof date !== "string" || Number.isNaN(when.getTime())) {
+      return res.status(400).json({ error: "date must be a valid date string" });
+    }
+  }
+  const recipe = await prisma.recipe.findFirst({
+    where: { id: req.params.id, OR: [{ ownerId: null }, { ownerId: userId }] },
+  });
+  if (!recipe) return res.status(404).json({ error: "not found" });
+
+  const name = `${recipe.title} (${recipe.calories} kcal/serving)`;
+  const food =
+    (await prisma.food.findUnique({ where: { name } })) ??
+    (await prisma.food.create({
+      data: { name, caloriesPer100: recipe.calories, servingUnit: "serving", recipeId: recipe.id },
+    }));
+  const meal = await prisma.mealLog.create({
+    data: { ownerId: userId, foodId: food.id, grams: servings * 100, date: when },
+  });
+  res.status(201).json({
+    id: meal.id,
+    recipeId: recipe.id,
+    servings,
+    calories: Math.round(recipe.calories * servings),
+    date: meal.date,
+  });
+});
+
 // POST /api/recipes/upload — multipart photo upload; returns { imageUrl }
 recipesRouter.post(
   "/upload",

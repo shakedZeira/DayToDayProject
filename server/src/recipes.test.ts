@@ -289,3 +289,39 @@ test("rejects unauthenticated access", async () => {
   const create = await request(app).post("/api/recipes").send(baseRecipe);
   expect(create.status).toBe(401);
 });
+
+test("POST /api/recipes/:id/log logs servings into the nutrition summary and hides snapshot foods", async () => {
+  token = await register("recipe-log@example.com");
+  const created = await createRecipe(token, { calories: 250 });
+  const id = created.body.id as string;
+
+  const res = await request(app)
+    .post(`/api/recipes/${id}/log`)
+    .set("Authorization", `Bearer ${token}`)
+    .send({ servings: 2 });
+  expect(res.status).toBe(201);
+  expect(res.body.calories).toBe(500);
+
+  const summary = await request(app).get("/api/nutrition/summary").set("Authorization", `Bearer ${token}`);
+  expect(summary.body.consumed).toBe(500);
+  expect(summary.body.meals[0].servings).toBe(2);
+
+  const foods = await request(app).get("/api/foods").set("Authorization", `Bearer ${token}`);
+  expect(foods.body.some((f: { name: string }) => f.name.includes("Test Oatmeal"))).toBe(false);
+
+  // editing the recipe later does not change the already-logged meal
+  await prisma.recipe.update({ where: { id }, data: { calories: 900 } });
+  const again = await request(app).get("/api/nutrition/summary").set("Authorization", `Bearer ${token}`);
+  expect(again.body.consumed).toBe(500);
+});
+
+test("POST /api/recipes/:id/log validates input and recipe visibility", async () => {
+  token = await register("recipe-log2@example.com");
+  otherToken = await register("recipe-log3@example.com");
+  const id = (await createRecipe(token)).body.id as string;
+
+  const bad = await request(app).post(`/api/recipes/${id}/log`).set("Authorization", `Bearer ${token}`).send({ servings: 0 });
+  expect(bad.status).toBe(400);
+  const hidden = await request(app).post(`/api/recipes/${id}/log`).set("Authorization", `Bearer ${otherToken}`).send({});
+  expect(hidden.status).toBe(404);
+});

@@ -41,7 +41,7 @@ export interface NutritionSummary {
   target: number;
   consumed: number;
   remaining: number;
-  meals: { id: string; foodName: string; grams: number; calories: number }[];
+  meals: { id: string; foodName: string; grams: number; servings?: number; calories: number }[];
 }
 
 export interface VisionEstimate {

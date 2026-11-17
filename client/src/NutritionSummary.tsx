@@ -53,7 +53,7 @@ export default function NutritionSummary({ summary }: Props) {
               className="flex items-center justify-between border rounded px-3 py-2 bg-slate-50 text-sm"
             >
               <span className="text-slate-700">
-                {meal.foodName} · {meal.grams}g
+                {meal.foodName} · {meal.servings !== undefined ? `${meal.servings} serving${meal.servings === 1 ? "" : "s"}` : `${meal.grams}g`}
               </span>
               <span className="text-slate-400">
                 {meal.calories} kcal

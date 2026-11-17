@@ -42,3 +42,12 @@ export async function deleteMeal(token: string, id: string): Promise<void> {
     throw new Error(err.error ?? "request failed");
   }
 }
+
+export async function logRecipeMeal(token: string, recipeId: string, servings: number): Promise<void> {
+  const res = await authedFetch(token, `/api/recipes/${recipeId}/log`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ servings }),
+  });
+  await json<unknown>(res);
+}

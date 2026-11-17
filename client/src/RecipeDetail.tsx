@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { RecipeView } from "shared";
-import { logMeal } from "./foodApi";
+import { logRecipeMeal } from "./foodApi";
 import CookingMode from "./CookingMode";
 
 interface Props {
@@ -37,11 +37,9 @@ export default function RecipeDetail({
   const [cooking, setCooking] = useState(false);
 
   async function handleLogAsMeal() {
-    // Recipes are not Food rows, so we log a synthetic entry keyed by the recipe id.
-    // grams = 1 represents one serving of the recipe.
     setLogging(recipe.id);
     try {
-      await logMeal(token, { foodId: `recipe:${recipe.id}`, grams: 1 });
+      await logRecipeMeal(token, recipe.id, 1);
       onLogged();
     } catch (err) {
       alert(err instanceof Error ? err.message : "נכשל ברישום הארוחה");

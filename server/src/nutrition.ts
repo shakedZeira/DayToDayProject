@@ -26,7 +26,7 @@ nutritionRouter.get("/summary", async (req: AuthedRequest, res) => {
 
   const meals = await prisma.mealLog.findMany({
     where: { ownerId: req.userId, date: { gte: start, lt: end } },
-    include: { food: { select: { id: true, name: true, caloriesPer100: true } } },
+    include: { food: { select: { id: true, name: true, caloriesPer100: true, servingUnit: true } } },
     orderBy: { date: "asc" },
   });
 
@@ -43,6 +43,7 @@ nutritionRouter.get("/summary", async (req: AuthedRequest, res) => {
       id: m.id,
       foodName: m.food.name,
       grams: m.grams,
+      ...(m.food.servingUnit === "serving" ? { servings: m.grams / 100 } : {}),
       calories: Math.round(m.food.caloriesPer100 * (m.grams / 100)),
     })),
   });
@@ -54,7 +55,7 @@ nutritionRouter.get("/detail", async (req: AuthedRequest, res) => {
 
   const meals = await prisma.mealLog.findMany({
     where: { ownerId: req.userId, date: { gte: start, lt: end } },
-    include: { food: { select: { id: true, name: true, caloriesPer100: true } } },
+    include: { food: { select: { id: true, name: true, caloriesPer100: true, servingUnit: true } } },
     orderBy: { date: "asc" },
   });
 
@@ -65,6 +66,7 @@ nutritionRouter.get("/detail", async (req: AuthedRequest, res) => {
       foodId: m.foodId,
       foodName: m.food.name,
       grams: m.grams,
+      ...(m.food.servingUnit === "serving" ? { servings: m.grams / 100 } : {}),
       calories: Math.round(m.food.caloriesPer100 * (m.grams / 100)),
     })),
   });
