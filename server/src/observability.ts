@@ -52,7 +52,6 @@ export function initSentry(): boolean {
     dsn,
     environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
     tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE) || 0,
-    sendDefaultPii: false,
   });
   addErrorReporter((err, ctx) => {
     Sentry.captureException(err, { extra: ctx });
