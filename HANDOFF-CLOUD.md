@@ -36,7 +36,8 @@ Rules
 
 Environment variables (names only)
 DATABASE_URL, JWT_SECRET, NODE_ENV, CLIENT_URL, ALLOW_REGISTRATION, LLM_PROVIDER, LLM_HTTP_URL,
-LLM_HTTP_KEY (Groq), LLM_MODEL, VISION_PROVIDER, HOST, PORT.
+LLM_HTTP_KEY (Groq), LLM_MODEL, VISION_PROVIDER (stub|gemini), GEMINI_API_KEY, VISION_MODEL
+(default gemini-2.5-flash), HOST, PORT.
 ```
 
 ## Part 2 — Prerequisites for a cloud session
