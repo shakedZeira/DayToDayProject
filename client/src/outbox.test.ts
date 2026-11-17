@@ -16,6 +16,7 @@ describe("isQueueable", () => {
     expect(isQueueable("/api/tasks/abc", "PATCH")).toBe(true);
     expect(isQueueable("/api/tasks/abc", "DELETE")).toBe(true);
     expect(isQueueable("/api/foods/meals", "POST")).toBe(true);
+    expect(isQueueable("/api/recipes/r1/log", "POST")).toBe(true);
     expect(isQueueable("/api/workouts/w1/sets", "POST")).toBe(true);
     expect(isQueueable("/api/workouts/w1/exercises/x1/sets", "POST")).toBe(true);
   });

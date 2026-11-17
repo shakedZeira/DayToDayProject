@@ -39,6 +39,7 @@ const QUEUEABLE: Array<{ methods: string[]; re: RegExp }> = [
   { methods: ["PATCH", "DELETE"], re: /^\/api\/tasks\/[^/?]+$/ },
   { methods: ["POST"], re: /^\/api\/foods\/meals$/ },
   { methods: ["DELETE"], re: /^\/api\/foods\/meals\/[^/?]+$/ },
+  { methods: ["POST"], re: /^\/api\/recipes\/[^/?]+\/log$/ },
   { methods: ["POST"], re: /^\/api\/workouts\/[^/?]+\/sets$/ },
   { methods: ["POST"], re: /^\/api\/workouts\/[^/?]+\/exercises\/[^/?]+\/sets$/ },
 ];
