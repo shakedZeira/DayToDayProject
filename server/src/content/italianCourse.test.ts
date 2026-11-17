@@ -19,6 +19,17 @@ describe("Italian course content", () => {
     }
   });
 
+  test("every unit ends with a review test", () => {
+    for (const unit of ITALIAN_COURSE.units) {
+      expect(unit.lessons.length, unit.id).toBeGreaterThanOrEqual(4);
+      const last = unit.lessons[unit.lessons.length - 1];
+      expect(last.kind, unit.id).toBe("test");
+      expect(last.title.startsWith("Test:"), unit.id).toBe(true);
+      expect(last.exercises.length, unit.id).toBeGreaterThanOrEqual(8);
+      expect(unit.lessons.filter((l) => l.kind === "test"), unit.id).toHaveLength(1);
+    }
+  });
+
   test("choice exercises have four distinct choices and a valid answer", () => {
     for (const ex of exercises) {
       if (ex.kind !== "choice") continue;

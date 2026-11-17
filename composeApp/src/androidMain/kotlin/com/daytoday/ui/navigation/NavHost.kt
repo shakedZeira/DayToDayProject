@@ -15,6 +15,8 @@ import com.daytoday.ui.screen.nba.NbaGameDetailScreen
 import com.daytoday.ui.screen.nba.NbaInjuriesScreen
 import com.daytoday.ui.screen.nba.NbaNewsScreen
 import com.daytoday.ui.screen.nba.NbaScoreboardScreen
+import com.daytoday.ui.screen.cooking.CookingScreen
+import com.daytoday.ui.screen.cooking.RecipeDetailScreen
 import com.daytoday.ui.screen.settings.SettingsScreen
 import com.daytoday.ui.screen.workout.WorkoutActiveScreen
 import com.daytoday.ui.screen.workout.WorkoutHistoryScreen
@@ -72,6 +74,16 @@ fun DayTodayNavHost(
         }
         composable(Screen.ItalianVoice.route) {
             VoiceScreen(onBack = { navController.navigateUp() })
+        }
+        composable(Screen.Cooking.route) {
+            CookingScreen(navController = navController)
+        }
+        composable(
+            route = "${Screen.RecipeDetail.route}/{recipeId}",
+            arguments = listOf(navArgument("recipeId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val recipeId = backStackEntry.arguments?.getString("recipeId").orEmpty()
+            RecipeDetailScreen(recipeId = recipeId, navController = navController)
         }
     }
 }

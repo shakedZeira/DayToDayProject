@@ -31,16 +31,20 @@ beforeEach(async () => {
   token = reg.body.token as string;
 });
 
-test("course returns 3 units with lessons", async () => {
+test("course returns units that each end with a review test", async () => {
   const res = await request(app)
     .get("/api/italian-path/course")
     .set("Authorization", `Bearer ${token}`);
   expect(res.status).toBe(200);
-  expect(res.body.units).toHaveLength(3);
-  const lessons = res.body.units.flatMap((u: { lessons: unknown[] }) => u.lessons);
-  expect(lessons).toHaveLength(9);
-  for (const l of lessons as { exercises: unknown[] }[]) {
-    expect(l.exercises).toHaveLength(5);
+  expect(res.body.units.length).toBeGreaterThanOrEqual(12);
+  const units = res.body.units as {
+    lessons: { kind?: string; exercises: unknown[] }[];
+  }[];
+  for (const unit of units) {
+    expect(unit.lessons.length).toBeGreaterThanOrEqual(4);
+    const last = unit.lessons[unit.lessons.length - 1];
+    expect(last.kind).toBe("test");
+    expect(last.exercises.length).toBeGreaterThanOrEqual(8);
   }
 });
 

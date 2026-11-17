@@ -1,6 +1,7 @@
 import { prisma } from "./db";
 import { seedFoods } from "./foods.seed";
 import { seedExercises } from "./exercises.seed";
+import { seedRecipes } from "./recipes.seed";
 import { seedDefaultRoutines } from "./routines.seed";
 
 async function main() {
@@ -8,6 +9,8 @@ async function main() {
   console.log(`Seeded ${foods} foods (shared global catalog)`);
   const exercises = await seedExercises();
   console.log(`Seeded ${exercises} exercises (shared global library)`);
+  const recipes = await seedRecipes();
+  console.log(`Seeded ${recipes} recipes (shared starter catalog)`);
 
   // Seed default routines for all existing users
   const users = await prisma.user.findMany({ select: { id: true, email: true } });

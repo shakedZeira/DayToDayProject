@@ -1,4 +1,81 @@
-import type { ItalianCourse } from "shared";
+import type {
+  ItalianChoiceExercise,
+  ItalianCourse,
+  ItalianExercise,
+  ItalianLessonDef,
+  ItalianMatchExercise
+} from "shared";
+
+type VocabPair = [italian: string, english: string];
+
+/** Builds four distinct choices and inserts the correct one at `position % 4`. */
+function choiceEx(
+  id: string,
+  direction: ItalianChoiceExercise["direction"],
+  prompt: string,
+  pool: string[],
+  correct: string,
+  position: number,
+  speak?: string
+): ItalianChoiceExercise {
+  const distractors = [...new Set(pool)].filter((c) => c !== correct).slice(0, 3);
+  if (distractors.length < 3) throw new Error(`Not enough choices for ${id}`);
+  const answerIndex = position % 4;
+  const choices = [...distractors];
+  choices.splice(answerIndex, 0, correct);
+  return speak
+    ? { id, kind: "choice", direction, prompt, choices, answerIndex, speak }
+    : { id, kind: "choice", direction, prompt, choices, answerIndex };
+}
+
+function matchEx(id: string, items: VocabPair[]): ItalianMatchExercise {
+  return { id, kind: "match", pairs: items.map(([left, right]) => ({ left, right })) };
+}
+
+/** Six-exercise vocabulary lesson: two translations, a match, a listening drill and two more translations. */
+function vocabLesson(id: string, title: string, items: VocabPair[]): ItalianLessonDef {
+  if (items.length < 6) throw new Error(`Lesson ${id} needs at least 6 items`);
+  const italian = items.map(([it]) => it);
+  const english = items.map(([, en]) => en);
+  return {
+    id,
+    title,
+    exercises: [
+      choiceEx(`${id}e1`, "en_to_it", items[0][1], italian, items[0][0], 1),
+      choiceEx(`${id}e2`, "it_to_en", items[1][0], english, items[1][1], 2),
+      matchEx(`${id}e3`, items.slice(0, 4)),
+      choiceEx(`${id}e4`, "listen", "Tap what you hear", english, items[2][1], 3, items[2][0]),
+      choiceEx(`${id}e5`, "en_to_it", items[3][1], italian, items[3][0], 0),
+      choiceEx(`${id}e6`, "it_to_en", items[4][0], english, items[4][1], 1)
+    ]
+  };
+}
+
+/** Ten-exercise mixed review quiz shown at the end of a unit. */
+function reviewLesson(id: string, title: string, items: VocabPair[]): ItalianLessonDef {
+  if (items.length < 10) throw new Error(`Test ${id} needs 10 items`);
+  const italian = items.map(([it]) => it);
+  const english = items.map(([, en]) => en);
+  const exercises: ItalianExercise[] = [];
+  for (let i = 0; i < 4; i++) {
+    exercises.push(
+      choiceEx(`${id}e${exercises.length + 1}`, "en_to_it", items[i][1], italian, items[i][0], i)
+    );
+  }
+  for (let i = 4; i < 7; i++) {
+    exercises.push(
+      choiceEx(`${id}e${exercises.length + 1}`, "it_to_en", items[i][0], english, items[i][1], i)
+    );
+  }
+  exercises.push(
+    choiceEx(`${id}e${exercises.length + 1}`, "listen", "Tap what you hear", english, items[7][1], 2, items[7][0])
+  );
+  exercises.push(matchEx(`${id}e${exercises.length + 1}`, items.slice(6, 10)));
+  exercises.push(
+    choiceEx(`${id}e${exercises.length + 1}`, "it_to_en", items[9][0], english, items[9][1], 3)
+  );
+  return { id, title, kind: "test", exercises };
+}
 
 export const ITALIAN_COURSE: ItalianCourse = {
   language: "it",
@@ -39,7 +116,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u1l3e5", kind: "choice", direction: "listen", prompt: "Tap what you hear", choices: ["Thanks a lot", "You're welcome", "Good morning", "Goodbye"], answerIndex: 0, speak: "Grazie mille" },
             { id: "u1l3e6", kind: "choice", direction: "en_to_it", prompt: "You're welcome", choices: ["prego", "grazie", "ciao", "scusi"], answerIndex: 0 }
           ]
-        }
+        },
+        vocabLesson("u1l4", "Saying goodbye", [
+          ["arrivederci", "goodbye"],
+          ["a presto", "see you soon"],
+          ["a domani", "see you tomorrow"],
+          ["buonanotte", "good night"],
+          ["ci vediamo", "see you"],
+          ["a dopo", "see you later"]
+        ]),
+        vocabLesson("u1l5", "Yes, no & maybe", [
+          ["sì", "yes"],
+          ["no", "no"],
+          ["forse", "maybe"],
+          ["certo", "of course"],
+          ["va bene", "okay"],
+          ["non lo so", "I don't know"]
+        ]),
+        reviewLesson("u1t1", "Test: Basics", [
+          ["ciao", "hello"],
+          ["buongiorno", "good morning"],
+          ["buonasera", "good evening"],
+          ["arrivederci", "goodbye"],
+          ["per favore", "please"],
+          ["grazie", "thank you"],
+          ["prego", "you're welcome"],
+          ["mi scusi", "excuse me"],
+          ["piacere", "nice to meet you"],
+          ["come stai", "how are you"]
+        ])
       ]
     },
     {
@@ -78,7 +183,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u2l3e5", kind: "choice", direction: "it_to_en", prompt: "Che ore sono?", choices: ["What day is it?", "What time is it?", "How much is it?", "Where is it?"], answerIndex: 1 },
             { id: "u2l3e6", kind: "choice", direction: "en_to_it", prompt: "tomorrow", choices: ["oggi", "domani", "ieri", "domenica"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u2l4", "Numbers 11-20", [
+          ["undici", "eleven"],
+          ["dodici", "twelve"],
+          ["tredici", "thirteen"],
+          ["quattordici", "fourteen"],
+          ["quindici", "fifteen"],
+          ["sedici", "sixteen"]
+        ]),
+        vocabLesson("u2l5", "Time expressions", [
+          ["adesso", "now"],
+          ["più tardi", "later"],
+          ["sempre", "always"],
+          ["mai", "never"],
+          ["ogni giorno", "every day"],
+          ["qualche volta", "sometimes"]
+        ]),
+        reviewLesson("u2t1", "Test: Numbers & Time", [
+          ["uno", "one"],
+          ["cinque", "five"],
+          ["dieci", "ten"],
+          ["undici", "eleven"],
+          ["venti", "twenty"],
+          ["trenta", "thirty"],
+          ["cento", "one hundred"],
+          ["che ore sono", "what time is it"],
+          ["domani", "tomorrow"],
+          ["mezzogiorno", "noon"]
+        ])
       ]
     },
     {
@@ -117,7 +250,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u3l3e5", kind: "choice", direction: "it_to_en", prompt: "L'aglio", choices: ["The onion", "The garlic", "The salt", "The oil"], answerIndex: 1 },
             { id: "u3l3e6", kind: "choice", direction: "en_to_it", prompt: "the egg", choices: ["il pomodoro", "l'uovo", "il latte", "il pane"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u3l4", "Bakery & breakfast", [
+          ["il pane", "the bread"],
+          ["il cornetto", "the croissant"],
+          ["la marmellata", "the jam"],
+          ["il burro", "the butter"],
+          ["il miele", "the honey"],
+          ["il biscotto", "the biscuit"]
+        ]),
+        vocabLesson("u3l5", "Restaurant phrases", [
+          ["il conto, per favore", "the bill, please"],
+          ["sono vegetariano", "I am vegetarian"],
+          ["senza glutine", "gluten free"],
+          ["buon appetito", "enjoy your meal"],
+          ["è delizioso", "it is delicious"],
+          ["un tavolo per due", "a table for two"]
+        ]),
+        reviewLesson("u3t1", "Test: Food & Drink", [
+          ["il caffè", "the coffee"],
+          ["il cappuccino", "the cappuccino"],
+          ["l'acqua", "the water"],
+          ["il vino", "the wine"],
+          ["la pizza", "the pizza"],
+          ["la pasta", "the pasta"],
+          ["il formaggio", "the cheese"],
+          ["la zuppa", "the soup"],
+          ["il conto", "the bill"],
+          ["delizioso", "delicious"]
+        ])
       ]
     },
     {
@@ -171,7 +332,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u4l4e5", kind: "choice", direction: "en_to_it", prompt: "We are a family", choices: ["Siamo una famiglia", "Mia madre è alta", "Questa è mia nonna", "Ho un fratello"], answerIndex: 0 },
             { id: "u4l4e6", kind: "choice", direction: "it_to_en", prompt: "Ho due figli", choices: ["This is my grandmother", "I have two children", "I have a sister", "My father is kind"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u4l5", "Relationships", [
+          ["il fidanzato", "the boyfriend"],
+          ["la fidanzata", "the girlfriend"],
+          ["il marito", "the husband"],
+          ["la moglie", "the wife"],
+          ["il cugino", "the male cousin"],
+          ["la cugina", "the female cousin"]
+        ]),
+        vocabLesson("u4l6", "Personality", [
+          ["timido", "shy"],
+          ["generoso", "generous"],
+          ["tranquillo", "calm"],
+          ["divertente", "funny"],
+          ["serio", "serious"],
+          ["gentile", "kind"]
+        ]),
+        reviewLesson("u4t1", "Test: Family & People", [
+          ["la madre", "the mother"],
+          ["il padre", "the father"],
+          ["il fratello", "the brother"],
+          ["la sorella", "the sister"],
+          ["il figlio", "the son"],
+          ["la figlia", "the daughter"],
+          ["il nonno", "the grandfather"],
+          ["la nonna", "the grandmother"],
+          ["il marito", "the husband"],
+          ["la moglie", "the wife"]
+        ])
       ]
     },
     {
@@ -225,7 +414,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u5l4e5", kind: "choice", direction: "en_to_it", prompt: "the sky", choices: ["il cielo", "il vento", "freddo", "la neve"], answerIndex: 0 },
             { id: "u5l4e6", kind: "choice", direction: "it_to_en", prompt: "la nuvola", choices: ["Cold", "The cloud", "The rain", "Hot"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u5l5", "Seasons", [
+          ["la primavera", "spring"],
+          ["l'estate", "summer"],
+          ["l'autunno", "autumn"],
+          ["l'inverno", "winter"],
+          ["la stagione", "the season"],
+          ["il clima", "the climate"]
+        ]),
+        vocabLesson("u5l6", "Daily routine", [
+          ["mi sveglio", "I wake up"],
+          ["faccio colazione", "I have breakfast"],
+          ["vado al lavoro", "I go to work"],
+          ["torno a casa", "I go home"],
+          ["ceno", "I have dinner"],
+          ["dormo", "I sleep"]
+        ]),
+        reviewLesson("u5t1", "Test: Daily Life", [
+          ["lunedì", "Monday"],
+          ["martedì", "Tuesday"],
+          ["mercoledì", "Wednesday"],
+          ["giovedì", "Thursday"],
+          ["venerdì", "Friday"],
+          ["sabato", "Saturday"],
+          ["domenica", "Sunday"],
+          ["gennaio", "January"],
+          ["luglio", "July"],
+          ["la settimana", "the week"]
+        ])
       ]
     },
     {
@@ -279,7 +496,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u6l4e5", kind: "choice", direction: "en_to_it", prompt: "the street", choices: ["la strada", "il passaporto", "l'albergo", "la valigia"], answerIndex: 0 },
             { id: "u6l4e6", kind: "choice", direction: "it_to_en", prompt: "il passaporto", choices: ["The street", "The passport", "The key", "The city"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u6l5", "Asking for help", [
+          ["mi può aiutare", "can you help me"],
+          ["dov'è la stazione", "where is the station"],
+          ["è lontano", "is it far"],
+          ["non capisco", "I don't understand"],
+          ["parla inglese", "do you speak English"],
+          ["può ripetere", "can you repeat"]
+        ]),
+        vocabLesson("u6l6", "City life", [
+          ["il centro", "the city center"],
+          ["il parco", "the park"],
+          ["il mercato", "the market"],
+          ["il museo", "the museum"],
+          ["il ponte", "the bridge"],
+          ["la piazza", "the square"]
+        ]),
+        reviewLesson("u6t1", "Test: Around Town", [
+          ["la casa", "the house"],
+          ["la scuola", "the school"],
+          ["la banca", "the bank"],
+          ["la farmacia", "the pharmacy"],
+          ["il negozio", "the shop"],
+          ["il treno", "the train"],
+          ["l'autobus", "the bus"],
+          ["il biglietto", "the ticket"],
+          ["la strada", "the street"],
+          ["l'albergo", "the hotel"]
+        ])
       ]
     },
     {
@@ -333,7 +578,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u7l4e5", kind: "choice", direction: "en_to_it", prompt: "the fork", choices: ["la forchetta", "la cena", "il tavolo", "il pranzo"], answerIndex: 0 },
             { id: "u7l4e6", kind: "choice", direction: "it_to_en", prompt: "il pranzo", choices: ["The menu", "Lunch", "Breakfast", "The fork"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u7l5", "Meat & fish", [
+          ["la carne", "the meat"],
+          ["il pollo", "the chicken"],
+          ["il pesce", "the fish"],
+          ["il prosciutto", "the ham"],
+          ["la bistecca", "the steak"],
+          ["il salame", "the salami"]
+        ]),
+        vocabLesson("u7l6", "Desserts", [
+          ["il gelato", "the ice cream"],
+          ["la torta", "the cake"],
+          ["il biscotto", "the biscuit"],
+          ["il tiramisù", "the tiramisu"],
+          ["la panna cotta", "the panna cotta"],
+          ["lo zucchero", "the sugar"]
+        ]),
+        reviewLesson("u7t1", "Test: More Food", [
+          ["la mela", "the apple"],
+          ["la banana", "the banana"],
+          ["l'arancia", "the orange"],
+          ["la fragola", "the strawberry"],
+          ["la carota", "the carrot"],
+          ["la patata", "the potato"],
+          ["la cipolla", "the onion"],
+          ["il fungo", "the mushroom"],
+          ["il gelato", "the ice cream"],
+          ["la torta", "the cake"]
+        ])
       ]
     },
     {
@@ -387,7 +660,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u8l4e5", kind: "choice", direction: "en_to_it", prompt: "we have", choices: ["abbiamo", "hai", "è", "ho"], answerIndex: 0 },
             { id: "u8l4e6", kind: "choice", direction: "it_to_en", prompt: "siete", choices: ["You are", "You all are", "I have", "I am"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u8l5", "Common -are verbs", [
+          ["parlare", "to speak"],
+          ["mangiare", "to eat"],
+          ["lavorare", "to work"],
+          ["studiare", "to study"],
+          ["abitare", "to live"],
+          ["comprare", "to buy"]
+        ]),
+        vocabLesson("u8l6", "Useful verb phrases", [
+          ["voglio", "I want"],
+          ["posso", "I can"],
+          ["devo", "I must"],
+          ["preferisco", "I prefer"],
+          ["vorrei", "I would like"],
+          ["ho bisogno di", "I need"]
+        ]),
+        reviewLesson("u8t1", "Test: Verbs & Actions", [
+          ["mangiare", "to eat"],
+          ["bere", "to drink"],
+          ["dormire", "to sleep"],
+          ["parlare", "to speak"],
+          ["andare", "to go"],
+          ["venire", "to come"],
+          ["vedere", "to see"],
+          ["fare", "to do"],
+          ["sono", "I am"],
+          ["ho", "I have"]
+        ])
       ]
     },
     {
@@ -441,7 +742,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u9l4e5", kind: "choice", direction: "en_to_it", prompt: "late", choices: ["tardi", "la mattina", "la notte", "presto"], answerIndex: 0 },
             { id: "u9l4e6", kind: "choice", direction: "it_to_en", prompt: "l'ora", choices: ["The evening", "The hour", "Early", "The afternoon"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u9l5", "Money & paying", [
+          ["i soldi", "the money"],
+          ["il prezzo", "the price"],
+          ["lo sconto", "the discount"],
+          ["la carta di credito", "the credit card"],
+          ["il resto", "the change"],
+          ["lo scontrino", "the receipt"]
+        ]),
+        vocabLesson("u9l6", "Sizes & colors", [
+          ["piccolo", "small"],
+          ["grande", "big"],
+          ["medio", "medium"],
+          ["la taglia", "the size"],
+          ["di che colore", "what color"],
+          ["nuovo", "new"]
+        ]),
+        reviewLesson("u9t1", "Test: Shopping & Time", [
+          ["la camicia", "the shirt"],
+          ["i pantaloni", "the pants"],
+          ["le scarpe", "the shoes"],
+          ["la giacca", "the jacket"],
+          ["il cappello", "the hat"],
+          ["i soldi", "the money"],
+          ["il prezzo", "the price"],
+          ["lo sconto", "the discount"],
+          ["il resto", "the change"],
+          ["la taglia", "the size"]
+        ])
       ]
     },
     {
@@ -495,7 +824,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u10l4e5", kind: "choice", direction: "en_to_it", prompt: "the energy", choices: ["l'energia", "la palestra", "la verdura", "lo sport"], answerIndex: 0 },
             { id: "u10l4e6", kind: "choice", direction: "it_to_en", prompt: "la verdura", choices: ["The fruit", "The vegetables", "The energy", "To swim"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u10l5", "At the pharmacy", [
+          ["la ricetta", "the prescription"],
+          ["le pillole", "the pills"],
+          ["il cerotto", "the bandage"],
+          ["lo sciroppo", "the syrup"],
+          ["il farmacista", "the pharmacist"],
+          ["senza ricetta", "without a prescription"]
+        ]),
+        vocabLesson("u10l6", "Emergencies", [
+          ["aiuto", "help"],
+          ["chiamate un medico", "call a doctor"],
+          ["è un'emergenza", "it is an emergency"],
+          ["ho bisogno di aiuto", "I need help"],
+          ["l'ambulanza", "the ambulance"],
+          ["il pronto soccorso", "the emergency room"]
+        ]),
+        reviewLesson("u10t1", "Test: Body & Health", [
+          ["la testa", "the head"],
+          ["la mano", "the hand"],
+          ["il piede", "the foot"],
+          ["l'occhio", "the eye"],
+          ["il naso", "the nose"],
+          ["la medicina", "the medicine"],
+          ["la febbre", "the fever"],
+          ["il raffreddore", "the common cold"],
+          ["la tosse", "the cough"],
+          ["il medico", "the doctor"]
+        ])
       ]
     },
     {
@@ -549,7 +906,35 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u11l4e5", kind: "choice", direction: "en_to_it", prompt: "Have a good day at work!", choices: ["Buon lavoro!", "Sono uno studente", "Finisco alle cinque", "Lavoro in un ufficio"], answerIndex: 0 },
             { id: "u11l4e6", kind: "choice", direction: "it_to_en", prompt: "Ho una riunione", choices: ["I finish at five", "I have a meeting", "What do you do for work?", "I study Italian"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u11l5", "Technology", [
+          ["il computer", "the computer"],
+          ["il telefono", "the phone"],
+          ["la password", "the password"],
+          ["internet", "the internet"],
+          ["l'email", "the email"],
+          ["lo schermo", "the screen"]
+        ]),
+        vocabLesson("u11l6", "Office phrases", [
+          ["puoi inviarmi", "can you send me"],
+          ["ho finito", "I have finished"],
+          ["sono in riunione", "I am in a meeting"],
+          ["a dopo", "see you later"],
+          ["buon lavoro", "good luck at work"],
+          ["sono in ritardo", "I am late"]
+        ]),
+        reviewLesson("u11t1", "Test: Work & School", [
+          ["l'insegnante", "the teacher"],
+          ["il cuoco", "the cook"],
+          ["l'avvocato", "the lawyer"],
+          ["l'infermiere", "the nurse"],
+          ["lo studente", "the student"],
+          ["il libro", "the book"],
+          ["la penna", "the pen"],
+          ["il lavoro", "the job"],
+          ["la riunione", "the meeting"],
+          ["lo stipendio", "the salary"]
+        ])
       ]
     },
     {
@@ -603,7 +988,169 @@ export const ITALIAN_COURSE: ItalianCourse = {
             { id: "u12l4e5", kind: "choice", direction: "en_to_it", prompt: "Best wishes", choices: ["Auguri", "Buon compleanno", "A presto", "Buona fortuna"], answerIndex: 0 },
             { id: "u12l4e6", kind: "choice", direction: "it_to_en", prompt: "Buona notte", choices: ["See you soon", "Good night", "Enjoy your meal", "See you tomorrow"], answerIndex: 1 }
           ]
-        }
+        },
+        vocabLesson("u12l5", "Making plans", [
+          ["ti va di uscire", "do you want to go out"],
+          ["ci vediamo", "let's meet"],
+          ["sei libero", "are you free"],
+          ["perfetto", "perfect"],
+          ["più tardi", "later"],
+          ["a che ora", "at what time"]
+        ]),
+        vocabLesson("u12l6", "Storytelling", [
+          ["ieri", "yesterday"],
+          ["sono andato", "I went"],
+          ["poi", "then"],
+          ["alla fine", "in the end"],
+          ["prima", "before"],
+          ["dopo", "after"]
+        ]),
+        reviewLesson("u12t1", "Test: Conversation", [
+          ["chi", "who"],
+          ["che cosa", "what"],
+          ["dove", "where"],
+          ["quando", "when"],
+          ["perché", "why"],
+          ["come", "how"],
+          ["quanto", "how much"],
+          ["mi piace", "I like it"],
+          ["non mi piace", "I do not like it"],
+          ["sono d'accordo", "I agree"]
+        ])
+      ]
+    },
+    {
+      id: "u13",
+      title: "Grammar: Nouns & Articles",
+      lessons: [
+        vocabLesson("u13l1", "Definite articles", [
+          ["il libro", "the book"],
+          ["lo studente", "the student"],
+          ["la casa", "the house"],
+          ["l'amico", "the friend"],
+          ["i libri", "the books"],
+          ["le case", "the houses"]
+        ]),
+        vocabLesson("u13l2", "Plural nouns", [
+          ["il gatto", "the cat"],
+          ["i gatti", "the cats"],
+          ["la chiave", "the key"],
+          ["le chiavi", "the keys"],
+          ["il mese", "the month"],
+          ["i mesi", "the months"]
+        ]),
+        vocabLesson("u13l3", "Indefinite articles", [
+          ["un libro", "a book"],
+          ["uno studente", "a student"],
+          ["una casa", "a house"],
+          ["un'amica", "a female friend"],
+          ["un caffè", "a coffee"],
+          ["una mela", "an apple"]
+        ]),
+        reviewLesson("u13t1", "Test: Nouns & Articles", [
+          ["il libro", "the book"],
+          ["lo studente", "the student"],
+          ["la casa", "the house"],
+          ["l'amico", "the male friend"],
+          ["i libri", "the books"],
+          ["le case", "the houses"],
+          ["un libro", "a book"],
+          ["una casa", "a house"],
+          ["il gatto", "the cat"],
+          ["le chiavi", "the keys"]
+        ])
+      ]
+    },
+    {
+      id: "u14",
+      title: "Grammar: Present Tense",
+      lessons: [
+        vocabLesson("u14l1", "-are verbs", [
+          ["parlo", "I speak"],
+          ["parli", "you speak"],
+          ["parla", "he speaks"],
+          ["parliamo", "we speak"],
+          ["parlate", "you all speak"],
+          ["parlano", "they speak"]
+        ]),
+        vocabLesson("u14l2", "-ere verbs", [
+          ["prendo", "I take"],
+          ["prendi", "you take"],
+          ["prende", "he takes"],
+          ["prendiamo", "we take"],
+          ["prendete", "you all take"],
+          ["prendono", "they take"]
+        ]),
+        vocabLesson("u14l3", "-ire verbs", [
+          ["dormo", "I sleep"],
+          ["dormi", "you sleep"],
+          ["dorme", "he sleeps"],
+          ["dormiamo", "we sleep"],
+          ["dormite", "you all sleep"],
+          ["dormono", "they sleep"]
+        ]),
+        vocabLesson("u14l4", "Irregular essentials", [
+          ["vado", "I go"],
+          ["fai", "you do"],
+          ["fa", "he does"],
+          ["andiamo", "we go"],
+          ["avete", "you all have"],
+          ["vengono", "they come"]
+        ]),
+        reviewLesson("u14t1", "Test: Present Tense", [
+          ["parlo", "I speak"],
+          ["parli", "you speak"],
+          ["parla", "he speaks"],
+          ["parliamo", "we speak"],
+          ["prendo", "I take"],
+          ["prende", "he takes"],
+          ["dormo", "I sleep"],
+          ["dorme", "he sleeps"],
+          ["vado", "I go"],
+          ["fanno", "they do"]
+        ])
+      ]
+    },
+    {
+      id: "u15",
+      title: "Idioms & Culture",
+      lessons: [
+        vocabLesson("u15l1", "Common idioms", [
+          ["in bocca al lupo", "good luck"],
+          ["non vedo l'ora", "I can't wait"],
+          ["costa un occhio", "it costs a fortune"],
+          ["mamma mia", "oh my goodness"],
+          ["che bello", "how nice"],
+          ["piano piano", "slowly but surely"]
+        ]),
+        vocabLesson("u15l2", "Italian customs", [
+          ["buon appetito", "enjoy your meal"],
+          ["il caffè al bar", "coffee at the bar"],
+          ["la passeggiata", "the evening walk"],
+          ["l'aperitivo", "the aperitif"],
+          ["la piazza", "the square"],
+          ["la dolce vita", "the sweet life"]
+        ]),
+        vocabLesson("u15l3", "Travel culture", [
+          ["la fermata", "the stop"],
+          ["lo sciopero", "the strike"],
+          ["il museo", "the museum"],
+          ["la chiesa", "the church"],
+          ["il centro storico", "the historic center"],
+          ["l'orario", "the timetable"]
+        ]),
+        reviewLesson("u15t1", "Test: Idioms & Culture", [
+          ["in bocca al lupo", "good luck"],
+          ["non vedo l'ora", "I can't wait"],
+          ["mamma mia", "oh my goodness"],
+          ["che bello", "how nice"],
+          ["buon appetito", "enjoy your meal"],
+          ["la passeggiata", "the evening walk"],
+          ["l'aperitivo", "the aperitif"],
+          ["la fermata", "the stop"],
+          ["il museo", "the museum"],
+          ["l'orario", "the timetable"]
+        ])
       ]
     }
   ]

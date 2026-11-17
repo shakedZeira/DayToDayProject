@@ -8,6 +8,7 @@ import com.daytoday.model.NbaNews
 import com.daytoday.model.PersonalBests
 import com.daytoday.model.WeeklyProgress
 import com.daytoday.model.WorkoutSession
+import com.daytoday.network.RecipeView
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
@@ -189,6 +190,23 @@ class DayTodayApiImpl : DayTodayApi {
             }
         }
     }
+
+    override suspend fun getRecipes(authToken: String, meal: String?, favorites: Boolean): List<RecipeView> =
+        client.get(absoluteUrl("api/recipes")) {
+            header("Authorization", "Bearer $authToken")
+            meal?.let { parameter("meal", it) }
+            if (favorites) parameter("favorites", "true")
+        }.body()
+
+    override suspend fun getRecipe(authToken: String, recipeId: String): RecipeView =
+        client.get(absoluteUrl("api/recipes/$recipeId")) {
+            header("Authorization", "Bearer $authToken")
+        }.body()
+
+    override suspend fun toggleFavorite(authToken: String, recipeId: String): Boolean =
+        client.post(absoluteUrl("api/recipes/$recipeId/favorite")) {
+            header("Authorization", "Bearer $authToken")
+        }.body<FavoriteToggleResponse>().favorited
 }
 
 class ApiException(message: String) : Exception(message)

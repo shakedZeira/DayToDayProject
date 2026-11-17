@@ -53,4 +53,10 @@ interface DayTodayApi {
         messages: List<ChatMessageDto>,
         onDelta: (text: String, lang: String) -> Unit,
     )
+
+    suspend fun getRecipes(authToken: String, meal: String?, favorites: Boolean): List<RecipeView>
+
+    suspend fun getRecipe(authToken: String, recipeId: String): RecipeView
+
+    suspend fun toggleFavorite(authToken: String, recipeId: String): Boolean
 }

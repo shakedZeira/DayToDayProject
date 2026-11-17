@@ -115,6 +115,7 @@ export default function ItalianPath({ token }: Props) {
             <div className="flex flex-wrap gap-3">
               {unit.lessons.map((l) => {
                 const status = statuses[l.id];
+                const isTest = l.kind === "test";
                 return (
                   <button
                     key={l.id}
@@ -126,13 +127,15 @@ export default function ItalianPath({ token }: Props) {
                     className={`rounded-full w-36 h-36 flex flex-col items-center justify-center gap-1 border-4 text-sm ${
                       status === "completed"
                         ? "border-yellow-400 bg-yellow-50"
-                        : status === "unlocked"
-                          ? "border-emerald-500 bg-emerald-50"
-                          : "border-gray-300 bg-gray-50 text-gray-400"
+                        : status === "unlocked" && isTest
+                          ? "border-amber-500 bg-amber-50"
+                          : status === "unlocked"
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-gray-300 bg-gray-50 text-gray-400"
                     }`}
                   >
                     <span className="text-2xl">
-                      {status === "completed" ? "⭐" : status === "unlocked" ? "▶" : "🔒"}
+                      {status === "completed" ? "⭐" : isTest ? "📝" : status === "unlocked" ? "▶" : "🔒"}
                     </span>
                     <span className="px-2 text-center font-medium">{l.title}</span>
                   </button>
