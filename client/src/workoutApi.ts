@@ -72,7 +72,7 @@ export async function getProgressive(token: string, id: string): Promise<Progres
 export async function addWorkoutExercise(
   token: string,
   workoutId: string,
-  input: { exerciseId?: string; exerciseName?: string; notes?: string },
+  input: { exerciseId?: string; exerciseName?: string; notes?: string; supersetGroup?: number | null },
 ): Promise<WorkoutExerciseView> {
   const res = await authedFetch(token, `/api/workouts/${workoutId}/exercises`, {
     method: "POST",
@@ -94,4 +94,18 @@ export async function appendSetToExercise(
     body: JSON.stringify(input),
   });
   return json<WorkoutSet>(res);
+}
+
+export async function setExerciseSuperset(
+  token: string,
+  workoutId: string,
+  xeId: string,
+  supersetGroup: number | null,
+): Promise<void> {
+  const res = await authedFetch(token, `/api/workouts/${workoutId}/exercises/${xeId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ supersetGroup }),
+  });
+  await json<unknown>(res);
 }

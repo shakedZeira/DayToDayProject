@@ -96,6 +96,8 @@ model WorkoutExercise {
   exerciseName String
   order        Int     @default(0)
   notes        String?
+  // Exercises in the same workout sharing a non-null group id form a superset.
+  supersetGroup Int?
   createdAt    DateTime @default(now())
   sets         WorkoutSet[]
 
@@ -225,6 +227,8 @@ model RoutineExercise {
   targetReps   Int
   targetWeight Float?
   notes        String?
+  // Exercises in the same day sharing a non-null group id form a superset.
+  supersetGroup Int?
   routineDayId String
   routineDay   RoutineDay   @relation(fields: [routineDayId], references: [id], onDelete: Cascade)
   exerciseId   String

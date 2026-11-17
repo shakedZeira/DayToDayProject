@@ -1,6 +1,7 @@
 import { authedFetch } from "./auth";
 import type {
   AnalyticsSummary,
+  DeloadSuggestion,
   ProgressiveOverloadView,
   ProgressionUpdateInput,
 } from "shared";
@@ -34,4 +35,8 @@ export async function setProgression(
     body: JSON.stringify(input),
   });
   return json<ProgressiveOverloadView>(res);
+}
+export async function getDeloads(token: string): Promise<DeloadSuggestion[]> {
+  const res = await authedFetch(token, "/api/progression/deload");
+  return json<DeloadSuggestion[]>(res);
 }

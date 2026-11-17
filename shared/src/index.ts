@@ -25,7 +25,7 @@ export interface WeeklyGoalView {
 export interface WorkoutCreateInput { title: string; date?: string; notes?: string | null; }
 export interface WorkoutSetInput { exercise: string; weightKg: number; reps: number; setType?: string; restSeconds?: number; rpe?: number; }
 export interface WorkoutSetView { id: string; exercise: string; weightKg: number; reps: number; setType: string; order: number; restSeconds?: number | null; rpe?: number | null; }
-export interface WorkoutExerciseView { id: string; order: number; exerciseId?: string | null; exerciseName: string; sets: WorkoutSetView[]; }
+export interface WorkoutExerciseView { id: string; order: number; exerciseId?: string | null; exerciseName: string; supersetGroup?: number | null; sets: WorkoutSetView[]; }
 export interface ProgressiveSuggestion {
   exercise: string;
   currentWeightKg: number;
@@ -105,6 +105,8 @@ export interface ExerciseCreateInput { name: string; muscleGroup?: string; equip
 export interface RoutineExerciseInput {
   order: number; targetSets: number; targetReps: number; targetWeight?: number | null;
   notes?: string | null; exerciseId: string;
+  /** Exercises of one day sharing a group id are performed as a superset. */
+  supersetGroup?: number | null;
 }
 export interface RoutineDayInput { name: string; order?: number; exercises?: RoutineExerciseInput[]; }
 export interface RoutineCreateInput { name: string; description?: string | null; days?: RoutineDayInput[]; }
@@ -125,7 +127,16 @@ export interface AnalyticsSummary {
   totalWorkouts: number; thisWeekWorkouts: number;
   volumeTrend: { date: string; kg: number }[];
   muscleVolume: { muscle: string; kg: number }[];
+  /** Last 8 ISO weeks (Monday start), oldest first; one entry per muscle per week with working sets. */
+  weeklyMuscleVolume: { weekStart: string; muscle: string; sets: number; kg: number }[];
   prs: { exerciseName: string; repRange: number; weight: number; e1rm: number; date: string }[];
+}
+export interface DeloadSuggestion {
+  exerciseName: string;
+  reason: "e1rm_drop" | "stalled";
+  detail: string;
+  currentWeightKg: number;
+  suggestedWeightKg: number;
 }
 export interface ProgressionUpdateInput {
   targetSets?: number; targetReps?: number; targetWeight?: number | null; incrementKg?: number;

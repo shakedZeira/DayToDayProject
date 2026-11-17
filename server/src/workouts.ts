@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "./db";
 import { requireAuth, type AuthedRequest } from "./session";
 import { updateProgression, computeAnalytics } from "./progression";
+import { validSupersetGroup } from "./routines";
 import { startOfWeek } from "./goals";
 import type { ProgressiveSuggestion, WorkoutSetInput } from "shared";
 
@@ -252,7 +253,10 @@ workoutsRouter.post("/:id/exercises", async (req: AuthedRequest, res) => {
   });
   if (!workout) return res.status(404).json({ error: "not found" });
 
-  const { exerciseId, exerciseName, notes } = req.body ?? {};
+  const { exerciseId, exerciseName, notes, supersetGroup } = req.body ?? {};
+  if (!validSupersetGroup(supersetGroup)) {
+    return res.status(400).json({ error: "supersetGroup must be an integer 1-99" });
+  }
   let resolvedName: string | undefined;
 
   if (exerciseId) {
@@ -279,10 +283,25 @@ workoutsRouter.post("/:id/exercises", async (req: AuthedRequest, res) => {
       exerciseName: resolvedName!,
       order: count + 1,
       notes: typeof notes === "string" ? notes : null,
+      supersetGroup: supersetGroup ?? null,
     },
   });
 
   res.status(201).json({ ...xe, sets: [] });
+});
+
+// PATCH /api/workouts/:id/exercises/:xeId — { supersetGroup: number | null } to (un)link a superset.
+workoutsRouter.patch("/:id/exercises/:xeId", async (req: AuthedRequest, res) => {
+  const xe = await prisma.workoutExercise.findFirst({
+    where: { id: req.params.xeId, workoutId: req.params.id, ownerId: req.userId },
+  });
+  if (!xe) return res.status(404).json({ error: "exercise not found" });
+  const { supersetGroup } = req.body ?? {};
+  if (supersetGroup === undefined || !validSupersetGroup(supersetGroup)) {
+    return res.status(400).json({ error: "supersetGroup must be null or an integer 1-99" });
+  }
+  const updated = await prisma.workoutExercise.update({ where: { id: xe.id }, data: { supersetGroup } });
+  res.json(updated);
 });
 
 workoutsRouter.post("/:id/exercises/:xeId/sets", async (req: AuthedRequest, res) => {

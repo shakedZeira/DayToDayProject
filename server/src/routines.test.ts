@@ -161,3 +161,25 @@ test("GET /api/routines rejects unauthenticated", async () => {
   const res = await request(app).get("/api/routines");
   expect(res.status).toBe(401);
 });
+
+test("routine exercises keep supersetGroup and reject invalid groups", async () => {
+  const mk = (g: unknown) => request(app).post("/api/routines").set("Authorization", `Bearer ${token}`).send({
+    name: "SS",
+    days: [{ name: "D", exercises: [
+      { order: 0, targetSets: 3, targetReps: 8, exerciseId: exerciseIds[0], supersetGroup: g },
+      { order: 1, targetSets: 3, targetReps: 8, exerciseId: exerciseIds[1], supersetGroup: g },
+    ] }],
+  });
+  const ok = await mk(1);
+  expect(ok.status).toBe(201);
+  expect(ok.body.days[0].exercises.map((e: { supersetGroup: number | null }) => e.supersetGroup)).toEqual([1, 1]);
+  const none = await mk(undefined);
+  expect(none.body.days[0].exercises[0].supersetGroup).toBeNull();
+  expect((await mk(0)).status).toBe(400);
+  expect((await mk("a")).status).toBe(400);
+  const put = await request(app).put(`/api/routines/${ok.body.id}`).set("Authorization", `Bearer ${token}`).send({
+    name: "SS", days: [{ name: "D", exercises: [{ order: 0, targetSets: 3, targetReps: 8, exerciseId: exerciseIds[0], supersetGroup: 2 }] }],
+  });
+  expect(put.body.days[0].exercises[0].supersetGroup).toBe(2);
+  await prisma.routine.deleteMany({});
+});

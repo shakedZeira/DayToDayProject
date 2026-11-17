@@ -3,6 +3,7 @@ import type { RoutineView, RoutineCreateInput, ExerciseRecord } from "shared";
 import { getRoutines, createRoutine, updateRoutine, deleteRoutine } from "./routineApi";
 import { getExercises } from "./exerciseApi";
 import ActiveWorkout from "./ActiveWorkout";
+import { toggleLinkWithPrevious, supersetLabel } from "./supersets";
 import ExerciseDemoModal, { type DemoExercise } from "./ExerciseDemoModal";
 
 interface ExerciseItem {
@@ -10,6 +11,7 @@ interface ExerciseItem {
   exerciseName: string;
   targetSets: number;
   targetReps: number;
+  supersetGroup?: number | null;
 }
 
 interface RoutineForm {
@@ -28,7 +30,7 @@ type Mode = "list" | "new" | "edit" | "active";
 
 interface ActiveInitial {
   title: string;
-  xes: { exerciseId?: string; exerciseName: string; targetSets?: number; targetReps?: number }[];
+  xes: { exerciseId?: string; exerciseName: string; targetSets?: number; targetReps?: number; supersetGroup?: number | null }[];
 }
 
 export default function Plans({ token }: { token: string }) {
@@ -76,6 +78,7 @@ export default function Plans({ token }: { token: string }) {
             exerciseName: re.exercise.name,
             targetSets: re.targetSets,
             targetReps: re.targetReps,
+            supersetGroup: re.supersetGroup ?? null,
           }))
         : [],
     });
@@ -117,6 +120,13 @@ export default function Plans({ token }: { token: string }) {
     });
   };
 
+  const toggleSuperset = (idx: number) => {
+    setForm((prev) => {
+      const groups = toggleLinkWithPrevious(prev.exercises.map((e) => e.supersetGroup), idx);
+      return { ...prev, exercises: prev.exercises.map((e, i) => ({ ...e, supersetGroup: groups[i] })) };
+    });
+  };
+
   const moveExercise = (idx: number, dir: -1 | 1) => {
     setForm((prev) => {
       const exercises = [...prev.exercises];
@@ -144,6 +154,7 @@ export default function Plans({ token }: { token: string }) {
             targetSets: re.targetSets,
             targetReps: re.targetReps,
             targetWeight: null,
+            supersetGroup: re.supersetGroup ?? null,
             exerciseId: re.exerciseId,
           })),
         }],
@@ -189,6 +200,7 @@ export default function Plans({ token }: { token: string }) {
         exerciseName: re.exercise.name,
         targetSets: re.targetSets,
         targetReps: re.targetReps,
+        supersetGroup: re.supersetGroup ?? null,
       })),
     });
     setMode("active");
@@ -283,6 +295,18 @@ export default function Plans({ token }: { token: string }) {
                     min={1}
                     title="Reps"
                   />
+                  {idx > 0 && (
+                    <button
+                      onClick={() => toggleSuperset(idx)}
+                      title="Superset with the previous exercise"
+                      className={`text-xs font-medium ${re.supersetGroup != null && re.supersetGroup === form.exercises[idx - 1].supersetGroup ? "text-violet-700" : "text-slate-400"} hover:text-violet-700`}
+                    >
+                      SS
+                    </button>
+                  )}
+                  {supersetLabel(re.supersetGroup) && (
+                    <span className="text-xs text-violet-600">{supersetLabel(re.supersetGroup)}</span>
+                  )}
                   <button
                     onClick={() => setDemoExercise({ name: re.exerciseName })}
                     className="text-xs font-medium text-indigo-500 hover:text-indigo-700"
