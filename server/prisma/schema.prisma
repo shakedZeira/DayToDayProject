@@ -25,6 +25,9 @@ model Task {
   dueAt       DateTime?
   recurrence  String?  @default("none")
   category    String?
+  remindAt        DateTime? // explicit reminder time (one-shot; time-of-day gate for recurring tasks)
+  reminderSentAt  DateTime?
+  snoozedUntil    DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

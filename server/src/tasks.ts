@@ -17,6 +17,14 @@ function dueOn(task: { dueAt: Date | null; recurrence: string | null }, date: Da
   return false;
 }
 
+function parseRemindAt(v: unknown): Date | null | undefined | "invalid" {
+  if (v === undefined) return undefined;
+  if (v === null) return null;
+  if (typeof v !== "string") return "invalid";
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? "invalid" : d;
+}
+
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
@@ -35,10 +43,12 @@ tasksRouter.get("/today", async (req: AuthedRequest, res) => {
 });
 
 tasksRouter.post("/", async (req: AuthedRequest, res) => {
-  const { title, notes, dueAt, recurrence, category } = req.body ?? {};
+  const { title, notes, dueAt, recurrence, category, remindAt } = req.body ?? {};
   if (typeof title !== "string" || !title.trim()) {
     return res.status(400).json({ error: "title required" });
   }
+  const remind = parseRemindAt(remindAt);
+  if (remind === "invalid") return res.status(400).json({ error: "remindAt must be an ISO date or null" });
   const task = await prisma.task.create({
     data: {
       ownerId: req.userId!,
@@ -46,7 +56,8 @@ tasksRouter.post("/", async (req: AuthedRequest, res) => {
       notes: typeof notes === "string" ? notes : null,
       dueAt: dueAt ? new Date(dueAt) : null,
       recurrence: typeof recurrence === "string" ? recurrence : "none",
-      category: typeof category === "string" ? category : null
+      category: typeof category === "string" ? category : null,
+      remindAt: remind ?? null
     }
   });
   res.status(201).json(task);
@@ -57,7 +68,9 @@ tasksRouter.patch("/:id", async (req: AuthedRequest, res) => {
   const existing = await prisma.task.findFirst({ where: { id, ownerId: req.userId } });
   if (!existing) return res.status(404).json({ error: "not found" });
 
-  const { title, notes, status, dueAt, recurrence, category } = req.body ?? {};
+  const { title, notes, status, dueAt, recurrence, category, remindAt } = req.body ?? {};
+  const remind = parseRemindAt(remindAt);
+  if (remind === "invalid") return res.status(400).json({ error: "remindAt must be an ISO date or null" });
   const data: Record<string, unknown> = {};
   if (typeof title === "string") data.title = title.trim();
   if (typeof notes === "string") data.notes = notes;
@@ -68,8 +81,29 @@ tasksRouter.patch("/:id", async (req: AuthedRequest, res) => {
   if (dueAt !== undefined) data.dueAt = dueAt === null ? null : new Date(dueAt);
   if (typeof recurrence === "string") data.recurrence = recurrence;
   if (category !== undefined) data.category = category === null ? null : category;
+  if (remind !== undefined) {
+    // A new reminder time re-arms the reminder and cancels any snooze.
+    data.remindAt = remind;
+    data.reminderSentAt = null;
+    data.snoozedUntil = null;
+  }
 
   const task = await prisma.task.update({ where: { id }, data });
+  res.json(task);
+});
+
+// POST /api/tasks/:id/snooze { minutes? } — hold reminders for a while (default 10, max 24h)
+tasksRouter.post("/:id/snooze", async (req: AuthedRequest, res) => {
+  const minutes = req.body?.minutes === undefined ? 10 : req.body.minutes;
+  if (typeof minutes !== "number" || !Number.isInteger(minutes) || minutes < 1 || minutes > 1440) {
+    return res.status(400).json({ error: "minutes must be an integer 1-1440" });
+  }
+  const existing = await prisma.task.findFirst({ where: { id: req.params.id, ownerId: req.userId } });
+  if (!existing) return res.status(404).json({ error: "not found" });
+  const task = await prisma.task.update({
+    where: { id: existing.id },
+    data: { snoozedUntil: new Date(Date.now() + minutes * 60_000) }
+  });
   res.json(task);
 });
 

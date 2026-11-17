@@ -7,6 +7,7 @@ export interface PushPayload {
   title: string;
   body: string;
   url?: string;
+  taskId?: string; // lets the client offer a snooze action
 }
 
 export async function sendPushToUser(
